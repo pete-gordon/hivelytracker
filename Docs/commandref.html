@@ -1,0 +1,62 @@
+<html>
+<head>
+<title>HivelyTracker Documentation</title>
+</head>
+<body>
+<h1>Command Reference</h1>
+<h1>Track commands</h1>
+<table border="1" cellpadding="1" cellspacing="0">
+<tr><td><b>Command</b></td><td><b>Description</b></td></tr>
+<tr><td valign="top">0</td><td>Pos jump hi<br />0 sets the high digit of the "jump to position" command (B)</td></tr>
+<tr><td valign="top">1</td><td>Portamento Up<br />Portamento up will slide the sample pitch up. The higher the parameter value, the faster it slides. You can't slide higher than B-5! Note: The portamento will be called as many times as the speed of the song per note. This means that you'll sometimes have trouble sliding accurately. If you change the speed without changing the slide rate, it could sound wrong.</td></tr>
+<tr><td valign="top">2</td><td>Portamento down<br />Portamento down will slide the sample pitch down. The higher the parameter value, the faster it slides. You cannot slide lower than C-1! The same limitations apply as portamento up.</td></tr>
+<tr><td valign="top">3</td><td>Tone portamento<br />Tone portamento automatically slides from the old note to the new note. You don't have to worry about which direction to slide, you only need to set the slide speed. To keep on sliding at a previously set rate, just use "300".</td></tr>
+<tr><td valign="top">4</td><td>Set filter</br />If the parameter is 00 to 3F, it overrides the filter value in the instrument performancelist. So, "420" would make the instrument set filter to "20" once the "0xx" command is reached in the performance list instead of "xx". 40-7F sets the filter immediately to parameter-40. So "452" immediately sets the filter to 12.</td></tr>
+<tr><td valign="top">5</td><td>Tone portamento and volume slide<bt />This command continues the current tone portamento slide, and slides the volume at the same time. The volume slide is the same as command "A".</td></tr>
+<tr><td valign="top">6</td><td>Not used</b></td></tr>
+<tr><td valign="top">7</td><td>Stereo panning (HivelyTracker only)<br />This sets the stereo panning position of the current channel from 80 (hard left) through 0 (centre) to 7F (hard right). It is a signed byte, so 80 is -128, and 7F is 127.</td></tr>
+<tr><td valign="top">8</td><td>External timing - UNUSED IN HIVELYTRACKER</td></tr>
+<tr><td valign="top">9</td><td>Set square relation<br />This command will set the square relation (set in performance list with 3xx) immediately and will disable the first 3xx command in the performance list of this instrument.</td></tr>
+<tr><td valign="top">A</td><td>Volume slide<br />This command will slide the volume up or down. If the high nibble is non-zero it slides the volume up at that speed. If the low nibble is non-zero it slides it down at that speed. e.g. A05 slides the volume down at speed 5, and A10 slides the volume up at speed 1.</td></tr>
+<tr><td valign="top">B</td><td>Position Jump<br />This command jumps to the specified position. Unlike most commands, the perameter is in decimal, not hex. If you want to jump to a position past "99", use the 0 command to set the "hundreds" column of the number</td></tr>
+<tr><td valign="top">C</td><td>Set volume<br />This sets the volume from 0 (silent) to 40 (full volume). Parameter is in hex. A value of 00 to 40 sets the volume for the current instrument. 50 to 90 sets the volume to "paremeter-50" for all channels. A0 to E0 sets the volume to "paremeter-A0" for the current channel</td></tr>
+<tr><td valign="top">D</td><td>Position break<br />This jumps to the next position in the song. The parameter is the note number to jump to.</td></tr>
+<tr><td valign="top">E</td><td>Multiple<br />The E command is split into sub commands using the high nibble of the effect parameter, so "E1x" is a different command to "E2x"</td></tr>
+<tr><td valign="top">E0</td><td>Not used</td></tr>
+<tr><td valign="top">E1</td><td>Fineslide up</br />This is like the "1xx" command, but the sliding is much finer.</td></tr>
+<tr><td valign="top">E2</td><td>Fineslide down</br />This is like the "2xx" command, but the sliding is much finer.</td></tr>
+<tr><td valign="top">E3</td><td>Not used</td></tr>
+<tr><td valign="top">E4</td><td>Vibrato control<br />This command overrides the vibrato depth set in the instrument editor</td></tr>
+<tr><td valign="top">E5</td><td>Not used</td></tr>
+<tr><td valign="top">E6</td><td>Not used</td></tr>
+<tr><td valign="top">E7</td><td>Not used</td></tr>
+<tr><td valign="top">E8</td><td>Not used</td></tr>
+<tr><td valign="top">E9</td><td>Not used</td></tr>
+<tr><td valign="top">EA</td><td>Fine volume up<br />This is similar to the "Ax0" command except the volume slide is much finer</td></tr>
+<tr><td valign="top">EB</td><td>Fine volume down<br />This is similar to the "A0x" command except the volume slide is much finer</td></tr>
+<tr><td valign="top">EC</td><td>Note cut<br />This command will cut the note at the selected tick, creating extremely short notes</td></tr>
+<tr><td valign="top">ED</td><td>Note delay<br />This command will delay the note to the selected tick</td></tr>
+<tr><td valign="top">EE</td><td>Not used</td></tr>
+<tr><td valign="top">EF</td><td>Miscellaneous flags:<br><br>EF1 = Preserve transpose value until another note is played in the channel (overrides default AHX behaviour) (v1.5+).</td></tr>
+<tr><td valign="top">F</td><td>Set tempo<br />The higher the parameter, the slower the tracks are parsed.</td></tr>
+</table>
+
+<h1>Instrument performance list commands</h1>
+<table border="1" cellpadding="1" cellspacing="0">
+<tr><td><b>Command</b></td><td>Description</td></tr>
+<tr><td valign="top">0</td><td>Set filter<br />A parameter of 01 to 1F sets the low pass filter, where 01 is heavy filtering and 1f is light filtering.<br />A parameter of 20 turns of all filtering.<br />A parameter of 21 to 3F sets the high pass filter, where 21 is light, and 3F is heavy filtering</td></tr>
+<tr><td valign="top">1</td><td>Portamento up (same as track cmd)</td></tr>
+<tr><td valign="top">2</td><td>Portamento down (same as track cmd)</td></tr>
+<tr><td valign="top">3</td><td>Set square relation value</td></tr>
+<tr><td valign="top">4</td><td>Toggle modulation<br />The upper nibble toggles filter modulation.<br />The lower nibble toggles square modulation<br />A value of 1 sets positive start direction, and F sets negative start direction.</td></tr>
+<tr><td valign="top">5</td><td>Jump to performance list position specified by the parameter</td></tr>
+<tr><td valign="top">7</td><td>Ring modulate instrument with a triangle wave. The parameter sets the note of the triangle oscillator, where 01 to 3B is C-1 to B-5 (fixed), and 81 to BB is C-1 to B-5 (relative). 00 or 80 turns off the modulation.</td></tr>
+<tr><td valign="top">8</td><td>Ring modulate instrument with a sawtooth wave. The parameter sets the note of the sawtooth oscillator, where 01 to 3B is C-1 to B-5 (fixed), and 81 to BB is C-1 to B-5 (relative). 00 or 80 turns off the modulation.</td></tr>
+<tr><td valign="top">9</td><td>Stereo panning (HivelyTracker only)<br />This sets the stereo panning for the channel the instrument is played in. This is limited to the instrument itself; the next time an instrument is played in the channel, it returns to the last stereo position set with the "7xx" track command (see table above).</td></tr>
+<tr><td valign="top">C</td><td>Set volume<br />00-40 sets the volume for the current waveform<br />50-90 sets the master volume for the instrument to parameter-50<br />a0 to f0 sets the track master volume</td></tr>
+<tr><td valign="top">F</td><td>Changes the speed of the performance list</td></tr>
+</table>
+<br />
+<a href="index.html">Back to index</a>
+</body>
+</html>

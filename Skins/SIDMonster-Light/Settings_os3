@@ -1,0 +1,51 @@
+#
+# format is "RRGGBB" hex values
+# any line starting with # is a comment
+#
+
+# 16 pixel tall proportional font
+font1 = 'BitStream Vera Sans.font'
+
+# 16x8 pixel fixed width font (MUST be 16x8)
+font2 = 'BitStream Vera Sans Mono.font'
+
+# 14x7 pixel fixed width font (MUST be 14x7)
+font3 = 'BitStream Vera Sans Mono.font'
+
+# first is the background to the track, pos &
+# performance editors, and the number & text gadgets
+000000
+
+# next is the "dark" colour underneath the position bars
+# in the track, pos and performance list editors
+113355
+
+# position bar colour
+446688
+
+# "light" colour above position bars
+8899bb
+
+# text colour
+aaccee
+
+# disabled text colour
+113355
+
+# wavemeter colour
+aaccee
+
+# normal cursor in track, pos & perf editors
+aaccee
+
+# edit mode cursor in track, pos & perf editors
+ffffff
+
+# text in buttons and tabs
+ffffff
+
+# shadow in buttons and tabs
+113355
+
+# track F-key position highlight colour
+d6e6ff
