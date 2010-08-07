@@ -1,0 +1,68 @@
+#
+# format is "RRGGBB" hex values
+# any line starting with # is a comment
+#
+
+# 16 pixel tall proportional font
+font1 = 'BitStream Vera Sans.font'
+
+# 16x8 pixel fixed width font (MUST be 16x8)
+font2 = 'BitStream Vera Sans Mono.font'
+
+# 14x7 pixel fixed width font (MUST be 14x7)
+font3 = 'BitStream Vera Sans Mono.font'
+
+# "Yes" if you want a different tab background behind
+# the tab label text, "No" for ordinary (defaults to No if omitted)
+tabtextback = 'Yes'
+
+# "Yes" if you want shadows behind tab label text
+# "No" if you don't (defaults to Yes if omitted)
+tabtextshad = 'No'
+
+# first is the background to the track, pos &
+# performance editors, and the number & text gadgets
+000022
+
+# next is the "dark" colour underneath the position bars
+# in the track, pos and performance list editors
+804400
+
+# position bar colour
+cc8200
+
+# "light" colour above position bars
+ffcc44
+
+# text colour
+ffffff
+
+# disabled text colour
+333333
+
+# wavemeter colour
+cc8200
+
+# normal cursor in track, pos & perf editors
+ffffff
+
+# edit mode cursor in track, pos & perf editors
+000022
+
+# text in buttons and tabs
+ffffff
+
+# shadow in buttons and tabs
+000022
+
+# track F-key position highlight colour
+ffffff
+
+# Position editor channel number highlight colour
+d6e6ff
+
+# Tab text colour (if you stop at the colour above, it'll use button text colour)
+0055aa
+
+# Tab shadow colour (if you stop before tab colours, it'll use button shadow colour)
+0055aa

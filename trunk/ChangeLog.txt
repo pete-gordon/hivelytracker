@@ -1,0 +1,206 @@
+1.6 22-Oct-2008
+===============
+
+- Right since 1.0, EDx was broken because of how i'd implimented the
+  two effect columns. Fixed. All replayers and plugins will need
+  updating :-/ Thanks to skope for pointing this out.
+- Fixed validity check for Cxx command, which broke in the ht replayer
+  because the parameter is signed. (fixes the sidvibes ahx file, which
+  used invalid Cxx commands). Thanks to megacz for pointing it out.
+- The replayer now strips the upper nibble of 4xx instrument commands
+  from "THX\0" AHX modules. These modules are saved from older versions
+  of AHX that didn't have filters, and so if the upper nibble is set
+  it activated filtering which is wrong since the module was created
+  in an editor that didn't have filters. The AHX editor also does this
+  stripping, but AFAIK WinAHX and its derivatives never did.
+
+
+1.5 18-Aug-2008
+===============
+
+- A parameter in the undo system was declared as a signed byte instead
+  of a signed word, which meant that some song parameters got corrupted
+  when they went over 127. Editing songs over 127 positions long was
+  buggered, for example. Can't believe i didn't spot this until now :(
+- Added Protracker mod import. Just like the one in AHX, it simply strips
+  out all PT commands that are not equivalent to AHX ones, and all
+  instruments are set to a simple tone, so you'll still have a lot of
+  work to do to make it sound nice.
+- Added a size optimisation feature. It removes all unused instruments,
+  and duplicate tracks. If you click with the right mousebutton, it'll
+  additionally try and use the transpose column to remove tracks which
+  are the same but transposed. However it doesn't know if sounds
+  continue after the newly transposed track so you may have to manually
+  fix any problems with that afterwards. Both modes keep the original
+  version and open a new tab with the optimise version so you won't
+  lose your work if it messes up. Both modes also use track 0 as the
+  empty track as AHX and HVL both make smaller files if that is the
+  case, however, if there are no empty tracks in the module, it won't
+  keep track 0 blank unnecessarily.
+- Added a new command! When "EF1" is placed on or after the last note
+  in a track, the "transpose" value for that channel will be preserved
+  until another note is played in the channel. This overrides the
+  default AHX/HVL behaviour, which is to switch to the next transpose
+  value as soon as the next position is reached.
+- '=' now does row preview, like enter does in protracker
+- '-' now toggles horizontal advance in the position editor
+- Added "posedadvance", "notejump" and "inotejump" fields to the
+  ht.prefs file. They don't show up in the prefs window, though, so
+  you have to edit them manually (run hively 1.5 and quit it to make
+  them show up in the file). "posedadvance" is either 0 or 1. When set
+  to 0, horizontal advance is disabled by default.
+  "defnotejump" is 0 to 9, and sets the default notejump in the pattern
+  editor. "definotejump" is the same for the instrument editor.
+  
+
+1.4 24-Aug-2007
+===============
+
+- Playback no longer stops when the "Load Mod" filerequester is open
+- Undo & Redo for almost all edit operations
+- Cutting an area in the position editor cleared both columns of
+  the left & right edges even if they weren't selected. Fixed.
+- Cutting or pasting in the position editor didn't update the
+  track editor even if the current tracks were changed by the
+  operation. Fixed.
+- If you change preference options that require the GUI to be closed
+  and re-opened, it now does that instead of requiring you to quit
+  and restart.
+- Skin directory, initial song directory and initial instrument
+  directory options all now can be selected via ASL directory requester.
+- Right-clicking on a channel mute button now mutes all other channels
+  except that channel. If it is already the only un-muted channel,
+  all channels will be unmuted instead (suggested by Syphus).
+- Added "9xx" panning command to the instrument performancelist. It
+  only changes the panning position for that specific instrument. The
+  next time an instrument is played in that channel, it returns to
+  the last panning position set with the traditional "7xx" track
+  command.
+- Pasting or marking blocks in the position editor didn't work
+  correctly if channel 1 wasn't the leftmost channel. Fixed.
+- Pressing Ctrl+B while marking a block now cancels block marking
+  instead of resetting the mark position.
+- Added a drumpad mode, selectable either by the funky new on/off
+  gadget or via the backslash key. When enabled, selecting instruments
+  via numeric keyboard causes them to be played, and if edit mode is
+  set, the instrument is inserted into the song. Suggested by Syphus.
+- Changed the release cut gadget from a 0/1 number gadget to the funk-
+  tastic new on/off gadget (W00T!!111)
+- Fixed a bug in the command line replayer that was really dumb and
+  should have been spotted ages ago! Oops.
+- Before, if a skin directory existed, and the logo bitmap existed
+  in that directory, but there was any other file missing, hively would
+  bomb out instead of reverting to the default skin and retrying. Now
+  if a skin fails to load for any reason, hively retries with the
+  default skin (SIDMonster-Light). This allows hively to load even
+  if ht.prefs contains an invalid skin (such as SIDMonster-Heavy,
+  which has been discontinued from 1.4 onwards).
+- Fixed an incorrect pointer in the autogain routine
+
+
+1.3 05-Mar-2007 (sorry it took so long :)
+=========================================
+
+- Position editor now has indicators so its clear to which channel
+  each column relates (suggested by syphus).
+- If you used ring modulation effects in the right hand parameter
+  list of an instrument, but not the left, it would try and save
+  it as an AHX instrument instead of an HVL instrument. Fixed.
+  (thanks to syphus).
+- Added Zap Song/Instrument/Position options (suggested by m0d)
+- Added play time indicator (suggested by someone, sorry forgot who).
+- You can now copy and paste arbitary regions in the position editor.
+  (suggested by a couple of people, and I always intended to do it
+  anyway :)
+- "prefs_bg" and "Settings" in skins are now "prefs_os4" and
+  "Settings_os4" respectively so that the same skin can be used for
+  both the OS4 and OS3.x versions.
+- Added some bounds checking to the replayer to avoid weird crashes
+- Fixed a couple of small bugs in the replayer (thanks to pieknyman)
+- When changing the position during playback, the current position
+  plays through to the end before jumping to your selected position
+  (suggested by syphus)
+- Some status information which should have been local to each tab
+  was global. Oops. Fixed now.
+- Added Ctrl+Tab to jump to the same column in the next channel, and
+  Shift+Ctrl+Tab to jump to the same column in the previous channel.
+  (suggested by syphus)
+- Added Alt+A to mute all but the current channel (suggested by
+  syphus)
+- Added Alt+Q to mute all channels
+- Right clicking on "New Tab" now makes an identical clone of the
+  current tab.
+- Added speed multiplier gadget. This is a feature of both AHX and
+  HVL tunes that was always implimented, but there was no way to
+  actually set it in hivelytracker until now (oops :)
+- Pressing the right mousebutton in the instruments list of the
+  instruments editor will copy the current instrument to the slot
+  where you clicked.
+- Holding control and pressing the right mousebutton on a slot in
+  the instrument list in the instrument editor will zap that
+  instrument.
+- Changed the default gain values when loading in AHX modules and
+  using stereo mixing. The values before were calculated by
+  running lots of tunes through the Autogain calculations and
+  using the lowest values that came out. Well, it was too high, so
+  now I actually calculated them using actual maths! (thanks again
+  to pieknyman for finding a tune that clipped).
+- Added some more options to the skin system to enable the cool new
+  "Vintage" theme.
+
+
+
+1.2 01-Jan-2007 (another bug fix release)
+=========================================
+
+- Pressing ESC now swaps between the instrument editor and tracker panel
+  (as in AHX, suggested by syphus)
+- An "are you sure?" requester now comes up when you try and quit, and
+  if there are modified songs loaded, it warns you of that fact, too.
+  (I always meant to do this but forgot. Thanks to syphus for the
+  suggestion).
+- Updating instrument number, or FX parameters with notejump set to 0
+  didn't show the change until you scrolled the track editor. Fixed.
+  (thanks to syphus).
+- Renamed the "palette" file in the skins to "Settings" and included the
+  ability to set fonts in there (thanks to spot and buzz for the
+  suggestion)
+- "Ctrl+K" and "Ctrl+Shift+K" keys actually worked without Ctrl pressed.
+  Fixed (thanks to syphus)
+- Added "BlankZeros" option (suggested by Spot)
+- Fixed 4xx command which was missing from both HivelyTracker *and* the
+  WinAHX sources that ahxplay.library was based on. The code was in there
+  all these years, but the actual bit of code that decodes the 4xx command
+  was missing! This fixes loads of old AHX tunes that played wrong in
+  windows players. (thanks to syphus for pointing this out)
+- Fixed a bug that called RectFill() with a negative Y value. This caused
+  no problem under OS4, or under OS3.x on RTG, but under AGA caused a
+  bad crash. Fixed because even though it didn't cause a problem under OS4,
+  it was still a bug.
+- Added "skinext" option to the skin settings file, so that skins can be
+  in a format other than PNG.
+
+
+1.1 19-Dec-2006 (bug fix release)
+=================================
+
+- Ensured all images are actually PNG. Any skin loading issues *should*
+  now be fixed.
+- Some places in the track editor were using the baseline offset of the
+  wrong font (oops!). It didn't notice on OS4 since the two fonts had
+  the same baseline. Fixed.
+- Notejump is now taken into account when editing instrument and effect
+  columns as well as the note column. (suggested by syphus)
+- You can set notejump in the instrument editor, which is independant
+  from the track editor notejump. (suggested by syphus).
+- Fixed a buffer overrun that somehow didn't cause a DSI under OS4, but
+  caused havoc on BuZz's port.
+- Fixed an illegal memory access when clicking on buttons. Again, thanks
+  to BuZz ;-)
+- Added www.hivelytracker.com to the screentitles
+
+
+1.0
+===
+
+- First release
