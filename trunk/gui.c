@@ -3255,8 +3255,6 @@ void gui_loadskinsettings( void )
         i++;
       }
 
-      printf("Pen %d is %06x\n", pen, col);
-
       pal[pen] = col;
 #ifdef __SDL_WRAPPER__
       mappal[pen] = SDL_MapRGB(ssrf->format, (col>>16)&0xff, (col>>8)&0xff, col&0xff);
@@ -3270,9 +3268,6 @@ void gui_loadskinsettings( void )
     }    
   }
   
-  printf("btnshadow = %06x\n", pal[PAL_BTNSHADOW]);
-  printf("btntext   = %06x\n", pal[PAL_BTNTEXT]);
-
   fclose(f);
 }
 
@@ -4486,20 +4481,23 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       olddir = IDOS->CurrentDir( lock );
       
       rp_load_ins( ins_lreq->fr_File, curtune, curtune->at_curins );
-
+    
+      IDOS->CurrentDir( olddir );
+      IDOS->UnLock( lock );
+#else
+      if (!(gfname = filerequester("Load instrument", instdir, "", FR_INSLOAD))) break;
+      rp_load_ins( gfname, curtune, curtune->at_curins );
+      free(gfname);
+#endif
       gui_set_various_things( curtune );
       if( curtune->at_curpanel == PN_TRACKER )
       {
         gui_render_inslist( TRUE );
       } else {
         gui_render_perf( curtune, &curtune->at_Instruments[curtune->at_curins], TRUE );
-        gui_render_tbox( mainwin->RPort, &tbx[TB_INSNAME] );
+        gui_render_tbox( &mainbm, &tbx[TB_INSNAME] );
         gui_render_inslistb( TRUE );
       }
-      
-      IDOS->CurrentDir( olddir );
-      IDOS->UnLock( lock );
-#endif
       break;
 
     case BBA_SAVEAHX:
@@ -4549,6 +4547,12 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       
       IDOS->CurrentDir( olddir );
       IDOS->UnLock( lock );
+#else
+      if (!(gfname = filerequester("Save AHX module", instdir, "", FR_AHXSAVE))) break;
+      rp_save_ahx( gfname, curtune );
+      free(gfname);
+      if( i == 0 )
+        curtune->at_modified = FALSE;
 #endif
       break;
 
@@ -4579,6 +4583,11 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       
       IDOS->CurrentDir( olddir );
       IDOS->UnLock( lock );
+#else
+      if (!(gfname = filerequester("Save HVL module", instdir, "", FR_HVLSAVE))) break;
+      rp_save_hvl( gfname, curtune );
+      free(gfname);
+      curtune->at_modified = FALSE;
 #endif
       break;
 
@@ -4608,6 +4617,11 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       
       IDOS->CurrentDir( olddir );
       IDOS->UnLock( lock );
+#else
+      if (!(gfname = filerequester("Save instrument", instdir, "", FR_INSSAVE))) break;
+      rp_save_ins( gfname, curtune, curtune->at_curins );
+      free(gfname);
+      gui_set_various_things( curtune );
 #endif
       break;
 
@@ -4623,13 +4637,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
         TAG_DONE );
       if( !ok ) break;
 #else
-      gfname = filerequester("Load song", songdir, "", FR_MODLOAD);
-//#define FR_HVLSAVE 0
-//#define FR_AHXSAVE 1
-//#define FR_INSSAVE 2
-//#define FR_MODLOAD 3
-//#define FR_INSLOAD 4
-//char *filerequester( char *title, char *path, char *fname, int type );
+      if (!(gfname = filerequester("Load song", songdir, "", FR_MODLOAD))) break;
 #endif      
       rp_stop();
       gui_render_tracked( TRUE );  // Kill the VUMeters
@@ -4645,7 +4653,6 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       IDOS->CurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
-      gui_req( 0, gfname, gfname, gfname);
       at = rp_load_tune( gfname, curtune );
       free( gfname );
       if( at ) curtune = at;
@@ -6259,6 +6266,31 @@ void gui_handler( uint32 gotsigs )
         break;
       
       case SDL_MOUSEBUTTONDOWN:
+      {
+        static struct IntuiWheelData iwd;
+
+        if (event.button.button == SDL_BUTTON_WHEELUP)
+        {
+          msg->Class    = IDCMP_EXTENDEDMOUSE;
+          msg->Code     = IMSGCODE_INTUIWHEELDATA;
+          msg->IAddress = &iwd;
+          msg->MouseX    = event.motion.x;
+          msg->MouseY    = event.motion.y;
+          iwd.WheelY    = -1;
+          break;
+        }
+
+        if (event.button.button == SDL_BUTTON_WHEELDOWN)
+        {
+          msg->Class    = IDCMP_EXTENDEDMOUSE;
+          msg->Code     = IMSGCODE_INTUIWHEELDATA;
+          msg->IAddress = &iwd;
+          msg->MouseX   = event.motion.x;
+          msg->MouseY   = event.motion.y;
+          iwd.WheelY    = 1;
+          break;
+        }
+
         if (event.button.button == SDL_BUTTON_RIGHT) mkqual |= IEQUALIFIER_RBUTTON;
         msg->Class     = IDCMP_MOUSEBUTTONS;
         msg->Code      = event.button.button;
@@ -6266,6 +6298,7 @@ void gui_handler( uint32 gotsigs )
         msg->MouseX    = event.motion.x;
         msg->MouseY    = event.motion.y;
         break;
+      }
 
       case SDL_MOUSEBUTTONUP:
         if (event.button.button == SDL_BUTTON_RIGHT) mkqual &= ~IEQUALIFIER_RBUTTON;
