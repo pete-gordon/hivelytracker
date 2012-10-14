@@ -3,13 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <exec/types.h>
-#include <exec/nodes.h>
-
-#include <intuition/intuition.h>
-
-#include <proto/exec.h>
-#include <proto/dos.h>
+#include <system_includes.h>
 
 #include "replay.h"
 #include "gui.h"
@@ -17,7 +11,6 @@
 
 extern struct ahx_tune       *curtune;
 extern struct textbox         tbx[];
-extern struct Window         *mainwin;
 extern int32                  pref_maxundobuf;
 
 extern struct ahx_instrument *perf_lastinst;
@@ -25,6 +18,12 @@ extern int16                  insls_lastcuri;
 extern int16                  inslsb_lastcuri;
 extern int16                  posed_lastposnr;
 extern int16                  trked_lastposnr;
+
+#ifndef __SDL_WRAPPER__
+extern struct Window         *mainwin;
+#else
+extern struct SDL_Surface    *ssrf;
+#endif
 
 struct textbox *show_tbox;
 uint32 mubsizes[] = { 0, 262144, 524288, 1048576, 2097152, 4194304 };
@@ -36,19 +35,19 @@ void free_undolists( struct ahx_tune *at )
   struct undonode *tn, *nn;
 
   // Clear undo system lists  
-  tn = (struct undonode *)at->at_undolist->lh_Head;
-  while( tn->un_ln.ln_Succ )
+  tn = (struct undonode *)IExec->GetHead(at->at_undolist);
+  while( tn )
   {
-    nn = (struct undonode *)tn->un_ln.ln_Succ;
+    nn = (struct undonode *)IExec->GetSucc(&tn->un_ln);
     IExec->Remove( (struct Node *)tn );
     IExec->FreeSysObject( ASOT_NODE, tn );
     tn = nn;
   }
 
-  tn = (struct undonode *)at->at_redolist->lh_Head;
-  while( tn->un_ln.ln_Succ )
+  tn = (struct undonode *)IExec->GetHead(at->at_redolist);
+  while( tn )
   {
-    nn = (struct undonode *)tn->un_ln.ln_Succ;
+    nn = (struct undonode *)IExec->GetSucc(&tn->un_ln);
     IExec->Remove( (struct Node *)tn );
     IExec->FreeSysObject( ASOT_NODE, tn );
     tn = nn;
@@ -61,10 +60,10 @@ void clear_redolist( struct ahx_tune *at )
 {
   struct undonode *tn, *nn;
   
-  tn = (struct undonode *)at->at_redolist->lh_Head;
-  while( tn->un_ln.ln_Succ )
+  tn = (struct undonode *)IExec->GetHead(at->at_redolist);
+  while( tn )
   {
-    nn = (struct undonode *)tn->un_ln.ln_Succ;
+    nn = (struct undonode *)IExec->GetSucc(&tn->un_ln);
     at->at_undomem -= tn->un_size;
     IExec->Remove( (struct Node *)tn );
     IExec->FreeSysObject( ASOT_NODE, tn );
@@ -98,9 +97,7 @@ struct undonode *alloc_undonode( struct ahx_tune *at, uint32 size )
 {
   struct undonode *un;
 
-  un = (struct undonode *)IExec->AllocSysObjectTags( ASOT_NODE,
-                            ASONODE_Size, size,
-                            TAG_DONE );
+  un = (struct undonode *)allocnode(size);
   if( !un ) return NULL;
 
   un->un_ln.ln_Succ = NULL;
@@ -1013,7 +1010,11 @@ void show_changed( struct ahx_tune *at, int32 wpanel, BOOL forceall )
 
   if( show_tbox )
   {
+#ifndef __SDL_WRAPPER__
     gui_render_tbox( mainwin->RPort, show_tbox );
+#else
+    gui_render_tbox( ssrf, show_tbox );
+#endif
     gui_render_tabs();
   }
 

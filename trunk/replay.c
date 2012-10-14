@@ -2,46 +2,43 @@
 #include <stdio.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <math.h>
 
-#include <exec/types.h>
-#include <exec/exectags.h>
-
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/ahi.h>
+#include <system_includes.h>
 
 #include "replay.h"
 #include "gui.h"
 #include "undo.h"
 
-#ifdef _OLD_SDK_
-#define ASOPOOL_Protected ( TAG_USER + 13 )
-#endif
-
 extern BOOL quitting;
-extern uint32 gui_tick_sig;
 extern int32 defnotejump, definotejump;
 
 APTR rp_mempool = NULL;
-struct List    *rp_tunelist    = NULL;
+
+#ifndef __SDL_WRAPPER__
+#define FREQ 48000
+extern uint32 gui_tick_sig;
 struct Task    *rp_maintask    = NULL;
 struct Process *rp_subtask     = NULL;
 int32           rp_subtask_sig = -1;
 struct MsgPort *rp_msgport     = NULL;
 uint32          rp_sigs        = 0;
 
-struct ahx_tune *rp_curtune    = NULL;
-
-struct SignalSemaphore *rp_list_ss = NULL;
-
-uint32          rp_freq        = 48000;
-float64         rp_freqf;
+uint32          rp_freq        = FREQ;
 uint32          rp_audiobuflen;
 int8           *rp_audiobuffer[2]  = { NULL, NULL };
 
-struct rp_command *rp_mainmsg   = NULL;
 struct MsgPort    *rp_replyport = NULL;
+#endif
+
+struct rp_command *rp_mainmsg   = NULL;
+
+struct List    *rp_tunelist    = NULL;
+
+struct ahx_tune *rp_curtune    = NULL;
+
+struct SignalSemaphore *rp_list_ss = NULL;
 
 enum {
   STS_IDLE = 0,
@@ -55,12 +52,15 @@ enum {
 };
 
 uint32 rp_state = STS_IDLE;
-
+#ifdef __SDL_WRAPPER__
+volatile uint32 rp_state_ack = STS_IDLE;
+#endif
 extern int32 pref_defstereo;
 
 int32 stereopan_left[]  = { 128,  96,  64,  32,   0 };
 int32 stereopan_right[] = { 128, 160, 193, 225, 255 };
 
+#ifndef __SDL_WRAPPER__
 // Libraries and interfaces
 struct Library  *AHIBase = NULL;
 struct AHIIFace *IAHI = NULL;
@@ -69,6 +69,14 @@ struct AHIIFace *IAHI = NULL;
 struct MsgPort    *ahi_mp;
 struct AHIRequest *ahi_io[2] = { NULL, NULL };
 int32              ahi_dev = -1;
+#else
+#define FREQ 44100
+#define HIVELY_LEN FREQ/50
+#define OUTPUT_LEN 4096
+static struct ahx_tune *rp_playtune = NULL;
+size_t hivelyIndex=0;
+int16 hivelyLeft[HIVELY_LEN], hivelyRight[HIVELY_LEN];
+#endif
 
 /*
 ** Waves
@@ -397,8 +405,8 @@ void rp_clear_tune( struct ahx_tune *at )
   at->at_ExactTime       = 0;
   at->at_LoopDetector    = 0;
   at->at_SongNum         = 0;
-  at->at_Frequency       = 48000;
-  at->at_FreqF           = 48000.f;
+  at->at_Frequency       = FREQ;
+  at->at_FreqF           = (float64)FREQ;
   at->at_WaveformTab[0]  = &waves[WO_TRIANGLE_04];
   at->at_WaveformTab[1]  = &waves[WO_SAWTOOTH_04];
   at->at_WaveformTab[3]  = &waves[WO_WHITENOISE];
@@ -613,12 +621,10 @@ struct ahx_tune *rp_new_tune( BOOL addtolist )
 {
   struct ahx_tune *at;
   
-  at = IExec->AllocSysObjectTags( ASOT_NODE,
-    ASONODE_Size, sizeof( struct ahx_tune ),
-    TAG_DONE );
+  at = (struct ahx_tune *)allocnode(sizeof(struct ahx_tune));
   if( !at )
   {
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return NULL;
   }
   
@@ -626,7 +632,7 @@ struct ahx_tune *rp_new_tune( BOOL addtolist )
   if( !at->at_undolist )
   {
     IExec->FreeSysObject( ASOT_NODE, at );
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return NULL;
   }
 
@@ -635,7 +641,7 @@ struct ahx_tune *rp_new_tune( BOOL addtolist )
   {
     IExec->FreeSysObject( ASOT_LIST, at->at_undolist );
     IExec->FreeSysObject( ASOT_NODE, at );
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return NULL;
   }
   
@@ -678,10 +684,10 @@ void rp_free_all_tunes( void )
   struct ahx_tune *at, *nat;
   
   IExec->ObtainSemaphore( rp_list_ss );
-  at = (struct ahx_tune *)rp_tunelist->lh_Head;
-  while( at->at_ln.ln_Succ )
+  at = (struct ahx_tune *)IExec->GetHead(rp_tunelist);
+  while( at )
   {
-    nat = (struct ahx_tune *)at->at_ln.ln_Succ;
+    nat = (struct ahx_tune *)IExec->GetSucc(&at->at_ln);
     rp_free_tune( at );
     at = nat;
   }
@@ -690,7 +696,7 @@ void rp_free_all_tunes( void )
 
 void rp_save_hvl_ins( TEXT *name, struct ahx_instrument *ins )
 {
-  BPTR fh;
+  FILE *fh;
   int8 *buf, *bptr;
   int32 buflen, i;
 
@@ -698,7 +704,7 @@ void rp_save_hvl_ins( TEXT *name, struct ahx_instrument *ins )
   buf = IExec->AllocPooled( rp_mempool, buflen );
   if( !buf )
   {
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return;
   }
   
@@ -746,24 +752,23 @@ void rp_save_hvl_ins( TEXT *name, struct ahx_instrument *ins )
     bptr += 5;
   }
 
-  fh = IDOS->Open( name, MODE_NEWFILE );
+  fh = fopen( name, "wb" );
   if( !fh )
   {
     printf( "unable to open file\n" );
-    IDOS->Close( fh );
     IExec->FreePooled( rp_mempool, buf, buflen );
     return;
   }
   
-  IDOS->Write( fh, buf, buflen );
-  IDOS->Write( fh, ins->ins_Name, strlen( ins->ins_Name )+1 );
-  IDOS->Close( fh );
+  fwrite( buf, buflen, 1, fh );
+  fwrite( ins->ins_Name, strlen( ins->ins_Name )+1, 1, fh );
+  fclose( fh );
   IExec->FreePooled( rp_mempool, buf, buflen );
 }
 
 void rp_save_ins( TEXT *name, struct ahx_tune *at, int32 in )
 {
-  BPTR fh;
+  FILE *fh;
   int8 *buf, *bptr;
   int32 buflen, i, k, l;
   struct ahx_instrument *ins;
@@ -798,7 +803,7 @@ void rp_save_ins( TEXT *name, struct ahx_tune *at, int32 in )
   buf = IExec->AllocPooled( rp_mempool, buflen );
   if( !buf )
   {
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return;
   }
   
@@ -854,86 +859,57 @@ void rp_save_ins( TEXT *name, struct ahx_tune *at, int32 in )
     bptr += 4;
   }
 
-  fh = IDOS->Open( name, MODE_NEWFILE );
+  fh = fopen( name, "wb" );
   if( !fh )
   {
     printf( "unable to open file\n" );
-    IDOS->Close( fh );
     IExec->FreePooled( rp_mempool, buf, buflen );
     return;
   }
   
-  IDOS->Write( fh, buf, buflen );
-  IDOS->Write( fh, ins->ins_Name, strlen( ins->ins_Name )+1 );
-  IDOS->Close( fh );
+  fwrite( buf, buflen, 1, fh );
+  fwrite( ins->ins_Name, strlen( ins->ins_Name )+1, 1, fh );
+  fclose( fh );
   IExec->FreePooled( rp_mempool, buf, buflen );
 }
 
 void rp_load_ins( TEXT *name, struct ahx_tune *at, int32 in )
 {
-  BPTR lock, fh;
+  FILE *fh;
   uint8  *buf, *bptr;
   uint32  buflen, i, k, l;
-  struct FileInfoBlock *fib;
   struct ahx_instrument *ni;
   BOOL ahxi;
   
   if( at == NULL ) return;
 
-  fib = IDOS->AllocDosObjectTags( DOS_FIB, TAG_DONE );
-  if( !fib )
-  {
-    printf( "Out of memory\n" );
-    return;
-  }
-  
-  lock = IDOS->Lock( name, ACCESS_READ );
-  if( !lock )
-  {
-    IDOS->FreeDosObject( DOS_FIB, fib );
-    printf( "Unable to find '%s'\n", name );
-    return;
-  }
-  
-  IDOS->Examine( lock, fib );
-  if( !FIB_IS_FILE( fib ) )
-  {
-    IDOS->UnLock( lock );
-    IDOS->FreeDosObject( DOS_FIB, fib );
-    printf( "Bad file!\n" );
-    return;
-  }
-  
-  buflen = fib->fib_Size;
-  buf = IExec->AllocPooled( rp_mempool, buflen );
-  if( !buf )
-  {
-    IDOS->UnLock( lock );
-    IDOS->FreeDosObject( DOS_FIB, fib );
-    printf( "Out of memory!\n" );
-    return;
-  }
-  
-  fh = IDOS->OpenFromLock( lock );
+  fh = fopen(name, "rb");
   if( !fh )
   {
-    IExec->FreePooled( rp_mempool, buf, buflen );
-    IDOS->UnLock( lock );
-    IDOS->FreeDosObject( DOS_FIB, fib );
     printf( "Can't open file\n" );
     return;
   }
 
-  if( IDOS->Read( fh, buf, buflen ) != buflen )
+  fseek(fh, 0, SEEK_END);
+  buflen = ftell(fh);
+  fseek(fh, 0, SEEK_SET);
+
+  buf = IExec->AllocPooled( rp_mempool, buflen );
+  if( !buf )
+  {
+    fclose(fh);
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
+    return;
+  }
+  
+  if( fread( buf, buflen, 1, fh ) != 1 )
   {
     IExec->FreePooled( rp_mempool, buf, buflen );
-    IDOS->Close( fh );
-    IDOS->FreeDosObject( DOS_FIB, fib );
+    fclose(fh);
     printf( "Unable to read from file!\n" );
     return;
   }
-  IDOS->Close( fh );
-  IDOS->FreeDosObject( DOS_FIB, fib );
+  fclose(fh);
   
   ahxi = TRUE;
   
@@ -1116,7 +1092,7 @@ uint32 rp_ahx_test( struct ahx_tune *at )
 
 void rp_save_hvl( TEXT *name, struct ahx_tune *at )
 {
-  BPTR h;
+  FILE *fh;
   int32 i, j, k, tbl;
   int32 minver;
   uint8 emptytrk;
@@ -1191,12 +1167,12 @@ void rp_save_hvl( TEXT *name, struct ahx_tune *at )
   tbf = IExec->AllocPooled( rp_mempool, tbl );
   if( !tbf )
   {
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return;
   }
 
-  h = IDOS->Open( name, MODE_NEWFILE );
-  if( !h )
+  fh = fopen( name, "wb" );
+  if( !fh )
   {
     IExec->FreePooled( rp_mempool, tbf, tbl );
     return;
@@ -1220,7 +1196,7 @@ void rp_save_hvl( TEXT *name, struct ahx_tune *at )
   tbf[13]  = at->at_SubsongNr;
   tbf[14] =  at->at_mixgainP;
   tbf[15] =  at->at_defstereo;
-  IDOS->Write( h, tbf, 16 );
+  fwrite( tbf, 16, 1, fh );
 
   // Subsongs
   if( at->at_SubsongNr > 0 )
@@ -1230,7 +1206,7 @@ void rp_save_hvl( TEXT *name, struct ahx_tune *at )
       tbf[k++] = at->at_Subsongs[i]>>8;
       tbf[k++] = at->at_Subsongs[i]&0xff;
     }
-    IDOS->Write( h, tbf, k );
+    fwrite( tbf, k, 1, fh );
   }
   
   // Position list
@@ -1242,7 +1218,7 @@ void rp_save_hvl( TEXT *name, struct ahx_tune *at )
       tbf[k++] = at->at_Positions[i].pos_Transpose[j];
     }
   }
-  IDOS->Write( h, tbf, k );
+  fwrite( tbf, k, 1, fh );
   
   // Tracks
   for( i=0, k=0; i<=at->at_TrackNr; i++ )
@@ -1271,7 +1247,7 @@ void rp_save_hvl( TEXT *name, struct ahx_tune *at )
       tbf[k++]  = at->at_Tracks[i][j].stp_FXbParam;
     }
   }
-  IDOS->Write( h, tbf, k );
+  fwrite( tbf, k, 1, fh );
 
   // Instruments
   for( i=1; i<=at->at_InstrumentNr; i++ )
@@ -1304,7 +1280,7 @@ void rp_save_hvl( TEXT *name, struct ahx_tune *at )
     tbf[19]  = in->ins_FilterUpperLimit&0x3f;
     tbf[20]  = in->ins_PList.pls_Speed;
     tbf[21]  = in->ins_PList.pls_Length;
-    IDOS->Write( h, tbf, 22 );
+    fwrite( tbf, 22, 1, fh );
      
     for( j=0, k=0; j<in->ins_PList.pls_Length; j++ )
     {
@@ -1316,20 +1292,20 @@ void rp_save_hvl( TEXT *name, struct ahx_tune *at )
       tbf[k++]  = in->ins_PList.pls_Entries[j].ple_FXParam[0];
       tbf[k++]  = in->ins_PList.pls_Entries[j].ple_FXParam[1];
     }
-    IDOS->Write( h, tbf, k );  
+    fwrite( tbf, k, 1, fh );  
   }
   
-  IDOS->Write( h, at->at_Name, strlen( at->at_Name )+1 );
+  fwrite( at->at_Name, strlen( at->at_Name )+1, 1, fh );
   for( i=1; i<=at->at_InstrumentNr; i++ )
-    IDOS->Write( h, at->at_Instruments[i].ins_Name, strlen( at->at_Instruments[i].ins_Name )+1 );
+    fwrite( at->at_Instruments[i].ins_Name, strlen( at->at_Instruments[i].ins_Name )+1, 1, fh );
 
-  IDOS->Close( h );
+  fclose( fh );
   IExec->FreePooled( rp_mempool, tbf, tbl );
 }
 
 void rp_save_ahx( TEXT *name, struct ahx_tune *at )
 {
-  BPTR h;
+  FILE *fh;
   int32 i, j, k, l, m, tbl;
   uint8 emptytrk;
   uint8 *tbf;
@@ -1375,12 +1351,12 @@ void rp_save_ahx( TEXT *name, struct ahx_tune *at )
   tbf = IExec->AllocPooled( rp_mempool, tbl );
   if( !tbf )
   {
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return;
   }
   
-  h = IDOS->Open( name, MODE_NEWFILE );
-  if( !h )
+  fh = fopen( name, "wb" );
+  if( !fh )
   {
     IExec->FreePooled( rp_mempool, tbf, tbl );
     return;
@@ -1400,7 +1376,7 @@ void rp_save_ahx( TEXT *name, struct ahx_tune *at )
   tbf[11] =  at->at_TrackNr;
   tbf[12] =  at->at_InstrumentNr;
   tbf[13] =  at->at_SubsongNr;
-  IDOS->Write( h, tbf, 14 );
+  fwrite( tbf, 14, 1, fh );
   
   // Subsongs
   if( at->at_SubsongNr > 0 )
@@ -1410,7 +1386,7 @@ void rp_save_ahx( TEXT *name, struct ahx_tune *at )
       tbf[k++]     = at->at_Subsongs[i]>>8;
       tbf[k++] = at->at_Subsongs[i]&0xff;
     }
-    IDOS->Write( h, tbf, k );
+    fwrite( tbf, k, 1, fh );
   }
   
   // Position list
@@ -1422,7 +1398,7 @@ void rp_save_ahx( TEXT *name, struct ahx_tune *at )
       tbf[k++] = at->at_Positions[i].pos_Transpose[j];
     }
   }
-  IDOS->Write( h, tbf, k );
+  fwrite( tbf, k, 1, fh );
   
   // Tracks
   for( i=0, k=0; i<=at->at_TrackNr; i++ )
@@ -1447,7 +1423,7 @@ void rp_save_ahx( TEXT *name, struct ahx_tune *at )
       }      
     }
   }
-  IDOS->Write( h, tbf, k );
+  fwrite( tbf, k, 1, fh );
 
   // Instruments
   for( i=1; i<=at->at_InstrumentNr; i++ )
@@ -1480,7 +1456,7 @@ void rp_save_ahx( TEXT *name, struct ahx_tune *at )
     tbf[19]  = in->ins_FilterUpperLimit&0x3f;
     tbf[20]  = in->ins_PList.pls_Speed;
     tbf[21]  = in->ins_PList.pls_Length;
-    IDOS->Write( h, tbf, 22 );
+    fwrite( tbf, 22, 1, fh );
      
     for( j=0, k=0; j<in->ins_PList.pls_Length; j++ )
     {
@@ -1500,14 +1476,14 @@ void rp_save_ahx( TEXT *name, struct ahx_tune *at )
       tbf[k++]  = in->ins_PList.pls_Entries[j].ple_FXParam[0];
       tbf[k++]  = in->ins_PList.pls_Entries[j].ple_FXParam[1];
     }
-    IDOS->Write( h, tbf, k );  
+    fwrite( tbf, k, 1, fh );  
   }
   
-  IDOS->Write( h, at->at_Name, strlen( at->at_Name )+1 );
+  fwrite( at->at_Name, strlen( at->at_Name )+1, 1, fh );
   for( i=1; i<=at->at_InstrumentNr; i++ )
-    IDOS->Write( h, at->at_Instruments[i].ins_Name, strlen( at->at_Instruments[i].ins_Name )+1 );
+    fwrite( at->at_Instruments[i].ins_Name, strlen( at->at_Instruments[i].ins_Name )+1, 1, fh );
 
-  IDOS->Close( h );
+  fclose( fh );
   IExec->FreePooled( rp_mempool, tbf, tbl );
 }
 
@@ -1832,9 +1808,8 @@ struct ahx_tune *rp_load_tune( TEXT *name, struct ahx_tune *at )
   uint8  *buf, *bptr;
   TEXT   *nptr;
   uint32  buflen, i, j;
-  BPTR    lock, fh;
+  FILE   *fh;
   BOOL    passed;
-  struct FileInfoBlock *fib;
 
   if( at )
   {
@@ -1844,72 +1819,41 @@ struct ahx_tune *rp_load_tune( TEXT *name, struct ahx_tune *at )
     at = rp_new_tune( FALSE );
     if( !at )
     {
-      printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
       return NULL;
     }
     passed = FALSE;
   }
 
-  fib = IDOS->AllocDosObjectTags( DOS_FIB, TAG_DONE );
-  if( !fib )
+  fh = fopen(name, "rb");
+  if (!fh)
   {
     if( !passed  ) rp_free_tune( at );
-    printf( "Out of memory\n" );
-    return NULL;
-  }
-  
-  lock = IDOS->Lock( name, ACCESS_READ );
-  if( !lock )
-  {
-    if( !passed  ) rp_free_tune( at );
-    IDOS->FreeDosObject( DOS_FIB, fib );
-    printf( "Unable to find '%s'\n", name );
-    return NULL;
-  }
-  
-  IDOS->Examine( lock, fib );
-  if( !FIB_IS_FILE( fib ) )
-  {
-    if( !passed  ) rp_free_tune( at );
-    IDOS->UnLock( lock );
-    IDOS->FreeDosObject( DOS_FIB, fib );
-    printf( "Bad file!\n" );
-    return NULL;
-  }
-  
-  buflen = fib->fib_Size;
-  buf = IExec->AllocPooled( rp_mempool, buflen );
-  if( !buf )
-  {
-    if( !passed  ) rp_free_tune( at );
-    IDOS->UnLock( lock );
-    IDOS->FreeDosObject( DOS_FIB, fib );
-    printf( "Out of memory!\n" );
-    return NULL;
-  }
-  
-  fh = IDOS->OpenFromLock( lock );
-  if( !fh )
-  {
-    if( !passed  ) rp_free_tune( at );
-    IExec->FreePooled( rp_mempool, buf, buflen );
-    IDOS->UnLock( lock );
-    IDOS->FreeDosObject( DOS_FIB, fib );
     printf( "Can't open file\n" );
     return NULL;
   }
 
-  if( IDOS->Read( fh, buf, buflen ) != buflen )
+  fseek(fh, 0, SEEK_END);
+  buflen = ftell(fh);
+  fseek(fh, 0, SEEK_SET);
+
+  buf = IExec->AllocPooled( rp_mempool, buflen );
+  if( !buf )
   {
     if( !passed  ) rp_free_tune( at );
-    IExec->FreePooled( rp_mempool, buf, buflen );
-    IDOS->Close( fh );
-    IDOS->FreeDosObject( DOS_FIB, fib );
+    fclose(fh);
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
+    return NULL;
+  }
+  
+  if( fread( buf, buflen, 1, fh ) != 1 )
+  {
+    if( !passed  ) rp_free_tune( at );
+    fclose(fh);
     printf( "Unable to read from file!\n" );
     return NULL;
   }
-  IDOS->Close( fh );
-  IDOS->FreeDosObject( DOS_FIB, fib );
+  fclose(fh);
 
   if( ( buf[0] == 'T' ) &&
       ( buf[1] == 'H' ) &&
@@ -3326,7 +3270,7 @@ void rp_play_irq( struct ahx_tune *at )
   }
 
   for( i=0; i<at->at_Channels; i++ )
-    rp_set_audio( &at->at_Voices[i], rp_freqf );
+    rp_set_audio( &at->at_Voices[i], (float64)FREQ );
   
 }
 
@@ -3526,15 +3470,15 @@ void rp_decode_frame( struct ahx_tune *at, int8 *buf1, int8 *buf2, int32 bufmod 
 {
   uint32 samples, loops;
   
-  samples = rp_freq/50/at->at_SpeedMultiplier;
+  samples = FREQ/50/at->at_SpeedMultiplier;
   loops   = at->at_SpeedMultiplier;
   
   do
   {
     rp_play_irq( at );
     rp_mixchunk( at, samples, buf1, buf2, bufmod );
-    buf1 += samples * 4;
-    buf2 += samples * 4;
+    buf1 += samples * bufmod;
+    buf2 += samples * bufmod;
     loops--;
   } while( loops );
   
@@ -3549,7 +3493,24 @@ void rp_decode_frame( struct ahx_tune *at, int8 *buf1, int8 *buf2, int32 bufmod 
 
   // Update the gui!
   rp_curtune = at;
+#ifndef __SDL_WRAPPER__
   IExec->Signal( rp_maintask, gui_tick_sig );
+#else
+  {
+    SDL_Event     event;
+    SDL_UserEvent userevent;
+
+    userevent.type  = SDL_USEREVENT;
+    userevent.code  = 0;
+    userevent.data1 = NULL;
+    userevent.data2 = NULL;
+    
+    event.type = SDL_USEREVENT;
+    event.user = userevent;
+    
+    SDL_PushEvent( &event );
+  }
+#endif
 }
 
 // You'd better not be playing this bastard!
@@ -3558,7 +3519,7 @@ int32 rp_find_loudest( struct ahx_tune *at )
   uint32 rsamp, rloop;
   uint32 samples, loops, loud, n, i;
 
-  rsamp = rp_freq/50/at->at_SpeedMultiplier;
+  rsamp = FREQ/50/at->at_SpeedMultiplier;
   rloop = at->at_SpeedMultiplier;
 
   loud = 0;
@@ -3574,8 +3535,8 @@ int32 rp_find_loudest( struct ahx_tune *at )
       samples = rsamp;
       loops   = rloop;
 
-      if( IExec->SetSignal( 0L, SIGBREAKF_CTRL_C ) & SIGBREAKF_CTRL_C )
-        break;
+//      if( IExec->SetSignal( 0L, SIGBREAKF_CTRL_C ) & SIGBREAKF_CTRL_C )
+//        break;
       do
       {
         rp_play_irq( at );
@@ -3589,14 +3550,15 @@ int32 rp_find_loudest( struct ahx_tune *at )
   return loud;
 }
 
+#ifndef __SDL_WRAPPER__
 BOOL rp_alloc_buffers( void )
 {
   int32 i;
 
   if( rp_audiobuffer[0] ) IExec->FreePooled( rp_mempool, rp_audiobuffer[0], rp_audiobuflen * 2 );
   
-  rp_freqf = (float64)rp_freq;
-  rp_audiobuflen = rp_freq * sizeof( uint16 ) * 2 / 50;
+  rp_freqf = (float64)FREQ;
+  rp_audiobuflen = FREQ * sizeof( uint16 ) * 2 / 50;
 
   rp_audiobuffer[0] = IExec->AllocPooled( rp_mempool, rp_audiobuflen * 2 );
   if( rp_audiobuffer[0] == NULL ) return FALSE;
@@ -3927,9 +3889,53 @@ void rp_subtask_main( void )
   rp_state = STS_DEADED;
   IExec->Signal( rp_maintask, (1L<<rp_subtask_sig) );
 }
+#else
+void do_the_music( void *dummy, int8 *stream, int length )
+{
+  int16 *out;
+  int i;
+  size_t streamPos = 0;
+  length = length >> 1;
+
+  if((rp_state != STS_IDLE) && (rp_playtune))
+  {
+    // Mix to 16bit interleaved stereo
+    out = (int16*) stream;
+    // Flush remains of previous frame
+    for(i = hivelyIndex; i < (HIVELY_LEN) && streamPos < length; i++)
+    {
+      out[streamPos++] = hivelyLeft[i];
+      out[streamPos++] = hivelyRight[i];
+    }
+
+    while(streamPos < length)
+    {
+      rp_decode_frame( rp_playtune, (int8 *) hivelyLeft, (int8 *) hivelyRight, 2 );
+      for(i = 0; i < (HIVELY_LEN) && streamPos < length; i++)
+      {
+        out[streamPos++] = hivelyLeft[i];
+        out[streamPos++] = hivelyRight[i];
+      }
+    }
+    hivelyIndex = i;
+  }
+  else
+  {
+    if (stream && length)
+      memset(stream, 0, length);
+  }
+
+  rp_state_ack = rp_state;
+}
+#endif
 
 BOOL rp_init( void )
 {
+#ifdef __SDL_WRAPPER__
+  SDL_AudioSpec wanted;
+#endif
+
+#ifndef __SDL_WRAPPER__
   rp_maintask = IExec->FindTask( NULL );
 
   rp_subtask_sig = IExec->AllocSignal( -1 );
@@ -3949,21 +3955,23 @@ BOOL rp_init( void )
     printf( "Unable to create memory pool\n" );
     return FALSE;
   }
-  
+#endif
+
   rp_tunelist = IExec->AllocSysObjectTags( ASOT_LIST, TAG_DONE );
   if( !rp_tunelist )
   {
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return FALSE;
   }
   
   rp_list_ss = IExec->AllocSysObjectTags( ASOT_SEMAPHORE, TAG_DONE );
   if( !rp_list_ss )
   {
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return FALSE;
   }
-  
+
+#ifndef __SDL_WRAPPER__
   rp_replyport = IExec->CreateMsgPort();
   if( !rp_replyport )
   {
@@ -3975,12 +3983,16 @@ BOOL rp_init( void )
     ASOMSG_Size,      sizeof( struct rp_command ),
     ASOMSG_ReplyPort, rp_replyport,
     TAG_DONE );
+#else
+  rp_mainmsg = malloc(sizeof(struct rp_command));
+#endif
+
   if( !rp_mainmsg )
   {
-    printf( "Out of memory\n" );
+    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return FALSE;
   }
-  
+
   rp_GenPanningTables();
   rp_GenSawtooth( &waves[WO_SAWTOOTH_04], 0x04 );
   rp_GenSawtooth( &waves[WO_SAWTOOTH_08], 0x08 );
@@ -3997,7 +4009,8 @@ BOOL rp_init( void )
   rp_GenSquare( &waves[WO_SQUARES] );
   rp_GenWhiteNoise( &waves[WO_WHITENOISE], WHITENOISELEN );
   rp_GenFilterWaves( &waves[WO_TRIANGLE_04], &waves[WO_LOWPASSES], &waves[WO_HIGHPASSES] );
-  
+
+#ifndef __SDL_WRAPPER__
   rp_subtask = IDOS->CreateNewProcTags( NP_Name,     "ahx2006 Player Task",
                                         NP_Entry,    rp_subtask_main,
                                         NP_Priority, 30,
@@ -4017,9 +4030,28 @@ BOOL rp_init( void )
     return FALSE;
   }
 
+  rp_sigs = ((1L<<rp_subtask_sig)|(1L<<rp_replyport->mp_SigBit));
+#endif
+
   rp_new_tune( TRUE );  
 
-  rp_sigs = ((1L<<rp_subtask_sig)|(1L<<rp_replyport->mp_SigBit));
+#ifdef __SDL_WRAPPER__
+  wanted.freq = FREQ; 
+  wanted.format = AUDIO_S16SYS; 
+  wanted.channels = 2; /* 1 = mono, 2 = stereo */
+  wanted.samples = OUTPUT_LEN; // HIVELY_LEN;
+
+  wanted.callback = (void*)do_the_music;
+  wanted.userdata = 0;
+
+  if( SDL_OpenAudio( &wanted, NULL ) < 0 )
+  {
+    printf( "SDL says: %s\n", SDL_GetError() );
+    return FALSE;
+  }
+
+  SDL_PauseAudio(0);
+#endif
   return TRUE;
 }
 
@@ -4032,7 +4064,8 @@ void rp_shutdown( void )
   }
   
   if( rp_list_ss ) IExec->FreeSysObject( ASOT_SEMAPHORE, rp_list_ss );
-  
+
+#ifndef __SDL_WRAPPER__
   if( rp_subtask )
   {
     IExec->Signal( (struct Task *)rp_subtask, SIGBREAKF_CTRL_C );
@@ -4046,8 +4079,13 @@ void rp_shutdown( void )
   if( rp_mempool )  IExec->FreeSysObject( ASOT_MEMPOOL, rp_mempool );  
 
   if( rp_subtask_sig != -1 ) IExec->FreeSignal( rp_subtask_sig );
+#else
+  SDL_PauseAudio(1);
+  if( rp_mainmsg )   free(rp_mainmsg);
+#endif
 }
 
+#ifndef __SDL_WRAPPER__
 void rp_handler( uint32 gotsigs )
 {
   // audio subtask has quit!
@@ -4058,9 +4096,22 @@ void rp_handler( uint32 gotsigs )
     return;
   }
 }
+#endif
+
+#ifdef __SDL_WRAPPER__
+static void set_player_state(uint32 newstate)
+{
+  rp_state = newstate;
+  while (rp_state_ack != newstate)
+  {
+    usleep(1000);
+  }
+}
+#endif
 
 void rp_send_command( struct rp_command *cmd )
 {
+#ifndef __SDL_WRAPPER__
   uint32 wsigs, gsigs;
   
   wsigs = (1L<<rp_replyport->mp_SigBit)|(1L<<rp_subtask_sig);
@@ -4078,6 +4129,122 @@ void rp_send_command( struct rp_command *cmd )
     // quit and we won't get a reply ever anyway. (== shit)
     quitting = TRUE;
   }
+#else
+  int i;
+  switch (cmd->rpc_Command)
+  {
+    case RPC_CONT_POS:
+    case RPC_PLAY_POS:
+    case RPC_CONT_SONG:
+    case RPC_PLAY_SONG:
+      set_player_state(STS_IDLE);
+      if( rp_playtune )
+      {
+        if( rp_playtune->at_doing == D_PLAYING )
+          rp_playtune->at_doing = D_IDLE;
+      }
+
+      rp_playtune = cmd->rpc_Tune;
+      if( rp_playtune != NULL )
+      {
+        rp_playtune->at_stopnextrow = 0;
+        if( cmd->rpc_Command == RPC_PLAY_SONG )
+          rp_playtune->at_NoteNr         = 0;
+
+        rp_playtune->at_PosJumpNote    = 0;
+        rp_playtune->at_StepWaitFrames = 0;
+        rp_playtune->at_GetNewPosition = 1;
+        rp_playtune->at_ticks = rp_playtune->at_secs = rp_playtune->at_mins = rp_playtune->at_hours = 0;
+        rp_reset_some_shit( rp_playtune );
+      }
+      break;
+
+    case RPC_PLAY_ROW:
+      if( cmd->rpc_Tune != NULL )
+      {
+        if (cmd->rpc_Tune != rp_playtune)
+          set_player_state(STS_IDLE);
+
+        ;
+        cmd->rpc_Tune->at_stopnextrow    = 3;
+        cmd->rpc_Tune->at_GetNewPosition = 1;
+        cmd->rpc_Tune->at_ticks = cmd->rpc_Tune->at_secs = cmd->rpc_Tune->at_mins = cmd->rpc_Tune->at_hours = 0;
+        if( ( rp_playtune != cmd->rpc_Tune ) || ( rp_state != STS_PLAYROW ) )
+        {
+          rp_reset_some_shit( cmd->rpc_Tune );
+          rp_playtune = cmd->rpc_Tune;
+        }
+        rp_state = STS_PLAYPOS;
+      }
+      break;
+
+    case RPC_PLAY_NOTE:
+      if( rp_playtune != cmd->rpc_Tune )
+      {
+        set_player_state(STS_IDLE);
+        rp_playtune = cmd->rpc_Tune;
+      }
+      
+      if( rp_playtune != NULL )
+      {
+        rp_play_instrument( rp_playtune, cmd->rpc_Data2>>8, cmd->rpc_Data, cmd->rpc_Data2&0xff );
+        rp_state = STS_PLAYNOTE;
+      }
+      break;
+    
+    case RPC_STOP:
+      set_player_state(STS_IDLE);
+      if( rp_playtune )
+      {
+        for( i=0; i<MAX_CHANNELS; i++ )
+        {
+          rp_playtune->at_Voices[i].vc_TrackOn = 0;
+          rp_playtune->at_Voices[i].vc_VUMeter = 0;
+        }
+        if( rp_playtune->at_NextPosNr != -1 )
+        {
+          SDL_Event     event;
+          SDL_UserEvent userevent;
+
+          rp_playtune->at_PosNr     = rp_playtune->at_NextPosNr;
+          rp_playtune->at_NextPosNr = -1;
+
+          userevent.type  = SDL_USEREVENT;
+          userevent.code  = 0;
+          userevent.data1 = NULL;
+          userevent.data2 = NULL;
+          
+          event.type = SDL_USEREVENT;
+          event.user = userevent;
+          
+          SDL_PushEvent( &event );
+        }
+        rp_playtune = NULL;
+      }   
+      break;
+  }
+
+  switch (cmd->rpc_Command)
+  {
+    case RPC_CONT_POS:
+    case RPC_PLAY_POS:
+      rp_state = STS_PLAYPOS;
+      break;
+
+    case RPC_CONT_SONG:
+    case RPC_PLAY_SONG:
+      if( rp_playtune )
+      {
+        rp_state = STS_PLAYSONG;
+      } else {
+        rp_state = STS_IDLE;
+      }
+
+      cmd->rpc_Tune = rp_playtune;
+      rp_curtune = rp_playtune;
+      break;
+  }
+#endif
 }
 
 BOOL rp_play_song( struct ahx_tune *at, uint32 subsong, BOOL cont )

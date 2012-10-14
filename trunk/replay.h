@@ -295,7 +295,9 @@ enum {
 
 struct rp_command
 {
+#ifndef __SDL_WRAPPER__
   struct Message   rpc_Message;
+#endif
   uint16           rpc_Command;
   uint16           rpc_Data;
   uint16           rpc_Data2;

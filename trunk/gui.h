@@ -3,8 +3,12 @@ struct rawbm
 {
   uint16  w;
   uint16  h;
+#ifndef __SDL_WRAPPER__
   struct RastPort rp;
   struct BitMap   *bm;
+#else
+  struct SDL_Surface *srf;
+#endif
 };
 
 struct textbox
@@ -31,7 +35,11 @@ void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL forc
 void gui_set_various_things( struct ahx_tune *at );
 void gui_render_inslistb( BOOL force );
 void gui_render_inslist( BOOL force );
+#ifndef __SDL_WRAPPER__
 void gui_render_tbox( struct RastPort *rp, struct textbox *tb );
+#else
+void gui_render_tbox( struct SDL_Surface *srf, struct textbox *tb );
+#endif
 void gui_render_tabs( void );
 
 BOOL make_image( struct rawbm *bm, uint16 w, uint16 h );
