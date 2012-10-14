@@ -58,6 +58,14 @@ BOOL init( void )
 
   SDL_WM_SetCaption( "HivelyTracker SDL", "HivelyTracker SDL" );
 
+  if (TTF_Init() == -1)
+  {
+    printf( "SDL TTF failed\n" );
+    return FALSE;
+  }
+
+  atexit(TTF_Quit);
+
   if( !rp_init() )  return FALSE;
   if( !gui_init() ) return FALSE;  
 //  if( !about_init() ) return FALSE;
