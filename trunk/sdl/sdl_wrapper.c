@@ -194,6 +194,8 @@ uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym)
     case SDLK_KP_MINUS:  return 74;
     case SDLK_LEFT:      return 79;
     case SDLK_RIGHT:     return 78;
+    case SDLK_UP:        return 76;
+    case SDLK_DOWN:      return 77;
     case SDLK_BACKSPACE: return 65;
     case SDLK_RETURN:    return 68;
     case SDLK_1:         return 1;

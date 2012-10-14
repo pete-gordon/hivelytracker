@@ -3,11 +3,18 @@ struct rawbm
 {
   uint16  w;
   uint16  h;
+  int     fpen, bpen;
+  int     findex;
+  BOOL    jam2;
+  BOOL    fpenset, bpenset, fontset;
 #ifndef __SDL_WRAPPER__
   struct RastPort rp;
   struct BitMap   *bm;
+  int     baseline;
 #else
   struct SDL_Surface *srf;
+  SDL_Color fsc, bsc;
+  TTF_Font *font;
 #endif
 };
 
@@ -35,11 +42,7 @@ void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL forc
 void gui_set_various_things( struct ahx_tune *at );
 void gui_render_inslistb( BOOL force );
 void gui_render_inslist( BOOL force );
-#ifndef __SDL_WRAPPER__
-void gui_render_tbox( struct RastPort *rp, struct textbox *tb );
-#else
-void gui_render_tbox( struct SDL_Surface *srf, struct textbox *tb );
-#endif
+void gui_render_tbox( struct rawbm *bm, struct textbox *tb );
 void gui_render_tabs( void );
 
 BOOL make_image( struct rawbm *bm, uint16 w, uint16 h );
@@ -73,3 +76,7 @@ enum
   TB_INSNAME2,
   TB_END
 };
+
+#define FONT_FIX 0
+#define FONT_SFX 1
+#define FONT_PRP 2

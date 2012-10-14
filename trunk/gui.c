@@ -171,6 +171,9 @@ enum
 };
 
 uint32 pal[] = { 0x000000, 0x500000, 0x780000, 0xff5555, 0xffffff, 0x808080, 0xff88ff, 0xffffff, 0xffff88, 0xffffff, 0x000000, 0xffffff, 0xffffff, 0xffffff, 0x000000 };
+#ifdef __SDL_WRAPPER__
+uint32 mappal[sizeof(pal)/sizeof(uint32)];
+#endif
 
 TEXT *notenames[] = { "---",
   "C-1", "C#1", "D-1", "D#1", "E-1", "F-1", "F#1", "G-1", "G#1", "A-1", "A#1", "B-1",
@@ -427,6 +430,10 @@ struct TextAttr prpfontattr = { prpfontname, 16, 0, 0 };
 struct TextFont *fixfont = NULL;
 struct TextFont *sfxfont = NULL;
 struct TextFont *prpfont = NULL;
+#else
+TTF_Font *fixttf = NULL;
+TTF_Font *sfxttf = NULL;
+TTF_Font *prpttf = NULL;
 #endif
 
 #define MAX_ZONES 100
@@ -434,6 +441,7 @@ struct TextFont *prpfont = NULL;
 
 int32 last_tbox = -1;
 
+struct rawbm      mainbm;
 struct rawbm      bitmaps[BM_END];
 struct czone      zones[MAX_ZONES], pzones[MAX_PZONES];
 struct numberbox  trk_nb[NB_END], ins_nb[INB_END];
@@ -548,37 +556,164 @@ int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 #endif
 }
 
-void fillrect_xy(int x, int y, int x2, int y2, int col)
+void set_fpen(struct rawbm *bm, int pen)
 {
+  if ((bm->fpenset) && (bm->fpen == pen))
+    return;
+
 #ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_APenColor, pal[col], TAG_DONE );
-  IGraphics->RectFill( mainwin->RPort, x, y, x2, y2 );
+  IGraphics->SetRPAttrs( &bm->rp, RPTAG_APenColor, pal[pen], TAG_DONE );
 #else
-  SDL_Rect rect = { .x = x, .y = y, .w = (x2-x)+1, .h = (y2-y)+1 };
-  SDL_FillRect(ssrf, &rect, pal[col]);
-  needaflip = TRUE;
+  bm->fsc.r = pal[pen]>>16;
+  bm->fsc.g = pal[pen]>>8;
+  bm->fsc.b = pal[pen];
 #endif
+
+  bm->fpen = pen;
+  bm->fpenset = TRUE;
 }
 
-void fillrect_xy_bm(struct rawbm *bm, int x, int y, int x2, int y2, int col)
+void set_bpen(struct rawbm *bm, int pen)
+{
+  if ((bm->bpenset) && (bm->bpen == pen))
+    return;
+
+#ifndef __SDL_WRAPPER__
+  IGraphics->SetRPAttrs( &bm->rp, RPTAG_BPenColor, pal[pen], TAG_DONE );
+#else
+  bm->bsc.r = pal[pen]>>16;
+  bm->bsc.g = pal[pen]>>8;
+  bm->bsc.b = pal[pen];
+#endif
+
+  bm->bpen = pen;
+  bm->bpenset = TRUE;
+}
+
+void set_pens(struct rawbm *bm, int fpen, int bpen)
+{
+  set_fpen(bm, fpen);
+  set_bpen(bm, bpen);
+}
+
+void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2)
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( &bm->rp, RPTAG_APenColor, pal[col], TAG_DONE );
   IGraphics->RectFill( &bm->rp, x, y, x2, y2 );
 #else
   SDL_Rect rect = { .x = x, .y = y, .w = (x2-x)+1, .h = (y2-y)+1 };
-  SDL_FillRect(bm->srf, &rect, pal[col]);
+  SDL_FillRect(bm->srf, &rect, mappal[bm->fpen]);
 #endif
 }
 
 void bm_to_bm(struct rawbm *src, int sx, int sy, struct rawbm *dest, int dx, int dy, int w, int h)
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->BltBitMapRastPort(src->bm, sx, sy, &dest->rp, dx, dy, w, h, 0x0C0);
+  IGraphics->BltBitMapRastPort(src->bm, sx, sy, &dest->rp, dx, dy, w, h);
 #else
   SDL_Rect srect = { .x = sx, .y = sy, .w = w, .h = h };
   SDL_Rect drect = { .x = dx, .y = dy, .w = w, .h = h };
   SDL_BlitSurface(src->srf, &srect, dest->srf, &drect);
+  if (dest == &mainbm) needaflip = TRUE;
+#endif
+}
+
+void set_font(struct rawbm *bm, int findex, BOOL jam2)
+{
+  if ((bm->fontset) && (bm->findex == findex) && (bm->jam2 == jam2))
+    return;
+
+#ifndef __SDL_WRAPPER__
+  struct TextFont *thefont;
+  switch (findex)
+  {
+    case FONT_SFX: thefont = sfxfont; break;
+    case FONT_PRP: thefont = prpfont; break;
+    default:       thefont = fixfont; break;
+  }
+   
+  IGraphics->SetRPAttrs( &bm->rp, RPTAG_DrMd, jam2 ? JAM2 : JAM1, RPTAG_Font, thefont, TAG_DONE );
+  bm->baseline = thefont->tf_Baseline;
+#else
+  switch (findex)
+  {
+    case FONT_SFX: bm->font = sfxttf; break;
+    case FONT_PRP: bm->font = prpttf; break;
+    default:       bm->font = fixttf; break;
+  }
+#endif
+
+  bm->findex  = findex;
+  bm->jam2    = jam2;
+  bm->fontset = TRUE;
+}
+
+void printstr(struct rawbm *bm, char *str, int x, int y)
+{
+#ifndef __SDL_WRAPPER__
+  IGraphics->Move(&bm->rp, x, y+bm->baseline);
+  IGraphics->Text(&bm->rp, str, strlen(str));
+#else
+  SDL_Surface *srf;
+  SDL_Rect rect = { .x = x, .y = y };
+  if (bm->jam2)
+  {
+    srf = TTF_RenderText_Shaded(bm->font, str, bm->fsc, bm->bsc);
+  }
+  else
+  {
+    srf = TTF_RenderText_Blended(bm->font, str, bm->fsc);
+  }
+  if (!srf) return;
+  SDL_BlitSurface(srf, NULL, bm->srf, &rect);
+  SDL_FreeSurface(srf);
+#endif
+}
+
+void printstrlen(struct rawbm *bm, char *str, int len, int x, int y)
+{
+#ifndef __SDL_WRAPPER__
+  IGraphics->Move(&bm->rp, x, y+bm->baseline);
+  IGraphics->Text(&bm->rp, str, len);
+#else
+  char tmp[len+1];
+  SDL_Surface *srf;
+  SDL_Rect rect = { .x = x, .y = y };
+  strncpy(tmp, str, len);
+  tmp[len] = 0;
+  if (bm->jam2)
+  {
+    srf = TTF_RenderText_Shaded(bm->font, tmp, bm->fsc, bm->bsc);
+  }
+  else
+  {
+    srf = TTF_RenderText_Blended(bm->font, tmp, bm->fsc);
+  }
+  if (!srf) return;
+  SDL_BlitSurface(srf, NULL, bm->srf, &rect);
+  SDL_FreeSurface(srf);
+#endif
+}
+
+int textfit( struct rawbm *bm, char *str, int w )
+{
+#ifndef __SDL_WRAPPER__
+  struct TextExtent te;
+  return IGraphics->TextFit( &bm->rp, str, strlen(str), &te, NULL, 1, w, 24 );
+#else
+  int tw, th, c;
+  char tmp[512];
+  strncpy(tmp, str, 512);
+  tmp[511] = 0;
+
+  c = strlen(tmp);
+  while (c>0)
+  {
+    TTF_SizeText(bm->font, tmp, &tw, &th);
+    if (tw <= w) break;
+    tmp[--c] = 0;
+  }
+  return c;
 #endif
 }
 
@@ -797,11 +932,7 @@ BOOL gui_set_tbox( struct textbox *tb, int16 x, int16 y, int16 w, TEXT *content,
 
   if( !make_image( &tb->bm, w, 16 ) ) return FALSE;
 
-#ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( &tb->bm.rp, RPTAG_DrMd,      JAM1,
-                                     RPTAG_Font,      fixfont,
-                                     TAG_DONE );
-#endif
+  set_font(&tb->bm, FONT_FIX, FALSE);
   return TRUE;
 }
 
@@ -853,16 +984,15 @@ void gui_render_nbox( struct ahx_tune *at, int32 panel, struct numberbox *nb )
   if( panel != at->at_curpanel )
     return;
 
-  fillrect_xy(nb->x, nb->y, nb->x+nb->w-25, nb->y+nb->h-1, PAL_BACK);
-#ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_DrMd,      JAM1,
-                             RPTAG_Font,      fixfont,
-                             TAG_DONE );
+  set_fpen(&mainbm, PAL_BACK);
+  fillrect_xy(&mainbm, nb->x, nb->y, nb->x+nb->w-25, nb->y+nb->h-1);
+
+  set_font(&mainbm, FONT_FIX, FALSE);
   
   if( ( nb->flags & NBF_ENABLED ) != 0 )
-    IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
+    set_fpen(&mainbm, PAL_TEXT);
   else
-    IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_APenColor, pal[PAL_DISABLEDTEXT], TAG_DONE );
+    set_fpen(&mainbm, PAL_DISABLEDTEXT);
 
   switch( nb->flags & (NBF_WAVELEN|NBF_ONOFF) )
   {
@@ -880,30 +1010,20 @@ void gui_render_nbox( struct ahx_tune *at, int32 panel, struct numberbox *nb )
     default:
       sprintf( pbuf, nb->fmt, nb->cnum );
   }
-  IGraphics->Move( mainwin->RPort, nb->x+4, nb->y+fixfont->tf_Baseline );
-  IGraphics->Text( mainwin->RPort, pbuf, strlen( pbuf ) );
-#endif
+  printstr(&mainbm, pbuf, nb->x+4, nb->y);
 
   put_partbitmap( BM_PLUSMINUS, 0, 0, nb->x+nb->w-28, nb->y-1, 28, 19 );
   nb->pressed = 0;
 }
 
-#ifndef __SDL_WRAPPER__
-void gui_render_tbox( struct RastPort *rp, struct textbox *tb )
-#else
-void gui_render_tbox( struct SDL_Surface *srf, struct textbox *tb )
-#endif
+void gui_render_tbox( struct rawbm *bm, struct textbox *tb )
 {
   int16 panel;
   int32 w;
   
   if( ( tb->flags & TBF_VISIBLE ) == 0 ) return;
 
-#ifndef __SDL_WRAPPER__
-  if( rp == mainwin->RPort )
-#else
-  if( srf == ssrf)
-#endif
+  if( bm == &mainbm )
   {
     panel = PN_TRACKER;
     if( curtune )
@@ -912,18 +1032,12 @@ void gui_render_tbox( struct SDL_Surface *srf, struct textbox *tb )
     if( panel != tb->inpanel ) return;
   }
 
-  fillrect_xy_bm(&tb->bm, 0, 0, tb->w-1, 15, PAL_BACK);
+  set_fpen(&tb->bm, PAL_BACK);
+  fillrect_xy(&tb->bm, 0, 0, tb->w-1, 15);
 
   if( tb->content == NULL )
   {
-#ifndef __SDL_WRAPPER__
-    IGraphics->BltBitMapRastPort( tb->bm.bm, 0, 0, rp, tb->x, tb->y, tb->w, 16, 0x0C0 );
-#else
-    SDL_Rect srect = { .x = 0, .y = 0, .w = tb->w, .h = 16 };
-    SDL_Rect drect = { .x = tb->x, .y = tb->y, .w = tb->w, .h = 16 };
-    SDL_BlitSurface(tb->bm.srf, &srect, ssrf, &drect);
-    needaflip = TRUE;
-#endif
+    bm_to_bm(&tb->bm, 0, 0, bm, tb->x, tb->y, tb->w, 16);
     return;
   }
   
@@ -941,26 +1055,18 @@ void gui_render_tbox( struct SDL_Surface *srf, struct textbox *tb )
   
   if( tb->flags & TBF_ACTIVE )
   {
-    fillrect_xy_bm(&tb->bm, (tb->cpos-tb->spos)*8, 0, (tb->cpos-tb->spos)*8+7, 15, PAL_BARLIGHT);
+    set_fpen(&tb->bm, PAL_BARLIGHT);
+    fillrect_xy(&tb->bm, (tb->cpos-tb->spos)*8, 0, (tb->cpos-tb->spos)*8+7, 15);
   }
 
-#ifndef __SDL_WRAPPER__
   if( tb->flags & TBF_ENABLED )
-    IGraphics->SetRPAttrs( &tb->bm.rp, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
+    set_fpen(&tb->bm, PAL_TEXT);
   else
-    IGraphics->SetRPAttrs( &tb->bm.rp, RPTAG_APenColor, pal[PAL_DISABLEDTEXT], TAG_DONE );
+    set_fpen(&tb->bm, PAL_DISABLEDTEXT);
 
-  IGraphics->Move( &tb->bm.rp, 0, fixfont->tf_Baseline );
-  IGraphics->Text( &tb->bm.rp, &tb->content[tb->spos], w );
-  IGraphics->BltBitMapRastPort( tb->bm.bm, 0, 0, rp, tb->x, tb->y, tb->w, 16, 0x0C0 );
-#else
-  {
-    SDL_Rect srect = { .x = 0, .y = 0, .w = tb->w, .h = 16 };
-    SDL_Rect drect = { .x = tb->x, .y = tb->y, .w = tb->w, .h = 16 };
-    SDL_BlitSurface(tb->bm.srf, &srect, ssrf, &drect);
-    needaflip = TRUE;
-  }
-#endif
+  printstrlen(&tb->bm, &tb->content[tb->spos], w, 0, 0);
+
+  bm_to_bm(&tb->bm, 0, 0, bm, tb->x, tb->y, tb->w, 16);
 }
 
 void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL force )
@@ -971,7 +1077,8 @@ void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL forc
 
   if( ins == NULL )
   {
-    fillrect_xy(PERF_X, PERF_Y, PERF_MX, PERF_MY, PAL_BACK);
+    set_fpen(&mainbm, PAL_BACK);
+    fillrect_xy(&mainbm, PERF_X, PERF_Y, PERF_MX, PERF_MY);
     perf_lastinst = NULL;
     return;
   }
@@ -1003,16 +1110,13 @@ void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL forc
   perf_lastcy   = ins->ins_pcury;
   perf_lastplen = ins->ins_PList.pls_Length;
   
-  fillrect_xy_bm(&bitmaps[BM_PERF], 0, 0, PERF_MX, PERF_MY, PAL_BACK);
+  set_fpen(&bitmaps[BM_PERF], PAL_BACK);
+  fillrect_xy(&bitmaps[BM_PERF], 0, 0, PERF_MX, PERF_MY);
   
-#ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( &bitmaps[BM_PERF].rp, RPTAG_APenColor, pal[PAL_TEXT],
-                                               RPTAG_BPenColor, pal[PAL_BACK],
-                                               TAG_DONE );
+  set_pens(&bitmaps[BM_PERF], PAL_TEXT, PAL_BACK);
   
   if( ins->ins_ptop >= ins->ins_PList.pls_Length )
-    IGraphics->SetRPAttrs( &bitmaps[BM_PERF].rp, RPTAG_APenColor, pal[PAL_DISABLEDTEXT], TAG_DONE );
-#endif
+    set_fpen(&bitmaps[BM_PERF], PAL_DISABLEDTEXT);
 
   k = ins->ins_pcury - ins->ins_ptop;
   
@@ -1020,15 +1124,13 @@ void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL forc
   {
     if( j > 254 ) break;
 
-#ifndef __SDL_WRAPPER__
     if( j == ins->ins_pcury )
-      IGraphics->SetRPAttrs( &bitmaps[BM_PERF].rp, RPTAG_BPenColor, pal[PAL_BARMID], TAG_DONE );
+      set_bpen(&bitmaps[BM_PERF], PAL_BARMID);
     if( j == ins->ins_pcury+1 )
-      IGraphics->SetRPAttrs( &bitmaps[BM_PERF].rp, RPTAG_BPenColor, pal[PAL_BACK], TAG_DONE );
+      set_bpen(&bitmaps[BM_PERF], PAL_BACK);
     
     if( j == ins->ins_PList.pls_Length )
-      IGraphics->SetRPAttrs( &bitmaps[BM_PERF].rp, RPTAG_APenColor, pal[PAL_DISABLEDTEXT], TAG_DONE );
-#endif
+      set_fpen(&bitmaps[BM_PERF], PAL_DISABLEDTEXT);
 
     n = ins->ins_PList.pls_Entries[j].ple_Note;
     if( n > 60 ) n = 0;
@@ -1043,31 +1145,31 @@ void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL forc
       ins->ins_PList.pls_Entries[j].ple_FX[1]&0xf,
       ins->ins_PList.pls_Entries[j].ple_FXParam[1]&0xff );
 
-#ifndef __SDL_WRAPPER__
-    IGraphics->Move( &bitmaps[BM_PERF].rp, 0, fixfont->tf_Baseline+(i<<4)+4 );
-    IGraphics->Text( &bitmaps[BM_PERF].rp, pbuf, strlen( pbuf ) );
-#endif
+    printstr(&bitmaps[BM_PERF], pbuf, 0, (i*16)+4);
   }
 
   if( k >= 0 )
   {
-    fillrect_xy_bm(&bitmaps[BM_PERF], 0, k*16+3, PERF_MX, k*16+3, PAL_BARLIGHT);
+    set_fpen(&bitmaps[BM_PERF], PAL_BARLIGHT);
+    fillrect_xy(&bitmaps[BM_PERF], 0, k*16+3, PERF_MX, k*16+3);
   }
   
   if( k < ((PERF_H>>4)-1) )
   {
-    fillrect_xy_bm(&bitmaps[BM_PERF], 0, k*16+20, PERF_MX, k*16+20, PAL_BARDARK);
+    set_fpen(&bitmaps[BM_PERF], PAL_BARDARK);
+    fillrect_xy(&bitmaps[BM_PERF], 0, k*16+20, PERF_MX, k*16+20);
   }
 
-  fillrect_xy_bm(&bitmaps[BM_PERF],  3*8+4, 0,  3*8+4, PERF_MY, PAL_CURSNORM);
-  fillrect_xy_bm(&bitmaps[BM_PERF],  8*8+4, 0,  8*8+4, PERF_MY, PAL_CURSNORM);
-  fillrect_xy_bm(&bitmaps[BM_PERF], 10*8+4, 0, 10*8+4, PERF_MY, PAL_CURSNORM);
-  fillrect_xy_bm(&bitmaps[BM_PERF], 14*8+4, 0, 14*8+4, PERF_MY, PAL_CURSNORM);
+  set_fpen(&bitmaps[BM_PERF], PAL_CURSNORM);
+  fillrect_xy(&bitmaps[BM_PERF],  3*8+4, 0,  3*8+4, PERF_MY);
+  fillrect_xy(&bitmaps[BM_PERF],  8*8+4, 0,  8*8+4, PERF_MY);
+  fillrect_xy(&bitmaps[BM_PERF], 10*8+4, 0, 10*8+4, PERF_MY);
+  fillrect_xy(&bitmaps[BM_PERF], 14*8+4, 0, 14*8+4, PERF_MY);
 
   if( at->at_idoing == D_EDITING )
-    col = PAL_CURSEDIT;
+    set_fpen(&bitmaps[BM_PERF], PAL_CURSEDIT);
   else
-    col = PAL_CURSNORM;
+    set_fpen(&bitmaps[BM_PERF], PAL_CURSNORM);
     
   cx = perf_xoff[ins->ins_pcurx]-2;
   cy = (k<<4)+2;
@@ -1077,10 +1179,10 @@ void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL forc
   if( ins->ins_pcurx == 0 )
     mx = cx+32+3;
     
-  fillrect_xy_bm(&bitmaps[BM_PERF], cx, cy, mx, cy+1, col);
-  fillrect_xy_bm(&bitmaps[BM_PERF], cx, my-1, mx, my, col);
-  fillrect_xy_bm(&bitmaps[BM_PERF], cx, cy, cx+1, my, col);
-  fillrect_xy_bm(&bitmaps[BM_PERF], mx-1, cy, mx, my, col);
+  fillrect_xy(&bitmaps[BM_PERF], cx, cy, mx, cy+1);
+  fillrect_xy(&bitmaps[BM_PERF], cx, my-1, mx, my);
+  fillrect_xy(&bitmaps[BM_PERF], cx, cy, cx+1, my);
+  fillrect_xy(&bitmaps[BM_PERF], mx-1, cy, mx, my);
 
   put_bitmap( BM_PERF, PERF_X, PERF_Y, PERF_W, PERF_H );
 }
@@ -1110,7 +1212,8 @@ void gui_render_inslistb( BOOL force )
       ( force == FALSE ) )
     return;
 
-  fillrect_xy_bm(&bitmaps[BM_INSLISTB], 0, 0, INSLSTB_MX, INSLSTB_MY, PAL_BACK);
+  set_fpen(&bitmaps[BM_INSLISTB], PAL_BACK);
+  fillrect_xy(&bitmaps[BM_INSLISTB], 0, 0, INSLSTB_MX, INSLSTB_MY);
 
   if( at )
   {
@@ -1119,11 +1222,7 @@ void gui_render_inslistb( BOOL force )
     
     if( at->at_topinsb < 1 ) at->at_topinsb = 1;
 
-#ifndef __SDL_WRAPPER__
-    IGraphics->SetRPAttrs( &bitmaps[BM_INSLISTB].rp, RPTAG_APenColor, pal[PAL_TEXT],
-                                                     RPTAG_BPenColor, pal[PAL_BACK],
-                                                     TAG_DONE );
-#endif
+    set_pens(&bitmaps[BM_INSLISTB], PAL_TEXT, PAL_BACK);
     for( i=0, j=at->at_topinsb; i<(INSLSTB_H>>4); i++, j++ )
     {
       sprintf( tmp, "%02ld                   ", j );
@@ -1135,25 +1234,25 @@ void gui_render_inslistb( BOOL force )
         tmp[k+3] = in->ins_Name[k];
       }
 
-#ifndef __SDL_WRAPPER__
       if( j == curi )
-        IGraphics->SetRPAttrs( &bitmaps[BM_INSLISTB].rp, RPTAG_BPenColor, pal[PAL_BARMID], TAG_DONE );
+        set_bpen(&bitmaps[BM_INSLISTB], PAL_BARMID);
       if( j == curi+1 )
-        IGraphics->SetRPAttrs( &bitmaps[BM_INSLISTB].rp, RPTAG_BPenColor, pal[PAL_BACK], TAG_DONE );
+        set_bpen(&bitmaps[BM_INSLISTB], PAL_BACK);
 
-      IGraphics->Move( &bitmaps[BM_INSLISTB].rp, 0, i*16+fixfont->tf_Baseline+4 );
-      IGraphics->Text( &bitmaps[BM_INSLISTB].rp, tmp, 24 );
-#endif
+      printstrlen(&bitmaps[BM_INSLISTB], tmp, 24, 0, i*16+4);
     }
 
     if( curi >= at->at_topinsb )
     {
       k = (curi-at->at_topinsb)*16+4;
-      fillrect_xy_bm(&bitmaps[BM_INSLISTB], 0, k-1, INSLSTB_MX, k-1, PAL_BARLIGHT);
-      fillrect_xy_bm(&bitmaps[BM_INSLISTB], 0, k+16, INSLSTB_MX, k+16, PAL_BARDARK);
+      set_fpen(&bitmaps[BM_INSLISTB], PAL_BARLIGHT);
+      fillrect_xy(&bitmaps[BM_INSLISTB], 0, k-1, INSLSTB_MX, k-1);
+      set_fpen(&bitmaps[BM_INSLISTB], PAL_BARDARK);
+      fillrect_xy(&bitmaps[BM_INSLISTB], 0, k+16, INSLSTB_MX, k+16);
     }
 
-    fillrect_xy_bm(&bitmaps[BM_INSLISTB], 20, 0, 20, INSLSTB_MY, PAL_TEXT);
+    set_fpen(&bitmaps[BM_INSLISTB], PAL_TEXT);
+    fillrect_xy(&bitmaps[BM_INSLISTB], 20, 0, 20, INSLSTB_MY);
   }
   
   put_bitmap( BM_INSLISTB, INSLSTB_X, INSLSTB_Y, INSLSTB_W, INSLSTB_H );
@@ -1184,11 +1283,6 @@ void gui_check_inb( struct ahx_tune *at, uint32 nb, int32 val )
 void gui_set_various_things( struct ahx_tune *at )
 {
   int32 i;
-#ifndef __SDL_WRAPPER__
-  struct RastPort *maindraw = mainwin->RPort;
-#else
-  struct SDL_Surface *maindraw = ssrf;
-#endif
 
   if( at->at_NextPosNr != -1 )
     gui_check_nb( at, NB_POSNR, at->at_NextPosNr );
@@ -1332,7 +1426,7 @@ void gui_set_various_things( struct ahx_tune *at )
     if( tbx[TB_SONGNAME].content != NULL )
     {
       tbx[TB_SONGNAME].content = NULL;
-      gui_render_tbox( maindraw, &tbx[TB_SONGNAME] );
+      gui_render_tbox( &mainbm, &tbx[TB_SONGNAME] );
     }
   } else {
     if( tbx[TB_SONGNAME].content != at->at_Name )
@@ -1340,7 +1434,7 @@ void gui_set_various_things( struct ahx_tune *at )
       tbx[TB_SONGNAME].content = at->at_Name;
       tbx[TB_SONGNAME].spos = 0;
       tbx[TB_SONGNAME].cpos = 0;
-      gui_render_tbox( maindraw, &tbx[TB_SONGNAME] );
+      gui_render_tbox( &mainbm, &tbx[TB_SONGNAME] );
     }
   }
 
@@ -1349,7 +1443,7 @@ void gui_set_various_things( struct ahx_tune *at )
     if( tbx[TB_INSNAME].content != NULL )
     {
       tbx[TB_INSNAME].content = NULL;
-      gui_render_tbox( maindraw, &tbx[TB_INSNAME] );
+      gui_render_tbox( &mainbm, &tbx[TB_INSNAME] );
     }
   } else {
     if( tbx[TB_INSNAME].content != at->at_Instruments[at->at_curins].ins_Name )
@@ -1357,7 +1451,7 @@ void gui_set_various_things( struct ahx_tune *at )
       tbx[TB_INSNAME].content = at->at_Instruments[at->at_curins].ins_Name;
       tbx[TB_INSNAME].spos = 0;
       tbx[TB_INSNAME].cpos = 0;
-      gui_render_tbox( maindraw, &tbx[TB_INSNAME] );
+      gui_render_tbox( &mainbm, &tbx[TB_INSNAME] );
     }
   }
   
@@ -1407,9 +1501,7 @@ void gui_setup_trkbbank( int32 which )
       break;
   }
 
-#ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_Font, prpfont, TAG_DONE );
-#endif
+  set_font(&mainbm, FONT_PRP, FALSE);
 
   for( i=0; i<11; i++ )
   {
@@ -1418,7 +1510,9 @@ void gui_setup_trkbbank( int32 which )
 #ifndef __SDL_WRAPPER__
       tbank[i].xo = 26 - ( IGraphics->TextLength( mainwin->RPort, tbank[i].name, strlen( tbank[i].name ) ) >> 1 );
 #else
-      tbank[i].xo = 26;
+      int w, h;
+      TTF_SizeText(mainbm.font, tbank[i].name, &w, &h);
+      tbank[i].xo = 26 - (w/2);
 #endif
     }
   }  
@@ -1482,9 +1576,7 @@ void gui_setup_buttonbank( int32 which )
       break;
   }
 
-#ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_Font, prpfont, TAG_DONE );
-#endif
+  set_font(&mainbm, FONT_PRP, FALSE);
 
   for( i=0; i<16; i++ )
   {
@@ -1493,7 +1585,9 @@ void gui_setup_buttonbank( int32 which )
 #ifndef __SDL_WRAPPER__
       bbank[i].xo = 40 - ( IGraphics->TextLength( mainwin->RPort, bbank[i].name, strlen( bbank[i].name ) ) >> 1 );
 #else
-      bbank[i].xo = 40;
+      int w, h;
+      TTF_SizeText(mainbm.font, bbank[i].name, &w, &h);
+      bbank[i].xo = 40 - (w/2);
 #endif
     } 
   }  
@@ -1501,34 +1595,28 @@ void gui_setup_buttonbank( int32 which )
 
 void gui_render_bbank_texts( struct buttonbank *bbnk, int32 nb )
 {
-#ifndef __SDL_WRAPPER__
   int32 i;
 
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_DrMd,      JAM1,
-                                         RPTAG_Font,      prpfont,
-                                         RPTAG_APenColor, pal[PAL_BTNSHADOW],
-                                         TAG_DONE );
+  set_font(&mainbm, FONT_PRP, FALSE);
+  set_fpen(&mainbm, PAL_BTNSHADOW);
 
   for( i=0; i<nb; i++ )
   {
     if( bbnk[i].name != NULL )
     {
-      IGraphics->Move( mainwin->RPort, bbnk[i].x+bbnk[i].xo+1, bbnk[i].y+5+prpfont->tf_Baseline );
-      IGraphics->Text( mainwin->RPort, bbnk[i].name, strlen( bbnk[i].name ) );
+      printstr(&mainbm, bbnk[i].name, bbnk[i].x+bbnk[i].xo+1, bbnk[i].y+5);
     }
   }
 
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_APenColor, pal[PAL_BTNTEXT], TAG_DONE );
+  set_fpen(&mainbm, PAL_BTNTEXT);
 
   for( i=0; i<nb; i++ )
   {
     if( bbnk[i].name != NULL )
     {
-      IGraphics->Move( mainwin->RPort, bbnk[i].x+bbnk[i].xo, bbnk[i].y+4+prpfont->tf_Baseline );
-      IGraphics->Text( mainwin->RPort, bbnk[i].name, strlen( bbnk[i].name ) );
+      printstr(&mainbm, bbnk[i].name, bbnk[i].x+bbnk[i].xo, bbnk[i].y+4);
     }
   }
-#endif
 }
 
 void gui_render_main_buttonbank( void )
@@ -1547,9 +1635,6 @@ void gui_render_tabs( void )
 {
   int32 ntabs, rtabs, tabw, tabsw, i, j, k, l, m, n, o, tabh;
   struct ahx_tune *at;
-#ifndef __SDL_WRAPPER__
-  struct TextExtent te;
-#endif
   TEXT *tname;
 
   put_bitmap( BM_TAB_AREA, 0, 96, 800, 24 );
@@ -1614,12 +1699,8 @@ void gui_render_tabs( void )
   // Tab offset
   k = ((tabsw>>1)-(tabw<<7));
 
-#ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_DrMd, JAM1,
-                                         RPTAG_Font, prpfont,
-                                         TAG_DONE );
+  set_font(&mainbm, FONT_PRP, FALSE);
 
-#endif
   // Draw them!
   at = (struct ahx_tune *)IExec->GetHead(rp_tunelist);
   for( i=0, j=k; i<rtabs; i++, j+=tabsw )
@@ -1645,7 +1726,7 @@ void gui_render_tabs( void )
 #ifndef __SDL_WRAPPER__
     n = IGraphics->TextLength( mainwin->RPort, tname, strlen( tname ) );
 #else
-    n = 20;
+    TTF_SizeText(mainbm.font, tname, &n, &k);
 #endif
     if( !tabtextback ) o = l+1;
 
@@ -1657,20 +1738,16 @@ void gui_render_tabs( void )
     }
     put_bitmap( l+2, (j>>8)+tabw-16, 96, 16, m );
     
-#ifndef __SDL_WRAPPER__
-    k = IGraphics->TextFit( mainwin->RPort, tname, strlen( tname ), &te, NULL, 1, tabw-32, 24 );
+    k = textfit(&mainbm, tname, tabw-32);
 
     if( tabtextshad )
     {    
-      IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_APenColor, pal[PAL_TABSHADOW], TAG_DONE );
-      IGraphics->Move( mainwin->RPort, (j>>8)+25, 100+prpfont->tf_Baseline );
-      IGraphics->Text( mainwin->RPort, tname, k );
+      set_fpen(&mainbm, PAL_TABSHADOW);
+      printstrlen(&mainbm, tname, k, (j>>8)+25, 100);
     }
 
-    IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_APenColor, pal[PAL_TABTEXT], TAG_DONE );
-    IGraphics->Move( mainwin->RPort, (j>>8)+24,  99+prpfont->tf_Baseline );
-    IGraphics->Text( mainwin->RPort, tname, k );
-#endif
+    set_fpen(&mainbm, PAL_TABTEXT);
+    printstrlen(&mainbm, tname, k, (j>>8)+24, 99);
     at = (struct ahx_tune *)IExec->GetSucc(&at->at_ln);
   }
   
@@ -1679,15 +1756,16 @@ void gui_render_tabs( void )
 
 void gui_render_wavemeter( void )
 {
-#ifndef __SDL_WRAPPER__
   int32 i, v, off, delta;
   int16 *ba;
 
-  fillrect_xy_bm(&bitmaps[BM_WAVEMETERS], 9,  7, 181+9, 37+ 7, PAL_BACK);
-  fillrect_xy_bm(&bitmaps[BM_WAVEMETERS], 9, 49, 181+9, 37+49, PAL_BACK);
+  set_fpen(&bitmaps[BM_WAVEMETERS], PAL_BACK);
+  fillrect_xy(&bitmaps[BM_WAVEMETERS], 9,  7, 181+9, 37+ 7);
+  fillrect_xy(&bitmaps[BM_WAVEMETERS], 9, 49, 181+9, 37+49);
 
-  IGraphics->SetRPAttrs( &bitmaps[BM_WAVEMETERS].rp, RPTAG_APenColor, pal[PAL_WAVEMETER], TAG_DONE );
-  
+  set_fpen(&bitmaps[BM_WAVEMETERS], PAL_WAVEMETER);
+
+#ifndef __SDL_WRAPPER__
   ba = (int16 *)rp_audiobuffer[0];
   
   delta = rp_audiobuflen / 728;
@@ -1717,9 +1795,8 @@ void gui_render_wavemeter( void )
     else
       IGraphics->Draw( &bitmaps[BM_WAVEMETERS].rp, i, v );
   } 
-  
-  put_bitmap( BM_WAVEMETERS, 576, 0, 200, 96 );
 #endif
+  put_bitmap( BM_WAVEMETERS, 576, 0, 200, 96 );
 }
 
 void gui_render_vumeters( void )
@@ -1867,25 +1944,25 @@ void gui_render_tracked( BOOL force )
     }
 #endif
 
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], 0, 256, TRACKED_MX, TRACKED_MY, PAL_BACK );
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], 0, 7*16-2, TRACKED_MX, 7*16-1, PAL_BACK );
+    set_fpen(&bitmaps[BM_TRACKED], PAL_BACK);
+    fillrect_xy(&bitmaps[BM_TRACKED], 0, 256, TRACKED_MX, TRACKED_MY );
+    fillrect_xy(&bitmaps[BM_TRACKED], 0, 7*16-2, TRACKED_MX, 7*16-1 );
 //    IGraphics->Move( &bitmaps[BM_TRACKED].rp, 0, 7*16-1 );
 //    IGraphics->Draw( &bitmaps[BM_TRACKED].rp, bw, 7*16-1 );
 
     hrestore = FALSE;
-#ifndef __SDL_WRAPPER__
-    IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
-    for( i=notenr-1, j=(7*16)+fixfont->tf_Baseline; i<notenr+3; i++, j+=16 )
+    set_fpen(&bitmaps[BM_TRACKED], PAL_TEXT);
+    for( i=notenr-1, j=(7*16); i<notenr+3; i++, j+=16 )
     {
       if( i == notenr+2 )
       {
         i = notenr+8;
-        j = (16*16)+fixfont->tf_Baseline;
+        j = (16*16);
       }
       if( i == notenr )
-        IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_BPenColor, pal[PAL_BARMID], TAG_DONE );
+        set_bpen(&bitmaps[BM_TRACKED], PAL_BARMID);
       if( i == notenr+1 )
-        IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_BPenColor, pal[PAL_BACK], TAG_DONE );
+        set_bpen(&bitmaps[BM_TRACKED], PAL_BACK);
       
       if( ( i == at->at_rempos[0] ) ||
           ( i == at->at_rempos[1] ) ||
@@ -1893,12 +1970,12 @@ void gui_render_tracked( BOOL force )
           ( i == at->at_rempos[3] ) ||
           ( i == at->at_rempos[4] ) )
       {
-        IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_APenColor, pal[PAL_FKEYHIGHLIGHT], TAG_DONE );
+        set_fpen(&bitmaps[BM_TRACKED], PAL_FKEYHIGHLIGHT);
         hrestore = TRUE;
       } else {
         if( hrestore )
         {
-         IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
+          set_fpen(&bitmaps[BM_TRACKED], PAL_TEXT);
           hrestore = FALSE;
         }
       }
@@ -1944,11 +2021,9 @@ void gui_render_tracked( BOOL force )
             }
           }
         }
-        IGraphics->Move( &bitmaps[BM_TRACKED].rp, 0, j );
-        IGraphics->Text( &bitmaps[BM_TRACKED].rp, pbuf, strlen( pbuf ) );
+        printstr(&bitmaps[BM_TRACKED], pbuf, 0, j);
       }
     }
-#endif
 
   } else {
   
@@ -1956,19 +2031,17 @@ void gui_render_tracked( BOOL force )
   
     if( ( !at ) || ( force ) )
     {
-      fillrect_xy_bm(&bitmaps[BM_TRACKED], 0, 0, TRACKED_MX, TRACKED_MY, PAL_BACK);
-      fillrect_xy_bm(&bitmaps[BM_TRACKED], 0, 8*16, TRACKED_MX, 8*16+15, PAL_BARMID);
+      set_fpen(&bitmaps[BM_TRACKED], PAL_BACK);
+      fillrect_xy(&bitmaps[BM_TRACKED], 0, 0, TRACKED_MX, TRACKED_MY);
+      set_fpen(&bitmaps[BM_TRACKED], PAL_BARMID);
+      fillrect_xy(&bitmaps[BM_TRACKED], 0, 8*16, TRACKED_MX, 8*16+15);
     }
 
     if( at )
     {  
       if( ( force ) || ( lch != trked_lastlchan ) || ( posnr != trked_lastposnr ) )
       {
-#ifndef __SDL_WRAPPER__
-        IGraphics->SetRPAttrs( &bitmaps[BM_TRACKBAR].rp, RPTAG_DrMd,      JAM1,
-                                                         RPTAG_Font,      prpfont,
-                                                         TAG_DONE );        
-#endif
+        set_font(&bitmaps[BM_TRACKBAR], FONT_PRP, FALSE);
         bm_to_bm(&bitmaps[BM_BG_TRACKER], 20+TRACKED_X, TRACKED_Y-142, &bitmaps[BM_TRACKBAR], 0, 0, 768, 19);
 
         for( j=0, k=lch, l=0; l<6; j+=15*8, k++, l++ )
@@ -1976,24 +2049,15 @@ void gui_render_tracked( BOOL force )
           if( k < ech )
           {
             sprintf( pbuf, "Track %ld", k+1 );
-#ifndef __SDL_WRAPPER__
-            IGraphics->SetRPAttrs( &bitmaps[BM_TRACKBAR].rp, RPTAG_APenColor, pal[PAL_BTNSHADOW], TAG_DONE );
-            IGraphics->Move( &bitmaps[BM_TRACKBAR].rp, j+1, 2+prpfont->tf_Baseline );
-            IGraphics->Text( &bitmaps[BM_TRACKBAR].rp, pbuf, strlen( pbuf ) );
-            IGraphics->SetRPAttrs( &bitmaps[BM_TRACKBAR].rp, RPTAG_APenColor, pal[PAL_BTNTEXT], TAG_DONE );
-            IGraphics->Move( &bitmaps[BM_TRACKBAR].rp, j, 1+prpfont->tf_Baseline );
-            IGraphics->Text( &bitmaps[BM_TRACKBAR].rp, pbuf, strlen( pbuf ) );
-#endif
+            set_fpen(&bitmaps[BM_TRACKBAR], PAL_BTNSHADOW);
+            printstr(&bitmaps[BM_TRACKBAR], pbuf, j+1, 2);
+            set_fpen(&bitmaps[BM_TRACKBAR], PAL_BTNTEXT);
+            printstr(&bitmaps[BM_TRACKBAR], pbuf, j, 1);
           }
         } 
 
-#ifndef __SDL_WRAPPER__
-        IGraphics->SetRPAttrs( &bitmaps[BM_TRACKBAR].rp, RPTAG_DrMd,      JAM2,
-                                                         RPTAG_Font,      fixfont,
-                                                         RPTAG_APenColor, pal[PAL_TEXT],
-                                                         RPTAG_BPenColor, pal[PAL_BACK],
-                                                         TAG_DONE );
-#endif
+        set_font(&bitmaps[BM_TRACKBAR], FONT_FIX, TRUE);
+        set_pens(&bitmaps[BM_TRACKBAR], PAL_TEXT, PAL_BACK);
         for( j=11*8-2, k=lch, l=0; l<6; j+=15*8, k++, l++ )
         { 
           if( k < ech )
@@ -2003,10 +2067,7 @@ void gui_render_tracked( BOOL force )
             else
               bm_to_bm(&bitmaps[BM_CHANMUTE], 0, 19, &bitmaps[BM_TRACKBAR], j-20, 0, 14, 19);
             sprintf( pbuf, "%03d", at->at_Positions[posnr].pos_Track[k] );
-#ifndef __SDL_WRAPPER__
-            IGraphics->Move( &bitmaps[BM_TRACKBAR].rp, j, 1+fixfont->tf_Baseline );
-            IGraphics->Text( &bitmaps[BM_TRACKBAR].rp, pbuf, strlen( pbuf ) );
-#endif
+            printstr(&bitmaps[BM_TRACKBAR], pbuf, j, 1);
           }
         } 
         put_bitmap( BM_TRACKBAR, 20+TRACKED_X, TRACKED_Y-22, TRACKED_W-24, 19 );
@@ -2014,24 +2075,25 @@ void gui_render_tracked( BOOL force )
     
       if( notenr < 8 )
       {
-        fillrect_xy_bm(&bitmaps[BM_TRACKED], 0, 0, TRACKED_MX, ((8-notenr)*16)-1, PAL_BACK);
+        set_fpen(&bitmaps[BM_TRACKED], PAL_BACK);
+        fillrect_xy(&bitmaps[BM_TRACKED], 0, 0, TRACKED_MX, ((8-notenr)*16)-1);
       }
   
       if( notenr > trkmax-8 )
       {
-        fillrect_xy_bm(&bitmaps[BM_TRACKED], 0, ((trklen-notenr)+8)*16, TRACKED_MX, TRACKED_MY, PAL_BACK);
+        set_fpen(&bitmaps[BM_TRACKED], PAL_BACK);
+        fillrect_xy(&bitmaps[BM_TRACKED], 0, ((trklen-notenr)+8)*16, TRACKED_MX, TRACKED_MY);
       }
       
       hrestore = FALSE;
 
-#ifndef __SDL_WRAPPER__
-      IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
-      for( i=notenr-8, j=fixfont->tf_Baseline; i<notenr+9; i++, j+=16 )
+      set_fpen(&bitmaps[BM_TRACKED], PAL_TEXT);
+      for( i=notenr-8, j=0; i<notenr+9; i++, j+=16 )
       {
         if( i == notenr )
-          IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_BPenColor, pal[PAL_BARMID], TAG_DONE );
+          set_bpen(&bitmaps[BM_TRACKED], PAL_BARMID);
         if( i == notenr+1 )
-          IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_BPenColor, pal[PAL_BACK], TAG_DONE );
+          set_bpen(&bitmaps[BM_TRACKED], PAL_BACK);
    
         if( ( i == at->at_rempos[0] ) ||
             ( i == at->at_rempos[1] ) ||
@@ -2039,12 +2101,12 @@ void gui_render_tracked( BOOL force )
             ( i == at->at_rempos[3] ) ||
             ( i == at->at_rempos[4] ) )
         {
-          IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_APenColor, pal[PAL_FKEYHIGHLIGHT], TAG_DONE );
+          set_fpen(&bitmaps[BM_TRACKED], PAL_FKEYHIGHLIGHT);
           hrestore = TRUE;
         } else {
           if( hrestore )
           {
-            IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
+            set_fpen(&bitmaps[BM_TRACKED], PAL_TEXT);
             hrestore = FALSE;
           }
         }
@@ -2090,8 +2152,7 @@ void gui_render_tracked( BOOL force )
               }
             }
           }
-          IGraphics->Move( &bitmaps[BM_TRACKED].rp, 0, j );
-          IGraphics->Text( &bitmaps[BM_TRACKED].rp, pbuf, strlen( pbuf ) );
+          printstr(&bitmaps[BM_TRACKED], pbuf, 0, j);
           
           if( at->at_cbmarktrack != -1 )
           {
@@ -2111,9 +2172,7 @@ void gui_render_tracked( BOOL force )
 
                 if( needrestore == FALSE )
                 {
-                  IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_BPenColor, pal[PAL_TEXT],
-                                                                  RPTAG_APenColor, pal[PAL_BACK],
-                                                                  TAG_DONE );
+                  set_pens(&bitmaps[BM_TRACKED], PAL_BACK, PAL_TEXT);
                   needrestore = TRUE;
                 }
                 
@@ -2138,42 +2197,33 @@ void gui_render_tracked( BOOL force )
                 switch( at->at_cbmarkbits )
                 {
                   case CBF_NOTES:
-                    IGraphics->Move( &bitmaps[BM_TRACKED].rp, 24+(l*120), j );
-                    IGraphics->Text( &bitmaps[BM_TRACKED].rp, pbuf, 6 );
+                    printstrlen(&bitmaps[BM_TRACKED], pbuf, 6, 24+(l*120), j );
                     break;
                   case CBF_NOTES|CBF_CMD1:
-                    IGraphics->Move( &bitmaps[BM_TRACKED].rp, 24+(l*120), j );
-                    IGraphics->Text( &bitmaps[BM_TRACKED].rp, pbuf, 10 );
+                    printstrlen(&bitmaps[BM_TRACKED], pbuf, 10, 24+(l*120), j );
                     break;
                   case CBF_NOTES|CBF_CMD1|CBF_CMD2:  // everything
-                    IGraphics->Move( &bitmaps[BM_TRACKED].rp, 24+(l*120), j );
-                    IGraphics->Text( &bitmaps[BM_TRACKED].rp, pbuf, strlen( pbuf ) );
+                    printstr(&bitmaps[BM_TRACKED], pbuf, 24+(l*120), j );
                     break;
                   case CBF_CMD1:
-                    IGraphics->Move( &bitmaps[BM_TRACKED].rp, 24+(7*8)+(l*120), j );
-                    IGraphics->Text( &bitmaps[BM_TRACKED].rp, &pbuf[7], 3 );
+                    printstrlen(&bitmaps[BM_TRACKED], &pbuf[7], 3, 24+(7*8)+(l*120), j );
                     break;
                   case CBF_CMD1|CBF_CMD2:
-                    IGraphics->Move( &bitmaps[BM_TRACKED].rp, 24+(7*8)+(l*120), j );
-                    IGraphics->Text( &bitmaps[BM_TRACKED].rp, &pbuf[7], 7 );
+                    printstrlen(&bitmaps[BM_TRACKED], &pbuf[7], 7, 24+(7*8)+(l*120), j );
                     break;
                   case CBF_CMD2:
-                    IGraphics->Move( &bitmaps[BM_TRACKED].rp, 24+(11*8)+(l*120), j );
-                    IGraphics->Text( &bitmaps[BM_TRACKED].rp, &pbuf[11], 3 );
+                    printstrlen(&bitmaps[BM_TRACKED], &pbuf[11], 3, 24+(11*8)+(l*120), j );
                     break;
                 }
               }
             }
             if( needrestore )
             {
-              IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_BPenColor, pal[PAL_BACK],
-                                                              RPTAG_APenColor, pal[PAL_TEXT],
-                                                              TAG_DONE );
+              set_pens(&bitmaps[BM_TRACKED], PAL_BACK, PAL_TEXT);
             }
           }
         }
       }
-#endif
     }
   }
 
@@ -2183,20 +2233,24 @@ void gui_render_tracked( BOOL force )
   trked_lastchans  = dch;
   trked_lastlchan  = lch;
 
+  set_fpen(&bitmaps[BM_TRACKED], PAL_BARMID);
   for( i=0; i<6*120; i+=120 )
   {
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], i+24+28, 0, i+24+28, TRACKED_MY, PAL_BARMID);
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], i+24+52, 0, i+24+52, TRACKED_MY, PAL_BARMID);
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], i+24+84, 0, i+24+84, TRACKED_MY, PAL_BARMID);
+    fillrect_xy(&bitmaps[BM_TRACKED], i+24+28, 0, i+24+28, TRACKED_MY);
+    fillrect_xy(&bitmaps[BM_TRACKED], i+24+52, 0, i+24+52, TRACKED_MY);
+    fillrect_xy(&bitmaps[BM_TRACKED], i+24+84, 0, i+24+84, TRACKED_MY);
   }
 
-  fillrect_xy_bm(&bitmaps[BM_TRACKED], 0, 8*16-1, TRACKED_MX, 8*16-1, PAL_BARLIGHT);
-  fillrect_xy_bm(&bitmaps[BM_TRACKED], 0, 9*16-1, TRACKED_MX, 9*16-1, PAL_BARDARK);
-  fillrect_xy_bm(&bitmaps[BM_TRACKED], 20, 0, 20, TRACKED_MY, PAL_TEXT);
+  set_fpen(&bitmaps[BM_TRACKED], PAL_BARLIGHT);
+  fillrect_xy(&bitmaps[BM_TRACKED], 0, 8*16-1, TRACKED_MX, 8*16-1);
+  set_fpen(&bitmaps[BM_TRACKED], PAL_BARDARK);
+  fillrect_xy(&bitmaps[BM_TRACKED], 0, 9*16-1, TRACKED_MX, 9*16-1);
+  set_fpen(&bitmaps[BM_TRACKED], PAL_TEXT);
+  fillrect_xy(&bitmaps[BM_TRACKED], 20, 0, 20, TRACKED_MY);
   
   for( i=120; i<6*120; i+=120 )
   {
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], 20+i, 0, 20+i, TRACKED_MY, PAL_TEXT);
+    fillrect_xy(&bitmaps[BM_TRACKED], 20+i, 0, 20+i, TRACKED_MY);
   }
   
   if( at->at_editing == E_TRACK )
@@ -2204,9 +2258,9 @@ void gui_render_tracked( BOOL force )
     int32 cx, cy, mx, my, col;
 
     if( at->at_doing == D_EDITING )
-      col = PAL_CURSEDIT;
+      set_fpen(&bitmaps[BM_TRACKED], PAL_CURSEDIT);
     else
-      col = PAL_CURSNORM;
+      set_fpen(&bitmaps[BM_TRACKED], PAL_CURSNORM);
     
     cx = tracked_xoff[at->at_tracked_curs]-2;
     cy = 8*16-2;
@@ -2216,10 +2270,10 @@ void gui_render_tracked( BOOL force )
     if( ( at->at_tracked_curs % 9 ) == 0 )
       mx = cx+24+3;
     
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], cx, cy, mx, cy+1, col);
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], cx, my-1, mx, my, col);
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], cx, cy, cx+1, my, col);
-    fillrect_xy_bm(&bitmaps[BM_TRACKED], mx-1, cy, mx, my, col);
+    fillrect_xy(&bitmaps[BM_TRACKED], cx, cy, mx, cy+1);
+    fillrect_xy(&bitmaps[BM_TRACKED], cx, my-1, mx, my);
+    fillrect_xy(&bitmaps[BM_TRACKED], cx, cy, cx+1, my);
+    fillrect_xy(&bitmaps[BM_TRACKED], mx-1, cy, mx, my);
   }
 
   put_bitmap( BM_TRACKED, TRACKED_X, TRACKED_Y, bw, TRACKED_H );
@@ -2228,7 +2282,6 @@ void gui_render_tracked( BOOL force )
 
 void gui_render_inslist( BOOL force )
 {
-#ifndef __SDL_WRAPPER__
   struct ahx_tune *at;
   struct ahx_instrument *in;
   int16 curi;
@@ -2252,8 +2305,8 @@ void gui_render_inslist( BOOL force )
       ( force == FALSE ) )
     return;
 
-  IGraphics->SetRPAttrs( &bitmaps[BM_INSLIST].rp, RPTAG_APenColor, pal[PAL_BACK], TAG_DONE );
-  IGraphics->RectFill( &bitmaps[BM_INSLIST].rp, 0, 0, INSLIST_MX, INSLIST_MY );
+  set_fpen(&bitmaps[BM_INSLIST], PAL_BACK);
+  fillrect_xy(&bitmaps[BM_INSLIST], 0, 0, INSLIST_MX, INSLIST_MY);
 
   if( at )
   {
@@ -2262,9 +2315,7 @@ void gui_render_inslist( BOOL force )
     
     if( at->at_topins < 1 ) at->at_topins = 1;
 
-    IGraphics->SetRPAttrs( &bitmaps[BM_INSLIST].rp, RPTAG_APenColor, pal[PAL_TEXT],
-                                                    RPTAG_BPenColor, pal[PAL_BACK],
-                                                    TAG_DONE );
+    set_pens(&bitmaps[BM_INSLIST], PAL_TEXT, PAL_BACK);
     for( i=0, j=at->at_topins; i<9; i++, j++ )
     {
       sprintf( tmp, "%02ld                      ", j );
@@ -2277,40 +2328,34 @@ void gui_render_inslist( BOOL force )
       }
 
       if( j == curi )
-        IGraphics->SetRPAttrs( &bitmaps[BM_INSLIST].rp, RPTAG_BPenColor, pal[PAL_BARMID], TAG_DONE );
+        set_bpen(&bitmaps[BM_INSLIST], PAL_BARMID);
       if( j == curi+1 )
-        IGraphics->SetRPAttrs( &bitmaps[BM_INSLIST].rp, RPTAG_BPenColor, pal[PAL_BACK], TAG_DONE );
+        set_bpen(&bitmaps[BM_INSLIST], PAL_BACK);
 
-      IGraphics->Move( &bitmaps[BM_INSLIST].rp, 0, i*14+sfxfont->tf_Baseline+5 );
-      IGraphics->Text( &bitmaps[BM_INSLIST].rp, tmp, 24 );
+      printstrlen(&bitmaps[BM_INSLIST], tmp, 24, 0, i*14+5);
     }
 
     if( curi >= at->at_topins )
     {
       k = (curi-at->at_topins)*14+5;
-      IGraphics->SetRPAttrs( &bitmaps[BM_INSLIST].rp, RPTAG_APenColor, pal[PAL_BARLIGHT], TAG_DONE );
-      IGraphics->Move( &bitmaps[BM_INSLIST].rp,        0, k-1 );
-      IGraphics->Draw( &bitmaps[BM_INSLIST].rp, INSLIST_MX, k-1 );
-      IGraphics->SetRPAttrs( &bitmaps[BM_INSLIST].rp, RPTAG_APenColor, pal[PAL_BARDARK], TAG_DONE );
-      IGraphics->Move( &bitmaps[BM_INSLIST].rp,        0, k+14 );
-      IGraphics->Draw( &bitmaps[BM_INSLIST].rp, INSLIST_MX, k+14 );
+      set_fpen(&bitmaps[BM_INSLIST], PAL_BARLIGHT);
+      fillrect_xy(&bitmaps[BM_INSLIST], 0, k-1, INSLIST_MX, k-1);
+      set_fpen(&bitmaps[BM_INSLIST], PAL_BARDARK);
+      fillrect_xy(&bitmaps[BM_INSLIST], 0, k+14, INSLIST_MX, k+14);
     }
 
-    IGraphics->SetRPAttrs( &bitmaps[BM_INSLIST].rp, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
-    IGraphics->Move( &bitmaps[BM_INSLIST].rp, 17, 0 );
-    IGraphics->Draw( &bitmaps[BM_INSLIST].rp, 17, INSLIST_MY );
+    set_fpen(&bitmaps[BM_INSLIST], PAL_TEXT);
+    fillrect_xy(&bitmaps[BM_INSLIST], 17, 0, 17, INSLIST_MY);
   }
   
   put_bitmap( BM_INSLIST, INSLIST_X, INSLIST_Y, INSLIST_W, INSLIST_H );
   insls_lastcuri = curi;
   insls_lasttune = at;
   insls_lasttopi = at->at_topins;
-#endif
 }
 
 void gui_render_posed( BOOL force )
 {
-#ifndef __SDL_WRAPPER__
   struct ahx_tune *at;
   int16 posnr=0;
   int32 i, j, k, l, m, lch=0, dch, ech;
@@ -2356,33 +2401,33 @@ void gui_render_posed( BOOL force )
   
   if( ( !at ) || ( force ) )
   {
-    IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_APenColor, pal[PAL_BACK], TAG_DONE );
-    IGraphics->RectFill( &bitmaps[BM_POSED].rp, 0, 0, POSED_MX, POSED_MY );
-    IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_APenColor, pal[PAL_BARMID], TAG_DONE );
-    IGraphics->RectFill( &bitmaps[BM_POSED].rp, 0, 3*14, POSED_MX, 3*14+13 );
+    set_fpen(&bitmaps[BM_POSED], PAL_BACK);
+    fillrect_xy(&bitmaps[BM_POSED], 0, 0, POSED_MX, POSED_MY);
+    set_fpen(&bitmaps[BM_POSED], PAL_BARMID);
+    fillrect_xy( &bitmaps[BM_POSED], 0, 3*14, POSED_MX, 3*14+13 );
   }
   
   if( at )
   {
     if( posnr < 3 )
     {
-      IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_APenColor, pal[PAL_BACK], TAG_DONE );
-      IGraphics->RectFill( &bitmaps[BM_POSED].rp, 0, 0, POSED_MX, ((3-posnr)*14)-1 );
+      set_fpen(&bitmaps[BM_POSED], PAL_BACK);
+      fillrect_xy( &bitmaps[BM_POSED], 0, 0, POSED_MX, ((3-posnr)*14)-1 );
     }
   
     if( posnr > 996 )
     {
-      IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_APenColor, pal[PAL_BACK], TAG_DONE );
-      IGraphics->RectFill( &bitmaps[BM_POSED].rp, 0, (1003-posnr)*14, POSED_MX, POSED_MY );
+      set_fpen(&bitmaps[BM_POSED], PAL_BACK);
+      fillrect_xy( &bitmaps[BM_POSED], 0, (1003-posnr)*14, POSED_MX, POSED_MY );
     }
 
-    IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
-    for( i=posnr-3, j=sfxfont->tf_Baseline; i<posnr+4; i++, j+=14 )
+    set_fpen(&bitmaps[BM_POSED], PAL_TEXT);
+    for( i=posnr-3, j=0; i<posnr+4; i++, j+=14 )
     {
       if( i == posnr )
-        IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_BPenColor, pal[PAL_BARMID], TAG_DONE );
+        set_bpen(&bitmaps[BM_POSED], PAL_BARMID);
       if( i == posnr+1 )
-        IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_BPenColor, pal[PAL_BACK], TAG_DONE );
+        set_bpen(&bitmaps[BM_POSED], PAL_BACK);
      
       if( ( i >= 0 ) && ( i < 1000 ) )
       {
@@ -2391,8 +2436,7 @@ void gui_render_posed( BOOL force )
           sprintf( &pbuf[l*7+4], "%03d %02X ",
             at->at_Positions[i].pos_Track[k]&0xff,
             at->at_Positions[i].pos_Transpose[k]&0xff );
-        IGraphics->Move( &bitmaps[BM_POSED].rp, 0, j );
-        IGraphics->Text( &bitmaps[BM_POSED].rp, pbuf, strlen( pbuf ) );
+        printstr(&bitmaps[BM_POSED], pbuf, 0, j);
       }
     }
     
@@ -2441,15 +2485,12 @@ void gui_render_posed( BOOL force )
         it = at->at_cbpmarktop>(posnr-3) ? at->at_cbpmarktop : (posnr-3);
         ib = at->at_cbpmarkbot<(posnr+3) ? at->at_cbpmarkbot : (posnr+3);
         
-        IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp,
-          RPTAG_APenColor, pal[PAL_BACK],
-          RPTAG_BPenColor, pal[PAL_TEXT],
-          TAG_DONE );
+        set_pens(&bitmaps[BM_POSED], PAL_BACK, PAL_TEXT);
         
         pbuf[0]=0;
 
         // Nice! or... more accurately Confusing!
-        for( i=it, j=sfxfont->tf_Baseline+(14*(it-(posnr-3)));
+        for( i=it, j=14*(it-(posnr-3));
              i<=ib;
              i++, j+=14 )
         {
@@ -2468,40 +2509,31 @@ void gui_render_posed( BOOL force )
             }
           }
           pbuf[m-1] = 0;
-          IGraphics->Move( &bitmaps[BM_POSED].rp, ((kl-lch)*49)+(at->at_cbpmarklftcol*28)+28, j );
-          IGraphics->Text( &bitmaps[BM_POSED].rp, pbuf, strlen( pbuf ) );
+          printstr(&bitmaps[BM_POSED], pbuf, ((kl-lch)*49)+(at->at_cbpmarklftcol*28)+28, j);
         }
       }
     }
 
-    IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp,
-      RPTAG_APenColor, pal[PAL_POSEDCHIND],
-      RPTAG_BPenColor, pal[PAL_BARMID], 
-      TAG_DONE );
+    set_pens(&bitmaps[BM_POSED], PAL_POSEDCHIND, PAL_BARMID);
     for( k=lch, l=0; k<ech; k++, l++ )
     {
       sprintf( pbuf, "%ld ", k+1 );
-      IGraphics->Move( &bitmaps[BM_POSED].rp, l*49+25, sfxfont->tf_Baseline );
-      IGraphics->Text( &bitmaps[BM_POSED].rp, pbuf, strlen( pbuf ) );
+      printstr(&bitmaps[BM_POSED], pbuf, l*49+25, 0);
     }      
-    IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_BPenColor, pal[PAL_BACK], TAG_DONE );
+    set_bpen(&bitmaps[BM_POSED], PAL_BACK);
   }
-  
-  IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_APenColor, pal[PAL_BARLIGHT], TAG_DONE );
-  IGraphics->Move( &bitmaps[BM_POSED].rp,        0, 3*14-1 );
-  IGraphics->Draw( &bitmaps[BM_POSED].rp, POSED_MX, 3*14-1 );
-  IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_APenColor, pal[PAL_BARDARK], TAG_DONE );
-  IGraphics->Move( &bitmaps[BM_POSED].rp,        0, 4*14 );
-  IGraphics->Draw( &bitmaps[BM_POSED].rp, POSED_MX, 4*14 );
 
-  IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
-  IGraphics->Move( &bitmaps[BM_POSED].rp, 24, 0 );
-  IGraphics->Draw( &bitmaps[BM_POSED].rp, 24, POSED_MY );
+  set_fpen(&bitmaps[BM_POSED], PAL_BARLIGHT);
+  fillrect_xy(&bitmaps[BM_POSED], 0, 3*14-1, POSED_MX, 3*14-1);
+  set_fpen(&bitmaps[BM_POSED], PAL_BARDARK);
+  fillrect_xy(&bitmaps[BM_POSED], 0, 4*14, POSED_MX, 4*14);
+
+  set_fpen(&bitmaps[BM_POSED], PAL_TEXT);
+  fillrect_xy(&bitmaps[BM_POSED], 24, 0, 24, POSED_MY);
   
   for( i=1; i<6; i++ )
   {
-    IGraphics->Move( &bitmaps[BM_POSED].rp, 24+i*49, 0 );
-    IGraphics->Draw( &bitmaps[BM_POSED].rp, 24+i*49, POSED_MY );
+    fillrect_xy(&bitmaps[BM_POSED], 24+i*49, 0, 24+i*49, POSED_MY);
   }
 
   if( at->at_editing == E_POS )
@@ -2512,25 +2544,19 @@ void gui_render_posed( BOOL force )
     cy = 3*14-2;
     mx = cx+7+3;
     my = cy+14+3;
-    
-    IGraphics->RectFill( &bitmaps[BM_POSED].rp, cx, cy, mx, cy+1 );
-    IGraphics->RectFill( &bitmaps[BM_POSED].rp, cx, my-1, mx, my );
-    IGraphics->RectFill( &bitmaps[BM_POSED].rp, cx, cy, cx+1, my );
-    IGraphics->RectFill( &bitmaps[BM_POSED].rp, mx-1, cy, mx, my );
+
+    fillrect_xy(&bitmaps[BM_POSED], cx, cy, mx, cy+1 );
+    fillrect_xy(&bitmaps[BM_POSED], cx, my-1, mx, my );
+    fillrect_xy(&bitmaps[BM_POSED], cx, cy, cx+1, my );
+    fillrect_xy(&bitmaps[BM_POSED], mx-1, cy, mx, my );
   }
   
   put_bitmap( BM_POSED, POSED_X, POSED_Y, POSED_W, POSED_H );
-#endif
 }
 
 void gui_render_tracker( BOOL force )
 {
   int32 panel, i;
-#ifndef __SDL_WRAPPER__
-  struct RastPort *maindraw = mainwin->RPort;
-#else
-  struct SDL_Surface *maindraw = ssrf;
-#endif
 
   if( curtune == NULL )
     panel = PN_TRACKER;
@@ -2544,7 +2570,7 @@ void gui_render_tracker( BOOL force )
   gui_render_inslist( force );
   gui_set_various_things( curtune );
   for( i=0; i<TB_END; i++ )
-    gui_render_tbox( maindraw, &tbx[i] );  
+    gui_render_tbox( &mainbm, &tbx[i] );  
 }
 
 void gui_render_timer( BOOL force )
@@ -2563,28 +2589,18 @@ void gui_render_timer( BOOL force )
   tmr_lasttune = curtune;
   tmr_lasttime = (curtune->at_hours<<16)|(curtune->at_mins<<8)|curtune->at_secs;
 
-#ifndef __SDL_WRAPPER__
   sprintf( tbuf, "%02d:%02d:%02d", curtune->at_hours, curtune->at_mins, curtune->at_secs );  
 
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_DrMd,      JAM1,
-                             RPTAG_Font,      fixfont,
-                             RPTAG_APenColor, pal[PAL_BACK],
-                             TAG_DONE );
-  IGraphics->RectFill( mainwin->RPort, 546, 132, 546+65, 132+15 );
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_APenColor, pal[PAL_TEXT], TAG_DONE );
-  IGraphics->Move( mainwin->RPort, 546, 132+fixfont->tf_Baseline );
-  IGraphics->Text( mainwin->RPort, tbuf, strlen( tbuf ) );
-#endif
+  set_font(&mainbm, FONT_FIX, FALSE);
+  set_fpen(&mainbm, PAL_BACK);
+  fillrect_xy(&mainbm, 546, 132, 546+65, 132+15 );
+  set_fpen(&mainbm, PAL_TEXT);
+  printstr(&mainbm, tbuf, 546, 132);
 }
 
 void gui_render_tunepanel( BOOL force )
 {
   int32 panel, i;
-#ifndef __SDL_WRAPPER__
-  struct RastPort *maindraw = mainwin->RPort;
-#else
-  struct SDL_Surface *maindraw = ssrf;
-#endif
 
   if( curtune == NULL )
     panel = PN_TRACKER;
@@ -2615,7 +2631,7 @@ void gui_render_tunepanel( BOOL force )
         for( i=0; i<INB_END; i++ )
           gui_render_nbox( curtune, PN_INSED, &ins_nb[i] );
         for( i=0; i<TB_END; i++ )
-          gui_render_tbox( maindraw, &tbx[i] );  
+          gui_render_tbox( &mainbm, &tbx[i] );  
         gui_render_inslistb( force );
       }
       break;
@@ -3156,22 +3172,22 @@ void gui_loadskinsettings( void )
 
     if( gui_decode_pstr( "font1", tmp ) )
     {
-      strcpy( prpfontname, tmp );
+//      strcpy( prpfontname, tmp );
       continue;
     }
     
     if( gui_decode_pstr( "font2", tmp ) )
     {
-      strcpy( fixfontname, tmp );
+//      strcpy( fixfontname, tmp );
       continue;
     }
 
     if( gui_decode_pstr( "font3", tmp ) )
     {
-      strcpy( sfxfontname, tmp );
+//      strcpy( sfxfontname, tmp );
       continue;
     }
-    
+
     if( gui_decode_pstr( "tabtextback", tmp ) )
     {
       if( strcasecmp( tmp, "Yes" ) == 0 )
@@ -3205,10 +3221,12 @@ void gui_loadskinsettings( void )
         if(( tmp[i] >= 'a' ) && ( tmp[i] <= 'f' )) col += tmp[i]-('a'-10);
         i++;
       }
-#ifdef __SDL_WRAPPER__
-      pal[pen] = SDL_MapRGB(ssrf->format, (col>>16)&0xff, (col>>8)&0xff, col&0xff);
-#else
+
+      printf("Pen %d is %06x\n", pen, col);
+
       pal[pen] = col;
+#ifdef __SDL_WRAPPER__
+      mappal[pen] = SDL_MapRGB(ssrf->format, (col>>16)&0xff, (col>>8)&0xff, col&0xff);
 #endif  
       // Just in case the skin doesn't specify
       // tab colours
@@ -3219,6 +3237,9 @@ void gui_loadskinsettings( void )
     }    
   }
   
+  printf("btnshadow = %06x\n", pal[PAL_BTNSHADOW]);
+  printf("btntext   = %06x\n", pal[PAL_BTNTEXT]);
+
   fclose(f);
 }
 
@@ -3503,6 +3524,15 @@ BOOL gui_open( void )
   }
 #endif // __SDL_WRAPPER__
 
+  memset(&mainbm, 0, sizeof(mainbm));
+  mainbm.w = 800;
+  mainbm.h = 600;
+#ifndef __SDL_WRAPPER__
+  memcpy(&mainbm.rp, mainwin->RPort, sizeof(struct RastPort));
+#else
+  mainbm.srf = ssrf;
+#endif
+
   if( !gui_open_skin_images() )
   {
     printf( "Error loading skin. Reverting to SIDMonster-Light...\n" );
@@ -3538,41 +3568,43 @@ BOOL gui_open( void )
     printf( "Unable to open '%s'\n", prpfontattr.ta_Name );
     return FALSE;
   }
-  
-  IGraphics->SetRPAttrs( &bitmaps[BM_POSED].rp, RPTAG_DrMd,      JAM2,
-                                                RPTAG_Font,      sfxfont,
-                                                RPTAG_APenColor, pal[PAL_BACK],
-                                                RPTAG_BPenColor, pal[PAL_BACK],
-                                                TAG_DONE );
-  IGraphics->RectFill( &bitmaps[BM_POSED].rp, 0, 0, POSED_MX, POSED_MY );
+#else
+  fixttf = TTF_OpenFont(fixfontname, 14);
+  if( !fixttf )
+  {
+    printf( "Unable to open '%s'\n", fixfontname );
+    return FALSE;
+  }
 
-  IGraphics->SetRPAttrs( &bitmaps[BM_TRACKED].rp, RPTAG_DrMd,      JAM2,
-                                                  RPTAG_Font,      fixfont,
-                                                  RPTAG_APenColor, pal[PAL_BACK],
-                                                  RPTAG_BPenColor, pal[PAL_BACK],
-                                                  TAG_DONE );
-  IGraphics->RectFill( &bitmaps[BM_TRACKED].rp, 0, 0, TRACKED_MX, TRACKED_MY );
+  sfxttf = TTF_OpenFont(sfxfontname, 12);
+  if( !sfxttf )
+  {
+    printf( "Unable to open '%s'\n", sfxfontname );
+    return FALSE;
+  }
 
-  IGraphics->SetRPAttrs( &bitmaps[BM_PERF].rp, RPTAG_DrMd,      JAM2,
-                                               RPTAG_Font,      fixfont,
-                                               RPTAG_APenColor, pal[PAL_BACK],
-                                               RPTAG_BPenColor, pal[PAL_BACK],
-                                               TAG_DONE );
-
-  IGraphics->SetRPAttrs( &bitmaps[BM_INSLIST].rp, RPTAG_DrMd,      JAM2,
-                                                  RPTAG_Font,      sfxfont,
-                                                  RPTAG_APenColor, pal[PAL_BACK],
-                                                  RPTAG_BPenColor, pal[PAL_BACK],
-                                                  TAG_DONE );
-  IGraphics->RectFill( &bitmaps[BM_INSLIST].rp, 0, 0, INSLIST_MX, INSLIST_MY );
-
-  IGraphics->SetRPAttrs( &bitmaps[BM_INSLISTB].rp, RPTAG_DrMd,      JAM2,
-                                                   RPTAG_Font,      fixfont,
-                                                   RPTAG_APenColor, pal[PAL_BACK],
-                                                   RPTAG_BPenColor, pal[PAL_BACK],
-                                                   TAG_DONE );
-  IGraphics->RectFill( &bitmaps[BM_INSLISTB].rp, 0, 0, INSLSTB_MX, INSLSTB_MY );
+  prpttf = TTF_OpenFont(prpfontname, 14);
+  if( !prpttf )
+  {
+    printf( "Unable to open '%s'\n", prpfontname );
+    return FALSE;
+  }
 #endif
+
+  set_font(&bitmaps[BM_POSED], FONT_SFX, TRUE);
+  set_pens(&bitmaps[BM_POSED], PAL_BACK, PAL_BACK);
+  fillrect_xy(&bitmaps[BM_POSED], 0, 0, POSED_MX, POSED_MY);
+  set_font(&bitmaps[BM_TRACKED], FONT_FIX, TRUE);
+  set_pens(&bitmaps[BM_TRACKED], PAL_BACK, PAL_BACK);
+  fillrect_xy(&bitmaps[BM_TRACKED], 0, 0, TRACKED_MX, TRACKED_MY);
+  set_font(&bitmaps[BM_PERF], FONT_FIX, TRUE);
+  set_pens(&bitmaps[BM_PERF], PAL_BACK, PAL_BACK);
+  set_font(&bitmaps[BM_INSLIST], FONT_FIX, TRUE);
+  set_pens(&bitmaps[BM_INSLIST], PAL_BACK, PAL_BACK);
+  fillrect_xy(&bitmaps[BM_INSLIST], 0, 0, INSLIST_MX, TRACKED_MY);
+  set_font(&bitmaps[BM_INSLISTB], FONT_FIX, TRUE);
+  set_pens(&bitmaps[BM_INSLISTB], PAL_BACK, PAL_BACK);
+  fillrect_xy(&bitmaps[BM_INSLISTB], 0, 0, INSLIST_MX, TRACKED_MY);
 
   for( i=0; i<8; i++ )
   {
@@ -3668,11 +3700,15 @@ BOOL gui_init( void )
 #ifndef __SDL_WRAPPER__
   iev.ie_Class    = IECLASS_RAWKEY;
   iev.ie_SubClass = 0;
-#endif  
-
   strcpy( fixfontname, "Bitstream Vera Sans Mono.font" );
   strcpy( sfxfontname, "Bitstream Vera Sans Mono.font" );
   strcpy( prpfontname, "Bitstream Vera Sans.font" );
+#else
+  strcpy( fixfontname, "ttf/DejaVuSansMono.ttf" );
+  strcpy( sfxfontname, "ttf/DejaVuSansMono.ttf" );
+  strcpy( prpfontname, "ttf/DejaVuSans.ttf" );
+#endif  
+
   strcpy( skinext,     ".png" );
 
 #ifndef __SDL_WRAPPER__
@@ -3791,19 +3827,11 @@ void gui_press_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
 
   if( bbnk[i].name == NULL ) return;
 
-#ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_DrMd,      JAM1,
-                                         RPTAG_Font,      prpfont,
-                                         RPTAG_APenColor, pal[PAL_BTNSHADOW],
-                                         TAG_DONE );
-
-  IGraphics->Move( mainwin->RPort, bbnk[i].x+bbnk[i].xo+1, bbnk[i].y+5+prpfont->tf_Baseline );
-  IGraphics->Text( mainwin->RPort, bbnk[i].name, strlen( bbnk[i].name ) );
-
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_APenColor, pal[PAL_BTNTEXT], TAG_DONE );
-  IGraphics->Move( mainwin->RPort, bbnk[i].x+bbnk[i].xo, bbnk[i].y+4+prpfont->tf_Baseline );
-  IGraphics->Text( mainwin->RPort, bbnk[i].name, strlen( bbnk[i].name ) );
-#endif
+  set_font(&mainbm, FONT_PRP, FALSE);
+  set_fpen(&mainbm, PAL_BTNSHADOW);
+  printstr(&mainbm, bbnk[i].name, bbnk[i].x+bbnk[i].xo+1, bbnk[i].y+5);
+  set_fpen(&mainbm, PAL_BTNTEXT);
+  printstr(&mainbm, bbnk[i].name, bbnk[i].x+bbnk[i].xo, bbnk[i].y+4);
 }
 
 void gui_release_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
@@ -3836,19 +3864,11 @@ void gui_release_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button
 
   if( bbnk[i].name == NULL ) return;
 
-#ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_DrMd,      JAM1,
-                                         RPTAG_Font,      prpfont,
-                                         RPTAG_APenColor, pal[PAL_BTNSHADOW],
-                                         TAG_DONE );
-
-  IGraphics->Move( mainwin->RPort, bbnk[i].x+bbnk[i].xo+1, bbnk[i].y+5+prpfont->tf_Baseline );
-  IGraphics->Text( mainwin->RPort, bbnk[i].name, strlen( bbnk[i].name ) );
-
-  IGraphics->SetRPAttrs( mainwin->RPort, RPTAG_APenColor, pal[PAL_BTNTEXT], TAG_DONE );
-  IGraphics->Move( mainwin->RPort, bbnk[i].x+bbnk[i].xo, bbnk[i].y+4+prpfont->tf_Baseline );
-  IGraphics->Text( mainwin->RPort, bbnk[i].name, strlen( bbnk[i].name ) );
-#endif
+  set_font(&mainbm, FONT_PRP, FALSE);
+  set_fpen(&mainbm, PAL_BTNSHADOW);
+  printstr(&mainbm, bbnk[i].name, bbnk[i].x+bbnk[i].xo+1, bbnk[i].y+5);
+  set_fpen(&mainbm, PAL_BTNTEXT);
+  printstr(&mainbm, bbnk[i].name, bbnk[i].x+bbnk[i].xo, bbnk[i].y+4);
 }
 
 void gui_copyposregion( struct ahx_tune *at, BOOL cutting )
@@ -4939,11 +4959,6 @@ BOOL gui_check_tbox_press( int16 x, int16 y )
 {
   int32 i;
   int16 panel;
-#ifndef __SDL_WRAPPER__
-  struct RastPort *maindraw = mainwin->RPort;
-#else
-  struct SDL_Surface *maindraw = ssrf;
-#endif
 
   panel = PN_TRACKER;
   if( curtune )
@@ -4962,14 +4977,14 @@ BOOL gui_check_tbox_press( int16 x, int16 y )
         if( ( etbx != NULL ) && ( etbx != &tbx[i] ) )
         {
           etbx->flags &= ~TBF_ACTIVE;
-          gui_render_tbox( maindraw, etbx );
+          gui_render_tbox( &mainbm, etbx );
           gui_tbox_finish_editing();
         }
         setbefore_string( curtune, tbx[i].content );
         etbx = &tbx[i];
         etbx->flags |= TBF_ACTIVE;
         etbx->cpos = ((x-etbx->x)>>3)+etbx->spos;
-        gui_render_tbox( maindraw, etbx );
+        gui_render_tbox( &mainbm, etbx );
 #ifdef __SDL_WRAPPER__
         SDL_EnableUNICODE(SDL_TRUE);
 #endif
@@ -5289,11 +5304,6 @@ void gui_wheelybin( int16 mousex, int16 mousey, int16 wheeldir )
 void gui_mouse_handler( int16 x, int16 y, uint32 code )
 {
   int32 i, j;
-#ifndef __SDL_WRAPPER__
-  struct RastPort *maindraw = mainwin->RPort;
-#else
-  struct SDL_Surface *maindraw = ssrf;
-#endif
 
   switch( code )
   {
@@ -5303,7 +5313,7 @@ void gui_mouse_handler( int16 x, int16 y, uint32 code )
       if( etbx )
       {
         etbx->flags &= ~TBF_ACTIVE;
-        gui_render_tbox( maindraw, etbx );
+        gui_render_tbox( &mainbm, etbx );
         gui_tbox_finish_editing();
         return;
       }
@@ -5597,7 +5607,7 @@ void gui_mouse_handler( int16 x, int16 y, uint32 code )
           etbx = &tbx[TB_INSNAME2];
           if( x < etbx->x ) x = etbx->x;
           etbx->cpos = ((x-etbx->x)>>3)+etbx->spos;
-          gui_render_tbox( maindraw, etbx );
+          gui_render_tbox( &mainbm, etbx );
         }
       }
       
@@ -5662,11 +5672,7 @@ void gui_posed_moveright( void )
   }
 }
 
-#ifndef __SDL_WRAPPER__
-void gui_textbox_keypress( struct RastPort *draw, struct textbox **ttbx, struct IntuiMessage *msg )
-#else
-void gui_textbox_keypress( struct SDL_Surface *draw, struct textbox **ttbx, struct IntuiMessage *msg )
-#endif
+void gui_textbox_keypress( struct rawbm *bm, struct textbox **ttbx, struct IntuiMessage *msg )
 {
   int32 i, j, actual;
   TEXT kbuf[80];
@@ -5683,14 +5689,14 @@ void gui_textbox_keypress( struct SDL_Surface *draw, struct textbox **ttbx, stru
         (*ttbx)->cpos = 0;
       else
         if( (*ttbx)->cpos > 0 ) (*ttbx)->cpos--;
-      gui_render_tbox( draw, *ttbx );
+      gui_render_tbox( bm, *ttbx );
       break;
     case 78:  // Right arrow
       if( lqual & (IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT) )
         (*ttbx)->cpos = strlen( (*ttbx)->content );
       else
         (*ttbx)->cpos++;
-      gui_render_tbox( draw, *ttbx );
+      gui_render_tbox( bm, *ttbx );
       break;
     case 65:  // Backspace
       if( (*ttbx)->cpos == 0 ) break;
@@ -5701,32 +5707,32 @@ void gui_textbox_keypress( struct SDL_Surface *draw, struct textbox **ttbx, stru
       {
         for( i=(*ttbx)->cpos; i<=j; i++ ) (*ttbx)->content[i-(*ttbx)->cpos] = (*ttbx)->content[i];
         (*ttbx)->cpos = 0;
-        gui_render_tbox( draw, *ttbx );
+        gui_render_tbox( bm, *ttbx );
         break;
       }
       
       for( i=(*ttbx)->cpos-1; i<j; i++ ) (*ttbx)->content[i] = (*ttbx)->content[i+1];
       (*ttbx)->cpos--;
-      gui_render_tbox( draw, *ttbx );
+      gui_render_tbox( bm, *ttbx );
       break;
     case 70:  // Del
       if( lqual & (IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT) )
       {
         (*ttbx)->content[(*ttbx)->cpos] = 0;
-        gui_render_tbox( draw, *ttbx );
+        gui_render_tbox( bm, *ttbx );
         break;
       }
 
       if( (*ttbx)->cpos >= strlen( (*ttbx)->content ) ) break;
       j = strlen( (*ttbx)->content );
       for( i=(*ttbx)->cpos; i<j; i++ ) (*ttbx)->content[i] = (*ttbx)->content[i+1];
-      gui_render_tbox( draw, *ttbx );
+      gui_render_tbox( bm, *ttbx );
       break;
     case 68:  // Enter
     case 197:  // ESC
       (*ttbx)->flags &= ~TBF_ACTIVE;
-      gui_render_tbox( draw, *ttbx );
-      if( draw == ssrf )
+      gui_render_tbox( bm, *ttbx );
+      if( bm == &mainbm )
         gui_tbox_finish_editing();
       else
         gui_ptbox_finish_editing();
@@ -5751,7 +5757,7 @@ void gui_textbox_keypress( struct SDL_Surface *draw, struct textbox **ttbx, stru
         for( i=j+1; i>(*ttbx)->cpos; i-- ) (*ttbx)->content[i] = (*ttbx)->content[i-1];
         (*ttbx)->content[(*ttbx)->cpos] = kbuf[0];
         (*ttbx)->cpos++;
-        gui_render_tbox( draw, *ttbx );
+        gui_render_tbox( bm, *ttbx );
 //      } else {
 //        if( msg->Code < 128 )
 //          printf( "%d (%d)\n", msg->Code, msg->Code+128 );
@@ -5956,9 +5962,15 @@ BOOL gui_restart( void )
 #endif
 
   // Set some defaults
+#ifndef __SDL_WRAPPER__
   strcpy( fixfontname, "Bitstream Vera Sans Mono.font" );
   strcpy( sfxfontname, "Bitstream Vera Sans Mono.font" );
   strcpy( prpfontname, "Bitstream Vera Sans.font" );
+#else
+  strcpy( fixfontname, "ttf/DejaVuSansMono.ttf" );
+  strcpy( sfxfontname, "ttf/DejaVuSansMono.ttf" );
+  strcpy( prpfontname, "ttf/DejaVuSans.ttf" );
+#endif  
   strcpy( skinext,     ".png" );
 
   numzones = 0;
@@ -6230,11 +6242,7 @@ void gui_handler( uint32 gotsigs )
           // In a textbox?
           if( etbx != NULL )
           {
-#ifndef __SDL_WRAPPER__
-            gui_textbox_keypress( mainwin->RPort, &etbx, msg );
-#else
-            gui_textbox_keypress( ssrf, &etbx, msg );
-#endif
+            gui_textbox_keypress( &mainbm, &etbx, msg );
             break;
           }
           
@@ -8254,6 +8262,9 @@ void gui_shutdown( void )
 #else
   for( i=0; i<BM_END; i++ ) if( bitmaps[i].srf ) SDL_FreeSurface( bitmaps[i].srf );
   for( i=0; i<TB_END; i++ ) if( tbx[i].bm.srf )  SDL_FreeSurface( tbx[i].bm.srf );
+  TTF_CloseFont( prpttf ); prpttf = NULL;
+  TTF_CloseFont( fixttf ); fixttf = NULL;
+  TTF_CloseFont( sfxttf ); sfxttf = NULL;
 #endif
 }
 

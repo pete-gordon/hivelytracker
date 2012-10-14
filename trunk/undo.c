@@ -18,12 +18,7 @@ extern int16                  insls_lastcuri;
 extern int16                  inslsb_lastcuri;
 extern int16                  posed_lastposnr;
 extern int16                  trked_lastposnr;
-
-#ifndef __SDL_WRAPPER__
-extern struct Window         *mainwin;
-#else
-extern struct SDL_Surface    *ssrf;
-#endif
+extern struct rawbm mainbm;
 
 struct textbox *show_tbox;
 uint32 mubsizes[] = { 0, 262144, 524288, 1048576, 2097152, 4194304 };
@@ -1010,11 +1005,7 @@ void show_changed( struct ahx_tune *at, int32 wpanel, BOOL forceall )
 
   if( show_tbox )
   {
-#ifndef __SDL_WRAPPER__
-    gui_render_tbox( mainwin->RPort, show_tbox );
-#else
-    gui_render_tbox( ssrf, show_tbox );
-#endif
+    gui_render_tbox( &mainbm, show_tbox );
     gui_render_tabs();
   }
 
