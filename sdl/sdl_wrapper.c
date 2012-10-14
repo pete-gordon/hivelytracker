@@ -208,6 +208,16 @@ uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym)
     case SDLK_8:         return 8;
     case SDLK_9:         return 9;
     case SDLK_0:         return 10;
+    case SDLK_KP0:       return 0x0f;
+    case SDLK_KP1:       return 0x1d;
+    case SDLK_KP2:       return 0x1e;
+    case SDLK_KP3:       return 0x1f;
+    case SDLK_KP4:       return 0x2d;
+    case SDLK_KP5:       return 0x2e;
+    case SDLK_KP6:       return 0x2f;
+    case SDLK_KP7:       return 0x3d;
+    case SDLK_KP8:       return 0x3e;
+    case SDLK_KP9:       return 0x3f;
     case SDLK_KP_PERIOD: return 60;
     case SDLK_q:         return 16;
     case SDLK_w:         return 17;

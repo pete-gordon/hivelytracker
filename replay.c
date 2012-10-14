@@ -70,12 +70,11 @@ struct MsgPort    *ahi_mp;
 struct AHIRequest *ahi_io[2] = { NULL, NULL };
 int32              ahi_dev = -1;
 #else
-#define FREQ 44100
-#define HIVELY_LEN FREQ/50
-#define OUTPUT_LEN 4096
+#define FREQ 48000
+#define OUTPUT_LEN FREQ/50
 static struct ahx_tune *rp_playtune = NULL;
-size_t hivelyIndex=0;
-int16 hivelyLeft[HIVELY_LEN], hivelyRight[HIVELY_LEN];
+int16 rp_audiobuffer[OUTPUT_LEN*2];
+uint32 rp_audiobuflen = OUTPUT_LEN*2;
 #endif
 
 /*
@@ -3892,32 +3891,10 @@ void rp_subtask_main( void )
 #else
 void do_the_music( void *dummy, int8 *stream, int length )
 {
-  int16 *out;
-  int i;
-  size_t streamPos = 0;
-  length = length >> 1;
-
   if((rp_state != STS_IDLE) && (rp_playtune))
   {
-    // Mix to 16bit interleaved stereo
-    out = (int16*) stream;
-    // Flush remains of previous frame
-    for(i = hivelyIndex; i < (HIVELY_LEN) && streamPos < length; i++)
-    {
-      out[streamPos++] = hivelyLeft[i];
-      out[streamPos++] = hivelyRight[i];
-    }
-
-    while(streamPos < length)
-    {
-      rp_decode_frame( rp_playtune, (int8 *) hivelyLeft, (int8 *) hivelyRight, 2 );
-      for(i = 0; i < (HIVELY_LEN) && streamPos < length; i++)
-      {
-        out[streamPos++] = hivelyLeft[i];
-        out[streamPos++] = hivelyRight[i];
-      }
-    }
-    hivelyIndex = i;
+    rp_decode_frame( rp_playtune, (int8*)&rp_audiobuffer[0], (int8*)&rp_audiobuffer[1], 4 );
+    memcpy(stream, rp_audiobuffer, length);
   }
   else
   {
