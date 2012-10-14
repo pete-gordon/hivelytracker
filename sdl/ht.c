@@ -22,7 +22,7 @@ BOOL init( void )
 {
   const SDL_VideoInfo *info = NULL;
 
-//  gui_pre_init();
+  gui_pre_init();
 //  about_pre_init();
 
   // Go SDL!
@@ -93,18 +93,14 @@ int main( int argc, char *argv[] )
         needaflip = FALSE;
       }
 
-      printf("Waiting for an event..\n");
-      fflush(stdout);
-//      if( !SDL_WaitEvent( &event ) ) break;
-      while (!SDL_PollEvent(&event))
-      {
-        SDL_Delay(1);
-      }
+      if( !SDL_WaitEvent( &event ) ) break;
+//      while (!SDL_PollEvent(&event))
+//      {
+//        SDL_Delay(1);
+//      }
   
       do
       {
-        printf("Got an event (%d)\n", event.type);
-        fflush(stdout);
         switch( event.type )
         {
           case SDL_QUIT:
@@ -117,8 +113,6 @@ int main( int argc, char *argv[] )
         }
       }
       while (SDL_PollEvent(&event));
-      printf("Dropped out of loop\n");
-      fflush(stdout);
     }
     
     rp_stop();

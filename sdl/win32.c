@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <windows.h>
+#define WANT_WMINFO
 #include <SDL.h>
+#include <SDL_syswm.h>
 
 // The amiga wrapper and the windows header don't get along...
 typedef Uint32   uint32;
@@ -12,7 +14,15 @@ typedef char     TEXT;
 
 int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 {
-  return MessageBoxA(NULL, reqtxt, title, strcmp(buttons, "OK") ? MB_OKCANCEL : MB_OK ) == IDOK;
+  SDL_SysWMinfo wmi;
+  HWND hwnd;
+
+  hwnd = NULL;
+  SDL_VERSION(&wmi.version);
+  if( SDL_GetWMInfo( &wmi ) )
+    hwnd = (HWND)wmi.window;
+
+  return MessageBoxA(hwnd, reqtxt, title, strcmp(buttons, "OK") ? MB_OKCANCEL : MB_OK ) == IDOK;
 }
 
 #define FR_HVLSAVE 0
@@ -23,15 +33,26 @@ int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 
 char *filerequester( char *title, char *path, char *fname, int type )
 {
-  OPENFILENAME ofn;
+  SDL_SysWMinfo wmi;
+  static OPENFILENAME ofn;
+  HWND hwnd;
   char *result;
   char *odir;
+  char tmp[4096];
+  
+  strcpy(tmp, fname);
+
+  hwnd = NULL;
+  SDL_VERSION(&wmi.version);
+  if( SDL_GetWMInfo( &wmi ) )
+    hwnd = (HWND)wmi.window;
 
   ZeroMemory( &ofn, sizeof( ofn ) );
   ofn.lStructSize = sizeof( ofn );
-  ofn.hwndOwner   = NULL;
+  ofn.hwndOwner   = hwnd;
   ofn.lpstrFile   = fname;
   ofn.nMaxFile    = 4096;
+  ofn.lpstrFile   = tmp;
 
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
   switch( type )
@@ -55,17 +76,17 @@ char *filerequester( char *title, char *path, char *fname, int type )
       break;
 
     case FR_MODLOAD:
-      ofn.lpstrFilter = "All Files\0*.*\0Modules (*.ahx, *.hvl, *.mod)\0*.AHX;*.HVL;*.MOD\0";
+      ofn.lpstrFilter = "All Files\0*.*\0Modules (*.ahx, *.hvl, *.mod)\0*.AHX;*.HVL;*.MOD;HVL.*;AHX.*;MOD.*\0";
       ofn.nFilterIndex = 2;
       break;
 
     case FR_INSLOAD:
-      ofn.lpstrFilter = "All Files\0*.*\0Instrument (*.ins)\0*.INS\0";
+      ofn.lpstrFilter = "All Files\0*.*\0Instrument (*.ins)\0*.INS;INS.*\0";
       ofn.nFilterIndex = 2;
       break;
 
     default:
-      ofn.lpstrFilter = "All Files\0*.*";
+      ofn.lpstrFilter = "All Files\0*.*\0";
       ofn.nFilterIndex = 1;
       break;
   }
@@ -110,5 +131,5 @@ char *filerequester( char *title, char *path, char *fname, int type )
     strcpy(result, ofn.lpstrFile);
   }
 
-  return NULL;
+  return result;
 }
