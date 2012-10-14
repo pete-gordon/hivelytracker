@@ -11,12 +11,13 @@ CFLAGS += -I$(BASEDIR) \
           -I$(WRAPPERDIR) \
           -Ic:/mingw/include/SDL
 
-LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL_ttf -lSDL -lSDL_image -lfreetype -lz
+LFLAGS += -g -lm -mwindows -lmingw32 -lSDL_ttf -lSDLmain -lSDL -lSDL_image -lfreetype -lz
 
 TARGET = hivelytracker.exe
 
 OBJECTS = sdl_wrapper.o \
           ht.o \
+	  win32.o \
 	  ../gui.o \
 	  ../replay.o \
 	  ../util.o \

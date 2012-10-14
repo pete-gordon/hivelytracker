@@ -49,6 +49,8 @@ struct SDL_Surface *ssrf = NULL;
 BOOL needaflip = FALSE;
 extern int srfdepth;
 extern SDL_Event event;
+extern int16 rp_audiobuffer[];
+extern uint32 rp_audiobuflen;
 #endif
 
 BOOL gui_savethem;
@@ -60,6 +62,7 @@ uint32 gui_tick_sig = 0;
 uint32 mainwin_sig = 0;
 uint32 prefwin_sig = 0;
 uint32 gui_sigs    = 0;
+extern int8   *rp_audiobuffer[];
 #endif
 
 int16 pw_x = -1, pw_y = -1;
@@ -75,7 +78,6 @@ uint16  cbpchns = 0;
 uint16  cbprows = 0;
 
 extern uint32  rp_audiobuflen;
-extern int8   *rp_audiobuffer[];
 
 #define TRACKED_X 3
 #define TRACKED_Y 324
@@ -330,6 +332,13 @@ enum
   
   BBA_OPTIMISE,
   BBA_OPTIMISE_MORE,
+
+  BBA_ZAP_SONG,
+  BBA_ZAP_TRACKS,
+  BBA_ZAP_POSNS,
+  BBA_ZAP_INSTRS,
+  BBA_ZAP_ALL,
+  BBA_BACK,
   
   BBA_END
 };
@@ -532,9 +541,9 @@ BOOL ishex( TEXT c )
   return FALSE;
 }
 
+#ifndef __SDL_WRAPPER__
 int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 {
-#ifndef __SDL_WRAPPER__
   Object *req_obj;
   int32 n;
 
@@ -551,10 +560,8 @@ int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
   n = IIntuition->IDoMethod( req_obj, RM_OPENREQ, NULL, NULL, scr );
   IIntuition->DisposeObject( req_obj );
   return n;
-#else
-  return 1;
-#endif
 }
+#endif
 
 void set_fpen(struct rawbm *bm, int pen)
 {
@@ -1574,6 +1581,23 @@ void gui_setup_buttonbank( int32 which )
       bbank[15].name   = "Zap";
       bbank[15].action = BBA_ZAP;
       break;
+
+#ifdef __SDL_WRAPPER__
+    case 1:
+      bbank[0].name    = "Zap song";
+      bbank[0].action  = BBA_ZAP_SONG;
+      bbank[1].name    = "Zap Tracks";
+      bbank[1].action  = BBA_ZAP_TRACKS;
+      bbank[2].name    = "Zap Posns";
+      bbank[2].action  = BBA_ZAP_POSNS;
+      bbank[3].name    = "Zap Instrs";
+      bbank[3].action  = BBA_ZAP_INSTRS;
+      bbank[12].name   = "Zap All";
+      bbank[12].action = BBA_ZAP_ALL;
+      bbank[15].name   = "Cancel";
+      bbank[15].action = BBA_BACK;
+      break;
+#endif
   }
 
   set_font(&mainbm, FONT_PRP, FALSE);
@@ -1767,7 +1791,9 @@ void gui_render_wavemeter( void )
 
 #ifndef __SDL_WRAPPER__
   ba = (int16 *)rp_audiobuffer[0];
-  
+#else
+  ba = rp_audiobuffer;
+#endif
   delta = rp_audiobuflen / 728;
   if( delta == 0 ) delta = 1;
   delta <<= 1;
@@ -1777,12 +1803,16 @@ void gui_render_wavemeter( void )
     v = (ba[off] >> 10) + 16 + 10;
     if( v < (0+10) ) v = 0+10;
     if( v > (31+10) ) v = 31+10;
+#ifndef __SDL_WRAPPER__
     if( i == 9 )
       IGraphics->Move( &bitmaps[BM_WAVEMETERS].rp, 9, v );
     else
       IGraphics->Draw( &bitmaps[BM_WAVEMETERS].rp, i, v );
+#else
+     fillrect_xy(&bitmaps[BM_WAVEMETERS], i, v, i, v);
+#endif
   } 
-  
+
   ba++;
 
   for( i=9, off=0; i<(9+182); i++, off += delta )
@@ -1790,12 +1820,15 @@ void gui_render_wavemeter( void )
     v = (ba[off] >> 10) + 16 + 52;
     if( v < (0+52) ) v = 0+52;
     if( v > (31+52) ) v = 31+52;
+#ifndef __SDL_WRAPPER__
     if( i == 9 )
       IGraphics->Move( &bitmaps[BM_WAVEMETERS].rp, 9, v );
     else
       IGraphics->Draw( &bitmaps[BM_WAVEMETERS].rp, i, v );
-  } 
+#else
+     fillrect_xy(&bitmaps[BM_WAVEMETERS], i, v, i, v);
 #endif
+  } 
   put_bitmap( BM_WAVEMETERS, 576, 0, 200, 96 );
 }
 
@@ -4200,6 +4233,8 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
   int32 chan, track;
 #ifndef __SDL_WRAPPER__
   BPTR lock, olddir;
+#else
+  char *gfname;
 #endif
   BOOL ok, optimise_more;
   struct ahx_tune *at;
@@ -4240,6 +4275,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       break;
     
     case BBA_ZAP:
+#ifndef __SDL_WRAPPER__
       switch( gui_req( REQIMAGE_QUESTION, "Zap!", "What would you like to Zap?", "Everything|Song|Tracks|Positions|Instruments|Oops! Nothing!" ) )
       {
         case 1: // Everything
@@ -4247,33 +4283,82 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
           gui_render_tunepanel( TRUE );
           break;
         
-        case 2:
+        case 2: // Song
           rp_zap_tracks( curtune );
           rp_zap_positions( curtune );
           free_undolists( curtune );
           gui_render_tunepanel( TRUE );
           break;
         
-        case 3:
+        case 3: // Tracks
           rp_zap_tracks( curtune );
           free_undolists( curtune );
           gui_render_tunepanel( TRUE );
           break;
         
-        case 4:
+        case 4: // Positions
           rp_zap_positions( curtune );
           free_undolists( curtune );
           gui_render_tunepanel( TRUE );
           break;
         
-        case 5:
+        case 5:  // Instruments
           rp_zap_instruments( curtune );
           free_undolists( curtune );
           gui_render_tunepanel( TRUE );
           break; 
       }
+#else
+      gui_setup_buttonbank( 1 );
+      gui_render_main_buttonbank();
+#endif
       break;
-      
+
+    case BBA_ZAP_SONG:
+      rp_zap_tracks( curtune );
+      rp_zap_positions( curtune );
+      free_undolists( curtune );
+      gui_render_tunepanel( TRUE );
+      gui_setup_buttonbank( 0 );
+      gui_render_main_buttonbank();
+      break;
+
+    case BBA_ZAP_TRACKS:
+      rp_zap_tracks( curtune );
+      free_undolists( curtune );
+      gui_render_tunepanel( TRUE );
+      gui_setup_buttonbank( 0 );
+      gui_render_main_buttonbank();
+      break;
+
+    case BBA_ZAP_POSNS:
+      rp_zap_positions( curtune );
+      free_undolists( curtune );
+      gui_render_tunepanel( TRUE );
+      gui_setup_buttonbank( 0 );
+      gui_render_main_buttonbank();
+      break;
+        
+    case BBA_ZAP_INSTRS:
+      rp_zap_instruments( curtune );
+      free_undolists( curtune );
+      gui_render_tunepanel( TRUE );
+      gui_setup_buttonbank( 0 );
+      gui_render_main_buttonbank();
+      break; 
+
+    case BBA_ZAP_ALL:
+      rp_clear_tune( curtune );
+      gui_render_tunepanel( TRUE );
+      gui_setup_buttonbank( 0 );
+      gui_render_main_buttonbank();
+      break;
+
+    case BBA_BACK:
+      gui_setup_buttonbank( 0 );
+      gui_render_main_buttonbank();
+      break;
+
     case BBA_UNDO:
       rp_stop();
       curtune->at_doing = D_IDLE;
@@ -4527,40 +4612,47 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       break;
 
     case BBA_LOADTUNE:
-#ifndef __SDL_WRAPPER__
       if( ( curtune != NULL ) && ( curtune->at_modified ) )
         if( gui_req( REQIMAGE_QUESTION, "HivelyTracker", "This song has been modified. Continue?", "_Yep!|Arrgh.. _No!" ) == 0 )
           break;
 
+#ifndef __SDL_WRAPPER__
       ok = IAsl->AslRequestTags( sng_lreq,
         ASLFR_Window,      mainwin,
         ASLFR_SleepWindow, TRUE,
         TAG_DONE );
       if( !ok ) break;
-      
+#else
+      gfname = filerequester("Load song", songdir, "", FR_MODLOAD);
+//#define FR_HVLSAVE 0
+//#define FR_AHXSAVE 1
+//#define FR_INSSAVE 2
+//#define FR_MODLOAD 3
+//#define FR_INSLOAD 4
+//char *filerequester( char *title, char *path, char *fname, int type );
+#endif      
       rp_stop();
       gui_render_tracked( TRUE );  // Kill the VUMeters
       if( curtune ) curtune->at_doing = D_IDLE;
-      
+
+#ifndef __SDL_WRAPPER__
       lock = IDOS->Lock( sng_lreq->fr_Drawer, ACCESS_READ );
       olddir = IDOS->CurrentDir( lock );
-      
+
       at = rp_load_tune( sng_lreq->fr_File, curtune );
       if( at ) curtune = at;
       
       IDOS->CurrentDir( olddir );
       IDOS->UnLock( lock );
-      if( at ) gui_set_rempos( at );
-      gui_render_tabs();
-      gui_render_tunepanel( TRUE );
 #else
-      rp_stop();
-      at = rp_load_tune( "Songs/HVL.chiprolled", curtune );
+      gui_req( 0, gfname, gfname, gfname);
+      at = rp_load_tune( gfname, curtune );
+      free( gfname );
       if( at ) curtune = at;
+#endif
       if( at ) gui_set_rempos( at );
       gui_render_tabs();
       gui_render_tunepanel( TRUE );
-#endif
       break;
 
     case BBA_CONTPOS:    

@@ -116,4 +116,12 @@ uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym);
 #define REQIMAGE_WARNING 1
 #define REQIMAGE_ERROR 2
 
+#define FR_HVLSAVE 0
+#define FR_AHXSAVE 1
+#define FR_INSSAVE 2
+#define FR_MODLOAD 3
+#define FR_INSLOAD 4
+
+char *filerequester( char *title, char *path, char *fname, int type );
+
 #endif /* __SDL_WRAPPER_H__ */
