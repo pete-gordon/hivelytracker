@@ -135,15 +135,21 @@ static struct Node *_RemHead(struct List *list)
 
 static struct Node *_GetTail(struct List *list)
 {
-  if ((!list) || (!list->lh_TailPred) || (!list->lh_TailPred->ln_Succ)) return NULL;
+  if ((!list) || (!list->lh_TailPred) || (!list->lh_TailPred->ln_Pred)) return NULL;
   return list->lh_TailPred;
 }
 
 static struct Node *_RemTail(struct List *list)
 {
-  struct Node *node = _GetTail(list);
-  if (node) _Remove(node);
-  return node;
+	struct Node *n = list->lh_TailPred;
+
+	if (n->ln_Pred)
+	{
+		list->lh_TailPred = n->ln_Pred;
+		list->lh_TailPred->ln_Succ = (struct Node *)(&(list->lh_Tail));
+		return n;
+	}
+	return NULL;
 }
 
 static struct ExecIFace _exec = { .AllocVecTags       = _AllocVecTags,
