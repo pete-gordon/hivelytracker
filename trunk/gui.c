@@ -546,8 +546,6 @@ void setpathpart(char *path, char *file)
 
   strcpy(path, file);
   path[i] = 0;
-
-  gui_req(0, path, file, "OK");
 }
 #endif
 
