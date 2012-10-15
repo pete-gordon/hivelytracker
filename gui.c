@@ -521,6 +521,36 @@ TEXT songdir[512];
 TEXT instdir[512];
 TEXT skindir[512];
 
+#ifdef __SDL_WRAPPER__
+TEXT remsongdir[512];
+TEXT reminstdir[512];
+
+#ifdef WIN32
+#define PATHSEP '\\'
+#else
+#define PATHSEP '/'
+#endif
+
+void setpathpart(char *path, char *file)
+{
+  int i;
+
+  i = strlen(file);
+  while (i>0)
+  {
+    if (file[i] == PATHSEP) break;
+    i--;
+  }
+
+  if (i>511) return;
+
+  strcpy(path, file);
+  path[i] = 0;
+
+  gui_req(0, path, file, "OK");
+}
+#endif
+
 BOOL isws( TEXT c )
 {
   if( ( c == 9 ) || ( c == 32 ) ) return TRUE;
@@ -3371,6 +3401,11 @@ void gui_pre_init( void )
   strcpy( skindir, "Skins/SIDMonster-Light" );
 
   gui_load_prefs();
+
+#ifdef __SDL_WRAPPER__
+  strncpy( remsongdir, songdir, 512 );
+  strncpy( reminstdir, instdir, 512 );
+#endif
 }
 
 void gui_save_prefs( void )
@@ -4485,7 +4520,8 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       IDOS->CurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
-      if (!(gfname = filerequester("Load instrument", instdir, "", FR_INSLOAD))) break;
+      if (!(gfname = filerequester("Load instrument", reminstdir, "", FR_INSLOAD))) break;
+      setpathpart(reminstdir, gfname);
       rp_load_ins( gfname, curtune, curtune->at_curins );
       free(gfname);
 #endif
@@ -4548,7 +4584,8 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       IDOS->CurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
-      if (!(gfname = filerequester("Save AHX module", instdir, "", FR_AHXSAVE))) break;
+      if (!(gfname = filerequester("Save AHX module", remsongdir, "", FR_AHXSAVE))) break;
+      setpathpart(remsongdir, gfname);
       rp_save_ahx( gfname, curtune );
       free(gfname);
       if( i == 0 )
@@ -4584,7 +4621,8 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       IDOS->CurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
-      if (!(gfname = filerequester("Save HVL module", instdir, "", FR_HVLSAVE))) break;
+      if (!(gfname = filerequester("Save HVL module", remsongdir, "", FR_HVLSAVE))) break;
+      setpathpart(remsongdir, gfname);
       rp_save_hvl( gfname, curtune );
       free(gfname);
       curtune->at_modified = FALSE;
@@ -4618,7 +4656,8 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       IDOS->CurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
-      if (!(gfname = filerequester("Save instrument", instdir, "", FR_INSSAVE))) break;
+      if (!(gfname = filerequester("Save instrument", reminstdir, "", FR_INSSAVE))) break;
+      setpathpart(reminstdir, gfname);
       rp_save_ins( gfname, curtune, curtune->at_curins );
       free(gfname);
       gui_set_various_things( curtune );
@@ -4637,7 +4676,8 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
         TAG_DONE );
       if( !ok ) break;
 #else
-      if (!(gfname = filerequester("Load song", songdir, "", FR_MODLOAD))) break;
+      if (!(gfname = filerequester("Load song", remsongdir, "", FR_MODLOAD))) break;
+      setpathpart(remsongdir, gfname);
 #endif      
       rp_stop();
       gui_render_tracked( TRUE );  // Kill the VUMeters
