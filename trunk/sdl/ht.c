@@ -84,6 +84,8 @@ int main( int argc, char *argv[] )
 {
   if( init() )
   {
+    SDL_Flip(ssrf);
+    gui_req(0, "Here be dragons!", "This is beta software. Don't spread it.\nDon't expect it to work, or not to crash.", "OK");
     quitting = FALSE;
     while( !quitting )
     {
