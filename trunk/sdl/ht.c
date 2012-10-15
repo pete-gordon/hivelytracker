@@ -34,19 +34,7 @@ BOOL init( void )
   atexit(SDL_Quit);
 
   if( (info = SDL_GetVideoInfo()) )
-  {
-    switch( info->vfmt->BitsPerPixel )
-    {
-      // Great, cases we handle
-      case 16:
-      case 32:
-        srfdepth = info->vfmt->BitsPerPixel;
-        break;
-      // Damn, cases we don't handle. Let's say 16 bpp gonna be ok
-      default:
-        break;
-    }
-  }
+    srfdepth = info->vfmt->BitsPerPixel;
 
   // Try to setup the video display
   ssrf = SDL_SetVideoMode( 800, 600, srfdepth, pref_fullscr ? SDL_FULLSCREEN : SRFTYPE );
