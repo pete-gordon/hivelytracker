@@ -5,6 +5,7 @@
 
 #include <system_includes.h>
 
+#include "util.h"
 #include "replay.h"
 #include "gui.h"
 #include "undo.h"
