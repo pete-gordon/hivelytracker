@@ -3400,6 +3400,10 @@ void gui_pre_init( void )
 
   gui_load_prefs();
 
+  // Remove me later ...
+  if ( songdir[0] == 0 ) strcpy(songdir, "Songs");
+  if ( instdir[0] == 0 ) strcpy(instdir, "Instruments");
+
 #ifdef __SDL_WRAPPER__
   strncpy( remsongdir, songdir, 512 );
   strncpy( reminstdir, instdir, 512 );
