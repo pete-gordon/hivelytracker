@@ -136,7 +136,6 @@ uint32 tmr_lasttime = 0;
 
 int32 vum_last[MAX_CHANNELS];
 BOOL vum_needclr = 0;
-
 int32 wm_count = 0;
 
 int32 pref_defstereo  = 4;
@@ -5615,11 +5614,16 @@ void gui_mouse_handler( int16 x, int16 y, uint32 code )
                 if( IExec->GetSucc(IExec->GetHead(rp_tunelist)) == NULL )
                 {
                   rp_clear_tune( ttab[i].tune );
+                  gui_set_various_things( ttab[i].tune );
                   dorend = TRUE;
                 } else {
                   rp_free_tune( ttab[i].tune );
                   if( curtune == ttab[i].tune )
+                  {
                     curtune = (struct ahx_tune *)IExec->GetHead(rp_tunelist);
+                    gui_set_various_things(curtune);
+                  }
+
                   dorend = TRUE;
                 }
                 IExec->ReleaseSemaphore( rp_list_ss );
