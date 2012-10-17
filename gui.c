@@ -2279,7 +2279,7 @@ void gui_render_tracked( BOOL force )
             }
             if( needrestore )
             {
-              set_pens(&bitmaps[BM_TRACKED], PAL_BACK, PAL_TEXT);
+              set_pens(&bitmaps[BM_TRACKED], PAL_TEXT, PAL_BACK);
             }
           }
         }
@@ -2765,6 +2765,7 @@ void gui_update_from_nbox( int32 panel, struct numberbox *bp, int32 i )
         case NB_CHANS:
           rp_stop();
           gui_render_tracked( TRUE );  // Kill the VUMeters
+          gui_render_wavemeter();
           at->at_doing = D_IDLE;
           j = bp[NB_CHANS].cnum;
           if( j < 4 ) j = 4;
@@ -4390,16 +4391,19 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       rp_stop();
       curtune->at_doing = D_IDLE;
       undo( curtune );
+      gui_render_wavemeter();
       break;
 
     case BBA_REDO:
       rp_stop();
       curtune->at_doing = D_IDLE;
       redo( curtune );
+      gui_render_wavemeter();
       break;
 
     case BBA_AUTOGAIN:
       rp_stop();
+      gui_render_wavemeter();
       curtune->at_doing = D_IDLE;
       
       for( j=0; j<curtune->at_Channels; j++ )
@@ -4500,6 +4504,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
 
       rp_stop();
       gui_render_tracked( TRUE );  // Kill the VUMeters
+      gui_render_wavemeter();
       curtune->at_doing = D_IDLE;
 
 #ifndef __SDL_WRAPPER__
@@ -4538,6 +4543,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       
       rp_stop();
       gui_render_tracked( TRUE );  // Kill the VUMeters
+      gui_render_wavemeter();
       curtune->at_doing = D_IDLE;
     
       i = rp_ahx_test( curtune );
@@ -4595,6 +4601,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       
       rp_stop();
       gui_render_tracked( TRUE );  // Kill the VUMeters
+      gui_render_wavemeter();
       curtune->at_doing = D_IDLE;
     
       strcpy( tmp, "HVL." );
@@ -4631,6 +4638,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
 
       rp_stop();
       gui_render_tracked( TRUE );  // Kill the VUMeters
+      gui_render_wavemeter();
       curtune->at_doing = D_IDLE;
     
       strcpy( tmp, "INS." );
@@ -4678,6 +4686,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
 #endif      
       rp_stop();
       gui_render_tracked( TRUE );  // Kill the VUMeters
+      gui_render_wavemeter();
       if( curtune ) curtune->at_doing = D_IDLE;
 
 #ifndef __SDL_WRAPPER__
@@ -4722,6 +4731,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
     case BBA_STOP:
       rp_stop();
       gui_render_tracked( TRUE );  // Kill the VUMeters
+      gui_render_wavemeter();
       curtune->at_doing = D_IDLE;
       break;
     
@@ -6430,6 +6440,7 @@ void gui_handler( uint32 gotsigs )
                   break;
                 case 48: // Blank next to Z (shut up)
                   rp_stop();
+                  gui_render_wavemeter();
                   gui_render_tracked( TRUE );  // Kill the VUMeters
                   curtune->at_doing = D_IDLE;
                   donkey = TRUE;
@@ -7105,6 +7116,7 @@ void gui_handler( uint32 gotsigs )
                   donkey = TRUE;
                   rp_stop();
                   gui_render_tracked( TRUE );  // Kill the VUMeters
+                  gui_render_wavemeter();
 
                   if( curtune->at_doing == D_EDITING )
                     curtune->at_doing = D_IDLE;
@@ -7757,6 +7769,7 @@ void gui_handler( uint32 gotsigs )
 
                       case 22:  // Ctrl+U (Undo)
                         rp_stop();
+                        gui_render_wavemeter();
                         curtune->at_doing = D_IDLE;
                         if( qual & IEQUALIFIER_LSHIFT )
                           redo( curtune );
@@ -8296,6 +8309,7 @@ void gui_handler( uint32 gotsigs )
                   donkey = TRUE;
                   curtune->at_doing = D_IDLE;
                   rp_stop();
+                  gui_render_wavemeter();
                   
                   if( curtune->at_idoing == D_IDLE )
                     curtune->at_idoing = D_EDITING;
