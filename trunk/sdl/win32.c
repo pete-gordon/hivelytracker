@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <windows.h>
+#include <shlobj.h>
+#include <objbase.h>
 #define WANT_WMINFO
 #include <SDL.h>
 #include <SDL_syswm.h>
@@ -23,6 +25,66 @@ int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
     hwnd = (HWND)wmi.window;
 
   return MessageBoxA(hwnd, reqtxt, title, strcmp(buttons, "OK") ? MB_OKCANCEL : MB_OK ) == IDOK;
+}
+
+static int CALLBACK BrowseCallbackProc(HWND hwnd,UINT uMsg, LPARAM lParam, LPARAM lpData)
+{
+	// If the BFFM_INITIALIZED message is received
+	// set the path to the start path.
+	switch (uMsg)
+	{
+		case BFFM_INITIALIZED:
+		{
+			if (((LPARAM)NULL) != lpData)
+			{
+				SendMessage(hwnd, BFFM_SETSELECTION, TRUE, lpData);
+			}
+		}
+	}
+
+	return 0; // The function should always return 0.
+}
+
+BOOL directoryrequester( char *title, char *path )
+{
+  SDL_SysWMinfo wmi;
+  HWND hwnd;
+	LPITEMIDLIST pidl     = NULL;
+	BROWSEINFO   bi       = { 0 };
+	BOOL         bResult  = FALSE;
+  static BOOL coinitialised = FALSE;
+  static char tmp[MAX_PATH];
+
+  GetFullPathName(path, MAX_PATH, tmp, NULL);
+
+  if (!coinitialised)
+  {
+    CoInitialize(NULL);
+    coinitialised = TRUE;
+  }
+
+  hwnd = NULL;
+  SDL_VERSION(&wmi.version);
+  if( SDL_GetWMInfo( &wmi ) )
+    hwnd = (HWND)wmi.window;
+
+	bi.hwndOwner      = hwnd;
+	bi.pszDisplayName = tmp;
+	bi.pidlRoot       = NULL;
+	bi.lpszTitle      = title;
+	bi.ulFlags        = BIF_RETURNONLYFSDIRS | BIF_USENEWUI;
+	bi.lpfn           = BrowseCallbackProc;
+	bi.lParam         = (LPARAM) tmp;
+
+  if ((pidl = SHBrowseForFolder(&bi)) == NULL)
+	{
+		bResult = SHGetPathFromIDList(pidl, path);
+		CoTaskMemFree(pidl);
+    strncpy(path, tmp, 512);
+    path[511] = 0;
+	}
+
+	return bResult;
 }
 
 #define FR_HVLSAVE 0

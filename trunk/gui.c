@@ -442,6 +442,7 @@ struct TextFont *prpfont = NULL;
 TTF_Font *fixttf = NULL;
 TTF_Font *sfxttf = NULL;
 TTF_Font *prpttf = NULL;
+BOOL prefwin_open = FALSE;
 #endif
 
 #define MAX_ZONES 100
@@ -449,7 +450,7 @@ TTF_Font *prpttf = NULL;
 
 int32 last_tbox = -1;
 
-struct rawbm      mainbm;
+struct rawbm      mainbm, prefbm, aboutbm;
 struct rawbm      bitmaps[BM_END];
 struct czone      zones[MAX_ZONES], pzones[MAX_PZONES];
 struct numberbox  trk_nb[NB_END], ins_nb[INB_END];
@@ -635,7 +636,7 @@ void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2)
 #ifndef __SDL_WRAPPER__
   IGraphics->RectFill( &bm->rp, x, y, x2, y2 );
 #else
-  SDL_Rect rect = { .x = x, .y = y, .w = (x2-x)+1, .h = (y2-y)+1 };
+  SDL_Rect rect = { .x = x+bm->offx, .y = y+bm->offy, .w = (x2-x)+1, .h = (y2-y)+1 };
   SDL_FillRect(bm->srf, &rect, mappal[bm->fpen]);
 #endif
 }
@@ -645,8 +646,8 @@ void bm_to_bm(struct rawbm *src, int sx, int sy, struct rawbm *dest, int dx, int
 #ifndef __SDL_WRAPPER__
   IGraphics->BltBitMapRastPort(src->bm, sx, sy, &dest->rp, dx, dy, w, h);
 #else
-  SDL_Rect srect = { .x = sx, .y = sy, .w = w, .h = h };
-  SDL_Rect drect = { .x = dx, .y = dy, .w = w, .h = h };
+  SDL_Rect srect = { .x = sx+src->offx, .y = sy+src->offy, .w = w, .h = h };
+  SDL_Rect drect = { .x = dx+dest->offx, .y = dy+dest->offy, .w = w, .h = h };
   SDL_BlitSurface(src->srf, &srect, dest->srf, &drect);
   if (dest == &mainbm) needaflip = TRUE;
 #endif
@@ -689,7 +690,7 @@ void printstr(struct rawbm *bm, char *str, int x, int y)
   IGraphics->Text(&bm->rp, str, strlen(str));
 #else
   SDL_Surface *srf;
-  SDL_Rect rect = { .x = x, .y = y };
+  SDL_Rect rect = { .x = x+bm->offx, .y = y+bm->offy };
   if (bm->jam2)
   {
     srf = TTF_RenderText_Shaded(bm->font, str, bm->fsc, bm->bsc);
@@ -712,7 +713,7 @@ void printstrlen(struct rawbm *bm, char *str, int len, int x, int y)
 #else
   char tmp[len+1];
   SDL_Surface *srf;
-  SDL_Rect rect = { .x = x, .y = y };
+  SDL_Rect rect = { .x = x+bm->offx, .y = y+bm->offy };
   strncpy(tmp, str, len);
   tmp[len] = 0;
   if (bm->jam2)
@@ -847,6 +848,8 @@ BOOL make_image( struct rawbm *bm, uint16 w, uint16 h )
   }
   bm->rp.BitMap = bm->bm;
 #else
+  bm->offx = 0;
+  bm->offy = 0;
   bm->srf = SDL_CreateRGBSurface(SRFTYPE, w, h, srfdepth, 0, 0, 0, 0);
   if( !bm->srf )
   {
@@ -975,7 +978,7 @@ void put_partbitmap( uint32 bm, uint16 bx, uint16 by, uint16 x, uint16 y, uint16
 #ifndef __SDL_WRAPPER__
   IGraphics->BltBitMapRastPort( bitmaps[bm].bm, bx, by, mainwin->RPort, x, y, w, h, 0x0C0 );
 #else
-  SDL_Rect srect = { .x = bx, .y = by, .w = w, .h = h };
+  SDL_Rect srect = { .x = bx+bitmaps[bm].offx, .y = by+bitmaps[bm].offy, .w = w, .h = h };
   SDL_Rect drect = { .x = x , .y =  y, .w = w, .h = h };
   SDL_BlitSurface(bitmaps[bm].srf, &srect, ssrf, &drect);
   needaflip = TRUE;
@@ -987,7 +990,7 @@ void put_bitmap( uint32 bm, uint16 x, uint16 y, uint16 w, uint16 h )
 #ifndef __SDL_WRAPPER__
   IGraphics->BltBitMapRastPort( bitmaps[bm].bm, 0, 0, mainwin->RPort, x, y, w, h, 0x0C0 );
 #else
-  SDL_Rect srect = { .x = 0, .y = 0, .w = w, .h = h };
+  SDL_Rect srect = { .x = bitmaps[bm].offx, .y = bitmaps[bm].offy, .w = w, .h = h };
   SDL_Rect drect = { .x = x, .y = y, .w = w, .h = h };
   SDL_BlitSurface(bitmaps[bm].srf, &srect, ssrf, &drect);
   needaflip = TRUE;
@@ -998,6 +1001,10 @@ void put_ppartbitmap( uint32 bm, uint16 bx, uint16 by, uint16 x, uint16 y, uint1
 {
 #ifndef __SDL_WRAPPER__
   IGraphics->BltBitMapRastPort( bitmaps[bm].bm, bx, by, prefwin->RPort, x+pw_bl, y+pw_bt, w, h, 0x0C0 );
+#else
+  SDL_Rect srect = { .x = bx+bitmaps[bm].offx, .y = by+bitmaps[bm].offy, .w = w, .h = h };
+  SDL_Rect drect = { .x = x+4 , .y =  y+4, .w = w, .h = h };
+  SDL_BlitSurface(bitmaps[bm].srf, &srect, prefbm.srf, &drect);
 #endif
 }
 
@@ -1005,6 +1012,11 @@ void put_pbitmap( uint32 bm, uint16 x, uint16 y, uint16 w, uint16 h )
 {
 #ifndef __SDL_WRAPPER__
   IGraphics->BltBitMapRastPort( bitmaps[bm].bm, 0, 0, prefwin->RPort, x+pw_bl, y+pw_bt, w, h, 0x0C0 );
+#else
+  SDL_Rect srect = { .x = bitmaps[bm].offx, .y = bitmaps[bm].offy, .w = w, .h = h };
+  SDL_Rect drect = { .x = x+4, .y = y+4, .w = w, .h = h };
+  SDL_BlitSurface(bitmaps[bm].srf, &srect, prefbm.srf, &drect);
+  needaflip = TRUE;
 #endif
 }
 
@@ -2944,17 +2956,6 @@ void gui_update_from_nbox( int32 panel, struct numberbox *bp, int32 i )
   }
 }
 
-void gui_render_everything( void )
-{
-  // Do the logo  
-  put_bitmap( BM_LOGO, 0, 0, 256, 96 );
-  put_bitmap( BM_DEPTH, 776, 0, 24, 24 );
-  put_bitmap( BM_BLANK, 776, 24, 24, 72 );
-  gui_render_main_buttonbank();
-  gui_render_tunepanel( TRUE );
-  gui_render_wavemeter();
-}
-
 void gui_set_popup( int32 pn, int16 x, int16 y )
 {
   pp[pn].x = x;
@@ -2987,7 +2988,7 @@ void gui_set_pcycle( int32 cn, int16 x, int16 y, int32 cur, TEXT **opts )
 
 void gui_render_pcycle( int32 cn, BOOL pressed )
 {
-  int32 w, tx;
+  int w, tx;
   TEXT *ctxt;
 
   if( pressed )
@@ -3001,45 +3002,50 @@ void gui_render_pcycle( int32 cn, BOOL pressed )
 
 #ifndef __SDL_WRAPPER__
   w = IGraphics->TextLength( prefwin->RPort, ctxt, strlen( ctxt ) );
-  tx = pcyc[cn].x+pw_bl+(79-(w>>1));
-  
-  IGraphics->SetRPAttrs( prefwin->RPort, RPTAG_APenColor, pal[PAL_BTNSHADOW], TAG_DONE );
-  IGraphics->Move( prefwin->RPort, tx+1, pcyc[cn].y+pw_bt+prpfont->tf_Baseline+5 );
-  IGraphics->Text( prefwin->RPort, ctxt, strlen( ctxt ) );
-
-  IGraphics->SetRPAttrs( prefwin->RPort, RPTAG_APenColor, pal[PAL_BTNTEXT], TAG_DONE );
-  IGraphics->Move( prefwin->RPort, tx,   pcyc[cn].y+pw_bt+prpfont->tf_Baseline+4 );
-  IGraphics->Text( prefwin->RPort, ctxt, strlen( ctxt ) );
+#else
+  TTF_SizeText(prefbm.font, ctxt, &w, &tx);
 #endif
+  tx = pcyc[cn].x+pw_bl+(79-(w>>1));
+
+  set_fpen(&prefbm, PAL_BTNSHADOW);
+  printstr(&prefbm, ctxt, tx+1, pcyc[cn].y+5);
+  set_fpen(&prefbm, PAL_BTNTEXT);
+  printstr(&prefbm, ctxt, tx, pcyc[cn].y+4);
 }
 
 void gui_render_prefs( void )
 {
-#ifndef __SDL_WRAPPER__
   int32 i;
   
-  put_pbitmap( BM_PRF_BG, 0, 0, 400, 300 );
+  bm_to_bm( &bitmaps[BM_PRF_BG], 0, 0, &prefbm, 0, 0, 400, 300);
   
   for( i=0; i<PC_END; i++ )
     gui_render_pcycle( i, FALSE );
 
   for( i=0; i<PTB_END; i++ )
-    gui_render_tbox( prefwin->RPort, &ptb[i] );  
+    gui_render_tbox( &prefbm, &ptb[i] );  
   
   for( i=0; i<PP_END; i++ )
     gui_render_popup( i, FALSE );
+
+#ifdef __SDL_WRAPPER__
+  set_fpen(&prefbm, PAL_BTNSHADOW);
+  printstr(&prefbm, "ESC to close", 5, 281);
+  set_fpen(&prefbm, PAL_BTNTEXT);
+  printstr(&prefbm, "ESC to close", 4, 280);
+  bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
 #endif
 }
 
 void gui_open_prefs( void )
 {
-#ifndef __SDL_WRAPPER__
-  if( pw_x == -1 ) pw_x = mainwin->LeftEdge + 150;
-  if( pw_y == -1 ) pw_y = mainwin->TopEdge + 100;
-
   pref_dorestart = FALSE;
   pref_oldfullscr = pref_fullscr;
   strcpy( pref_oldskindir, skindir );
+
+#ifndef __SDL_WRAPPER__
+  if( pw_x == -1 ) pw_x = mainwin->LeftEdge + 150;
+  if( pw_y == -1 ) pw_y = mainwin->TopEdge + 100;
 
   prefwin = IIntuition->OpenWindowTags( NULL,
     WA_Left,        pw_x,
@@ -3062,9 +3068,16 @@ void gui_open_prefs( void )
     prefwin_sig = 0;
     return;
   }
+
+  memcpy(&prefbm.rp, prefwin->RPort, sizeof(struct RastPort));
+  prefbm.bm = prefwin->BitMap;
   
   pw_bl = prefwin->BorderLeft;
   pw_bt = prefwin->BorderTop;
+#else
+  pw_bl = 0;
+  pw_bt = 0;
+#endif
 
   gui_set_pcycle( PC_WMODE,     220, 8     , pref_fullscr ? 1 : 0, pc_wmode_opts );
   gui_set_pcycle( PC_DEFSTEREO, 220, 8+24*1, pref_defstereo,  pc_defst_opts );
@@ -3080,26 +3093,26 @@ void gui_open_prefs( void )
 
   gui_set_pcycle( PC_MAXUNDOBUF, 220, 8+24*6, pref_maxundobuf, pc_mundo_opts );
 
-  IGraphics->SetRPAttrs( prefwin->RPort, RPTAG_DrMd,      JAM1,
-                                         RPTAG_Font,      prpfont,
-                                         TAG_DONE );
-
+  set_font(&prefbm, FONT_PRP, FALSE);
   gui_render_prefs();
-  
+
+#ifndef __SDL_WRAPPER__
   prefwin_sig = (1L<<prefwin->UserPort->mp_SigBit);
   gui_sigs |= prefwin_sig;
+#else
+  prefwin_open = TRUE;
 #endif
 }
 
 void gui_close_prefs( void )
 {
-#ifndef __SDL_WRAPPER__
   int32 i;
 
   for( i=0; i<MAX_PZONES; i++ )
     pzones[i].x = -1;
   numpzones = 0;
 
+#ifndef __SDL_WRAPPER__
   if( prefwin )
   {
     pw_x = prefwin->LeftEdge;
@@ -3110,11 +3123,16 @@ void gui_close_prefs( void )
   prefwin = NULL;
   gui_sigs &= ~prefwin_sig;
   prefwin_sig = 0;
+  memset(&prefbm.rp, 0, sizeof(struct RastPort));
+  prefbm.bm = NULL;
+#else
+  prefwin_open = FALSE;
+  gui_render_everything();
+#endif
 
   if( ( pref_oldfullscr != pref_fullscr ) ||
       ( strcmp( pref_oldskindir, skindir ) != 0 ) )
     pref_dorestart = TRUE;
-#endif
 }
 
 TEXT *gui_encode_pstr( TEXT *out, TEXT *in )
@@ -3408,6 +3426,9 @@ void gui_pre_init( void )
   strncpy( remsongdir, songdir, 512 );
   strncpy( reminstdir, instdir, 512 );
 #endif
+
+  memset(&prefbm, 0, sizeof(prefbm));
+  memset(&aboutbm, 0, sizeof(aboutbm));
 }
 
 void gui_save_prefs( void )
@@ -3598,6 +3619,9 @@ BOOL gui_open( void )
   mainbm.srf = ssrf;
 #endif
 
+  prefbm.w = 400;
+  prefbm.h = 300;
+
   if( !gui_open_skin_images() )
   {
     printf( "Error loading skin. Reverting to SIDMonster-Light...\n" );
@@ -3611,6 +3635,11 @@ BOOL gui_open( void )
   if( !make_image( &bitmaps[BM_PERF],       PERF_W, PERF_H ) ) return FALSE;
   if( !make_image( &bitmaps[BM_INSLIST],    INSLIST_W, INSLIST_H ) ) return FALSE;
   if( !make_image( &bitmaps[BM_INSLISTB],   INSLSTB_W, INSLSTB_H ) ) return FALSE;
+#ifdef __SDL_WRAPPER__
+  if( !make_image( &prefbm, 408, 308 ) ) return FALSE;
+  prefbm.offx = 4;
+  prefbm.offy = 4;
+#endif
 
 #ifndef __SDL_WRAPPER__
   fixfont = IDiskfont->OpenDiskFont( &fixfontattr );
@@ -4745,6 +4774,8 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
         gui_close_prefs();
       else
         gui_open_prefs();
+#else
+      gui_open_prefs();
 #endif
       break;
     
@@ -5030,9 +5061,13 @@ BOOL gui_check_ptbox_press( int16 x, int16 y )
 {
   int32 i;
   
+#ifndef __SDL_WRAPPER__
   // *sigh* i suck, i know i suck.
   x += pw_bl;
   y += pw_bt;
+#else
+  if (!prefwin_open) return FALSE;
+#endif
 
   for( i=0; i<PTB_END; i++ )
   {
@@ -5045,9 +5080,7 @@ BOOL gui_check_ptbox_press( int16 x, int16 y )
       if( ( ptbx != NULL ) && ( ptbx != &ptb[i] ) )
       {
         ptbx->flags &= ~TBF_ACTIVE;
-#ifndef __SDL_WRAPPER__
-        gui_render_tbox( prefwin->RPort, ptbx );
-#endif
+        gui_render_tbox( &prefbm, ptbx );
       }
       ptbx = &ptb[i];
 #ifdef __SDL_WRAPPER__
@@ -5055,8 +5088,9 @@ BOOL gui_check_ptbox_press( int16 x, int16 y )
 #endif
       ptbx->flags |= TBF_ACTIVE;
       ptbx->cpos = ((x-ptbx->x)>>3)+ptbx->spos;
-#ifndef __SDL_WRAPPER__
-      gui_render_tbox( prefwin->RPort, ptbx );
+      gui_render_tbox( &prefbm, ptbx );
+#ifdef __SDL_WRAPPER__
+      bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
 #endif
       return TRUE;
     }
@@ -5942,6 +5976,9 @@ BOOL gui_checkpop_down( int16 x, int16 y )
   if( whichpop == -1 ) return FALSE;
 
   gui_render_popup( whichpop, TRUE );
+#ifdef __SDL_WRAPPER__
+  bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
+#endif
   return TRUE;
 }
 
@@ -5966,8 +6003,11 @@ BOOL gui_checkpop_up( int16 x, int16 y )
           if( !ok ) break;
 
           strncpy( songdir, dir_req->fr_Drawer, 512 );
-          gui_render_tbox( prefwin->RPort, &ptb[PTB_SONGDIR] );  
+#else
+          if (directoryrequester("Select default song directory", songdir))
+            strncpy(remsongdir, songdir, 512);    
 #endif
+          gui_render_tbox( &prefbm, &ptb[PTB_SONGDIR] );
           break;
 
         case PP_INSTDIR:
@@ -5981,8 +6021,11 @@ BOOL gui_checkpop_up( int16 x, int16 y )
           if( !ok ) break;
           
           strncpy( instdir, dir_req->fr_Drawer, 512 );
-          gui_render_tbox( prefwin->RPort, &ptb[PTB_INSTDIR] );  
+#else
+          if (directoryrequester("Select default instrument directory", instdir))
+            strncpy(reminstdir, instdir, 512);    
 #endif
+          gui_render_tbox( &prefbm, &ptb[PTB_INSTDIR] );  
           break;
 
         case PP_SKINDIR:
@@ -5996,14 +6039,21 @@ BOOL gui_checkpop_up( int16 x, int16 y )
           if( !ok ) break;
           
           strncpy( skindir, dir_req->fr_Drawer, 512 );
-          gui_render_tbox( prefwin->RPort, &ptb[PTB_SKINDIR] );  
+#else
+          directoryrequester("Select skin directory", skindir);
 #endif
+          gui_render_tbox( &prefbm, &ptb[PTB_SKINDIR] );  
           break;
       }
     }
       
     gui_render_popup( whichpop, FALSE );
+    whichpop = -1;
   }
+
+#ifdef __SDL_WRAPPER__
+  bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
+#endif
   return gui_whichpop( x, y ) != -1;
 }
 
@@ -6027,6 +6077,9 @@ BOOL gui_checkpc_down( int16 x, int16 y )
   if( whichcyc == -1 ) return FALSE;
 
   gui_render_pcycle( whichcyc, TRUE );
+#ifdef __SDL_WRAPPER__
+  bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
+#endif
   return TRUE;
 }
 
@@ -6060,6 +6113,9 @@ BOOL gui_checkpc_up( int16 x, int16 y )
     }
       
     gui_render_pcycle( whichcyc, FALSE );
+#ifdef __SDL_WRAPPER__
+    bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
+#endif
   }
   return gui_whichpc( x, y ) != -1;
 }
@@ -6079,19 +6135,29 @@ int32 gui_findlastpos( struct ahx_tune *at )
   return 0;
 }
 
+void gui_render_everything( void )
+{
+  // Do the logo  
+  put_bitmap( BM_LOGO, 0, 0, 256, 96 );
+  put_bitmap( BM_DEPTH, 776, 0, 24, 24 );
+  put_bitmap( BM_BLANK, 776, 24, 24, 72 );
+  gui_render_main_buttonbank();
+  gui_render_tunepanel( TRUE );
+  gui_render_wavemeter();
+  if (prefwin_open) gui_render_prefs();
+}
+
 BOOL gui_restart( void )
 {
+#ifndef __SDL_WRAPPER__
   int32 i;
   BOOL oh_crap = FALSE;
 
   // Shutdown just the things we have to shut in order to reopen
   // with new settings
   gui_close_prefs();
-#ifndef __SDL_WRAPPER__
   about_close();
-#endif
 
-#ifndef __SDL_WRAPPER__
   IIntuition->CloseWindow( mainwin );
   mainwin = NULL;
   gui_sigs &= ~mainwin_sig;
@@ -6106,26 +6172,11 @@ BOOL gui_restart( void )
   IGraphics->CloseFont( prpfont ); prpfont = NULL;
   IGraphics->CloseFont( fixfont ); fixfont = NULL;
   IGraphics->CloseFont( sfxfont ); sfxfont = NULL;
-#else
-  SDL_QuitSubSystem(SDL_INIT_VIDEO);
-
-  for( i=0; i<BM_END; i++ ) { SDL_FreeSurface( bitmaps[i].srf ); bitmaps[i].srf = NULL; }
-  for( i=0; i<TB_END; i++ ) { SDL_FreeSurface( tbx[i].bm.srf ); tbx[i].bm.srf = NULL; }
-
-  if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-    oh_crap = TRUE;
-#endif
 
   // Set some defaults
-#ifndef __SDL_WRAPPER__
   strcpy( fixfontname, "Bitstream Vera Sans Mono.font" );
   strcpy( sfxfontname, "Bitstream Vera Sans Mono.font" );
   strcpy( prpfontname, "Bitstream Vera Sans.font" );
-#else
-  strcpy( fixfontname, "ttf/DejaVuSansMono.ttf" );
-  strcpy( sfxfontname, "ttf/DejaVuSansMono.ttf" );
-  strcpy( prpfontname, "ttf/DejaVuSans.ttf" );
-#endif  
   strcpy( skinext,     ".png" );
 
   numzones = 0;
@@ -6141,16 +6192,13 @@ BOOL gui_restart( void )
 
   if( oh_crap )
   {
-#ifndef __SDL_WRAPPER__
     BPTR cdir, lock;
-#endif
     int32 i;
     struct ahx_tune *at;
     char rname[64];
 
     gui_req( REQIMAGE_ERROR, "Oh crap!", "There was an error re-opening the GUI,\nand Hively has to quit. All open songs\nwill be saved to 'Songs/Rescue'", "OK" );
 
-#ifndef __SDL_WRAPPER__
     lock = IDOS->Lock( "Songs/Rescue", ACCESS_READ );
     if( !lock )
     {
@@ -6166,7 +6214,6 @@ BOOL gui_restart( void )
       }
     }
     cdir = IDOS->CurrentDir( lock );
-#endif
 
     IExec->ObtainSemaphore( rp_list_ss );
 
@@ -6179,16 +6226,113 @@ BOOL gui_restart( void )
       at = (struct ahx_tune *)IExec->GetSucc(&at->at_ln);
     }
 
-#ifndef __SDL_WRAPPER__
     IDOS->CurrentDir( cdir );
     IDOS->UnLock( lock );
-#endif
     IExec->ReleaseSemaphore( rp_list_ss );
     return FALSE;
   }
-
+#endif
   return TRUE; 
 }
+
+#ifdef __SDL_WRAPPER__
+struct IntuiMessage *translate_sdl_event(void)
+{
+  static uint32 mkqual = 0;
+  static struct IntuiMessage fakemsg;
+
+  fakemsg.IAddress  = NULL;
+
+  switch (event.type)
+  {
+    case SDL_MOUSEMOTION:
+      fakemsg.Class     = IDCMP_MOUSEMOVE;
+      fakemsg.Qualifier = mkqual;
+      fakemsg.Code      = 0;
+      fakemsg.MouseX    = event.motion.x;
+      fakemsg.MouseY    = event.motion.y;
+      break;
+    
+    case SDL_MOUSEBUTTONDOWN:
+    {
+      static struct IntuiWheelData iwd;
+
+      if (event.button.button == SDL_BUTTON_WHEELUP)
+      {
+        fakemsg.Class    = IDCMP_EXTENDEDMOUSE;
+        fakemsg.Code     = IMSGCODE_INTUIWHEELDATA;
+        fakemsg.IAddress = &iwd;
+        fakemsg.MouseX    = event.motion.x;
+        fakemsg.MouseY    = event.motion.y;
+        iwd.WheelY    = -1;
+        break;
+      }
+
+      if (event.button.button == SDL_BUTTON_WHEELDOWN)
+      {
+        fakemsg.Class    = IDCMP_EXTENDEDMOUSE;
+        fakemsg.Code     = IMSGCODE_INTUIWHEELDATA;
+        fakemsg.IAddress = &iwd;
+        fakemsg.MouseX   = event.motion.x;
+        fakemsg.MouseY   = event.motion.y;
+        iwd.WheelY    = 1;
+        break;
+      }
+
+      if (event.button.button == SDL_BUTTON_RIGHT) mkqual |= IEQUALIFIER_RBUTTON;
+      fakemsg.Class     = IDCMP_MOUSEBUTTONS;
+      fakemsg.Code      = event.button.button;
+      fakemsg.Qualifier = mkqual;
+      fakemsg.MouseX    = event.motion.x;
+      fakemsg.MouseY    = event.motion.y;
+      break;
+    }
+
+    case SDL_MOUSEBUTTONUP:
+      if (event.button.button == SDL_BUTTON_RIGHT) mkqual &= ~IEQUALIFIER_RBUTTON;
+      fakemsg.Class     = IDCMP_MOUSEBUTTONS;
+      fakemsg.Code      = event.button.button | 0x100;
+      fakemsg.Qualifier = mkqual;
+      fakemsg.MouseX    = event.motion.x;
+      fakemsg.MouseY    = event.motion.y;
+      break;
+
+    case SDL_KEYDOWN:
+      switch (event.key.keysym.sym)
+      {
+        case SDLK_LSHIFT: mkqual |= IEQUALIFIER_LSHIFT; break;
+        case SDLK_RSHIFT: mkqual |= IEQUALIFIER_RSHIFT; break;
+        case SDLK_LCTRL:  mkqual |= IEQUALIFIER_CONTROL; break;
+        case SDLK_RCTRL:  mkqual |= IEQUALIFIER_CONTROL; break;
+        case SDLK_LALT:   mkqual |= IEQUALIFIER_LALT; break;
+        case SDLK_LSUPER: mkqual |= IEQUALIFIER_LCOMMAND; break;
+      }
+
+      fakemsg.Class     = IDCMP_RAWKEY;
+      fakemsg.Code      = sdl_keysym_to_amiga_rawkey(event.key.keysym.sym);
+      fakemsg.Qualifier = mkqual;
+      break;        
+
+    case SDL_KEYUP:
+      switch (event.key.keysym.sym)
+      {
+        case SDLK_LSHIFT: mkqual &= ~IEQUALIFIER_LSHIFT; break;
+        case SDLK_RSHIFT: mkqual &= ~IEQUALIFIER_RSHIFT; break;
+        case SDLK_LCTRL:  mkqual &= ~IEQUALIFIER_CONTROL; break;
+        case SDLK_RCTRL:  mkqual &= ~IEQUALIFIER_CONTROL; break;
+        case SDLK_LALT:   mkqual &= ~IEQUALIFIER_LALT; break;
+        case SDLK_LSUPER: mkqual &= ~IEQUALIFIER_LCOMMAND; break;
+      }
+
+      fakemsg.Class     = IDCMP_RAWKEY;
+      fakemsg.Code      = sdl_keysym_to_amiga_rawkey(event.key.keysym.sym) | 0x80;
+      fakemsg.Qualifier = mkqual;
+      break;        
+  }
+
+  return &fakemsg;
+}
+#endif
 
 void gui_handler( uint32 gotsigs )
 {
@@ -6229,12 +6373,19 @@ void gui_handler( uint32 gotsigs )
 
 #ifndef __SDL_WRAPPER__
   if( gotsigs & prefwin_sig )
+#else
+  if( prefwin_open )
+#endif
   {
     BOOL wantclose;
     int16 x, y;
 
     wantclose = FALSE;
+#ifndef __SDL_WRAPPER__
     while( ( msg = (struct IntuiMessage *)IExec->GetMsg( prefwin->UserPort ) ) )
+#else
+    msg = translate_sdl_event();
+#endif
     {
       switch( msg->Class )
       {
@@ -6242,7 +6393,10 @@ void gui_handler( uint32 gotsigs )
           // In a textbox?
           if( ptbx != NULL )
           {
-            gui_textbox_keypress( prefwin->RPort, &ptbx, msg );
+            gui_textbox_keypress( &prefbm, &ptbx, msg );
+#ifdef __SDL_WRAPPER__
+            bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
+#endif
             break;
           }
 
@@ -6254,8 +6408,13 @@ void gui_handler( uint32 gotsigs )
           }
           break;
         case IDCMP_MOUSEBUTTONS:
+#ifndef __SDL_WRAPPER__         
           x = msg->MouseX-pw_bl;
           y = msg->MouseY-pw_bt;
+#else
+          x = msg->MouseX-200;
+          y = msg->MouseY-150;
+#endif
           
           switch( msg->Code )
           {
@@ -6267,8 +6426,11 @@ void gui_handler( uint32 gotsigs )
               if( ptbx )
               {
                 ptbx->flags &= ~TBF_ACTIVE;
-                gui_render_tbox( prefwin->RPort, ptbx );
+                gui_render_tbox( &prefbm, ptbx );
                 gui_ptbox_finish_editing();
+#ifdef __SDL_WRAPPER__
+                bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
+#endif
                 break;
               }
       
@@ -6282,16 +6444,22 @@ void gui_handler( uint32 gotsigs )
           }
           break;
 
+#ifndef __SDL_WRAPPER__
         case IDCMP_CLOSEWINDOW:
           wantclose = TRUE;
+#endif
           break;
-      }   
+      }
+#ifndef __SDL_WRAPPER__
       IExec->ReplyMsg( (struct Message *)msg );
+#endif
     }
     
     if( wantclose ) gui_close_prefs();
-  }
+#ifdef __SDL_WRAPPER__
+    return;
 #endif
+  }
 
 #ifndef __SDL_WRAPPER__
   if( gotsigs & mainwin_sig )
@@ -6305,99 +6473,7 @@ void gui_handler( uint32 gotsigs )
 #ifndef __SDL_WRAPPER__
     while( ( msg = (struct IntuiMessage *)IExec->GetMsg( mainwin->UserPort ) ) )
 #else
-    static uint32 mkqual = 0;
-    struct IntuiMessage fakemsg;
-    msg = &fakemsg;
-
-    msg->IAddress  = NULL;
-
-    switch (event.type)
-    {
-      case SDL_MOUSEMOTION:
-        msg->Class     = IDCMP_MOUSEMOVE;
-        msg->Qualifier = mkqual;
-        msg->Code      = 0;
-        msg->MouseX    = event.motion.x;
-        msg->MouseY    = event.motion.y;
-        break;
-      
-      case SDL_MOUSEBUTTONDOWN:
-      {
-        static struct IntuiWheelData iwd;
-
-        if (event.button.button == SDL_BUTTON_WHEELUP)
-        {
-          msg->Class    = IDCMP_EXTENDEDMOUSE;
-          msg->Code     = IMSGCODE_INTUIWHEELDATA;
-          msg->IAddress = &iwd;
-          msg->MouseX    = event.motion.x;
-          msg->MouseY    = event.motion.y;
-          iwd.WheelY    = -1;
-          break;
-        }
-
-        if (event.button.button == SDL_BUTTON_WHEELDOWN)
-        {
-          msg->Class    = IDCMP_EXTENDEDMOUSE;
-          msg->Code     = IMSGCODE_INTUIWHEELDATA;
-          msg->IAddress = &iwd;
-          msg->MouseX   = event.motion.x;
-          msg->MouseY   = event.motion.y;
-          iwd.WheelY    = 1;
-          break;
-        }
-
-        if (event.button.button == SDL_BUTTON_RIGHT) mkqual |= IEQUALIFIER_RBUTTON;
-        msg->Class     = IDCMP_MOUSEBUTTONS;
-        msg->Code      = event.button.button;
-        msg->Qualifier = mkqual;
-        msg->MouseX    = event.motion.x;
-        msg->MouseY    = event.motion.y;
-        break;
-      }
-
-      case SDL_MOUSEBUTTONUP:
-        if (event.button.button == SDL_BUTTON_RIGHT) mkqual &= ~IEQUALIFIER_RBUTTON;
-        msg->Class     = IDCMP_MOUSEBUTTONS;
-        msg->Code      = event.button.button | 0x100;
-        msg->Qualifier = mkqual;
-        msg->MouseX    = event.motion.x;
-        msg->MouseY    = event.motion.y;
-        break;
-
-      case SDL_KEYDOWN:
-        switch (event.key.keysym.sym)
-        {
-          case SDLK_LSHIFT: mkqual |= IEQUALIFIER_LSHIFT; break;
-          case SDLK_RSHIFT: mkqual |= IEQUALIFIER_RSHIFT; break;
-          case SDLK_LCTRL:  mkqual |= IEQUALIFIER_CONTROL; break;
-          case SDLK_RCTRL:  mkqual |= IEQUALIFIER_CONTROL; break;
-          case SDLK_LALT:   mkqual |= IEQUALIFIER_LALT; break;
-          case SDLK_LSUPER: mkqual |= IEQUALIFIER_LCOMMAND; break;
-        }
-
-        msg->Class     = IDCMP_RAWKEY;
-        msg->Code      = sdl_keysym_to_amiga_rawkey(event.key.keysym.sym);
-        msg->Qualifier = mkqual;
-        break;        
-
-      case SDL_KEYUP:
-        switch (event.key.keysym.sym)
-        {
-          case SDLK_LSHIFT: mkqual &= ~IEQUALIFIER_LSHIFT; break;
-          case SDLK_RSHIFT: mkqual &= ~IEQUALIFIER_RSHIFT; break;
-          case SDLK_LCTRL:  mkqual &= ~IEQUALIFIER_CONTROL; break;
-          case SDLK_RCTRL:  mkqual &= ~IEQUALIFIER_CONTROL; break;
-          case SDLK_LALT:   mkqual &= ~IEQUALIFIER_LALT; break;
-          case SDLK_LSUPER: mkqual &= ~IEQUALIFIER_LCOMMAND; break;
-        }
-
-        msg->Class     = IDCMP_RAWKEY;
-        msg->Code      = sdl_keysym_to_amiga_rawkey(event.key.keysym.sym) | 0x80;
-        msg->Qualifier = mkqual;
-        break;        
-    }
-
+    msg = translate_sdl_event();
 #endif
 
     {
@@ -8447,6 +8523,7 @@ void gui_shutdown( void )
 #else
   for( i=0; i<BM_END; i++ ) if( bitmaps[i].srf ) SDL_FreeSurface( bitmaps[i].srf );
   for( i=0; i<TB_END; i++ ) if( tbx[i].bm.srf )  SDL_FreeSurface( tbx[i].bm.srf );
+  if( prefbm.srf ) SDL_FreeSurface( prefbm.srf );
   TTF_CloseFont( prpttf ); prpttf = NULL;
   TTF_CloseFont( fixttf ); fixttf = NULL;
   TTF_CloseFont( sfxttf ); sfxttf = NULL;

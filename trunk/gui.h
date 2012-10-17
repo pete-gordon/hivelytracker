@@ -15,6 +15,7 @@ struct rawbm
   struct SDL_Surface *srf;
   SDL_Color fsc, bsc;
   TTF_Font *font;
+  int     offx, offy;
 #endif
 };
 
@@ -44,6 +45,7 @@ void gui_render_inslistb( BOOL force );
 void gui_render_inslist( BOOL force );
 void gui_render_tbox( struct rawbm *bm, struct textbox *tb );
 void gui_render_tabs( void );
+void gui_render_everything( void );
 
 BOOL make_image( struct rawbm *bm, uint16 w, uint16 h );
 BOOL open_image( TEXT *name, struct rawbm *bm );
