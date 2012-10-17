@@ -46,6 +46,8 @@ BOOL init( void )
 
   SDL_WM_SetCaption( "HivelyTracker SDL", "HivelyTracker SDL" );
 
+  SDL_EnableKeyRepeat(500, 30);
+
   if (TTF_Init() == -1)
   {
     printf( "SDL TTF failed\n" );
