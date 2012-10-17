@@ -707,7 +707,7 @@ void rp_save_hvl_ins( TEXT *name, struct ahx_instrument *ins )
     printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return;
   }
-  
+
   for( i=0; i<buflen; i++ ) buf[i] = 0;
   
   strcpy( (TEXT *)buf, "HVLI" );
@@ -773,9 +773,30 @@ void rp_save_ins( TEXT *name, struct ahx_tune *at, int32 in )
   int32 buflen, i, k, l;
   struct ahx_instrument *ins;
   BOOL saveahxi;
+#ifdef __SDL_WRAPPER__
+  char mkname[4096];
+#endif
   
   if( at == NULL ) return;
-  
+
+#ifdef __SDL_WRAPPER__
+  // Enforce file extension since windows likes them so much
+  // (although let them use a prefix if they want to keep it oldskool)
+  if (strncasecmp(name, "ins.", 4) != 0)
+  {
+    // No prefix...
+    i = strlen(name);
+    if ((i < 4) || (strcasecmp(&name[i-4], ".ins") != 0))
+    {
+      // No extension
+      strncpy(mkname, name, 4096);
+      strncat(mkname, ".ins", 4096);
+      mkname[4095] = 0;
+      name = mkname;
+    }
+  }
+#endif
+
   ins = &at->at_Instruments[in];
 
   saveahxi = TRUE;
@@ -1098,8 +1119,29 @@ void rp_save_hvl( TEXT *name, struct ahx_tune *at )
   uint8 emptytrk;
   uint8 *tbf;
   struct ahx_instrument *in;
+#ifdef __SDL_WRAPPER__
+  char mkname[4096];
+#endif
   
   if( at == NULL ) return;
+
+#ifdef __SDL_WRAPPER__
+  // Enforce file extension since windows likes them so much
+  // (although let them use a prefix if they want to keep it oldskool)
+  if (strncasecmp(name, "hvl.", 4) != 0)
+  {
+    // No prefix...
+    i = strlen(name);
+    if ((i < 4) || (strcasecmp(&name[i-4], ".hvl") != 0))
+    {
+      // No extension
+      strncpy(mkname, name, 4096);
+      strncat(mkname, ".hvl", 4096);
+      mkname[4095] = 0;
+      name = mkname;
+    }
+  }
+#endif
 
   // Calculate TrackNr
   at->at_TrackNr = 0;
@@ -1310,9 +1352,33 @@ void rp_save_ahx( TEXT *name, struct ahx_tune *at )
   uint8 emptytrk;
   uint8 *tbf;
   struct ahx_instrument *in;
-  
+#ifdef __SDL_WRAPPER__
+  char mkname[4096];
+#endif
+
   if( at == NULL ) return;
-  
+
+#ifdef __SDL_WRAPPER__
+  // Enforce file extension since windows likes them so much
+  // (although let them use a prefix if they want to keep it oldskool)
+  if ((strncasecmp(name, "ahx.", 4) != 0) &&
+      (strncasecmp(name, "thx.", 4) != 0))
+  {
+    // No prefix...
+    i = strlen(name);
+    if ((i < 4) ||
+        ((strcasecmp(&name[i-4], ".ahx") != 0) &&
+         (strcasecmp(&name[i-4], ".thx") != 0)))
+    {
+      // No extension
+      strncpy(mkname, name, 4096);
+      strncat(mkname, ".ahx", 4096);
+      mkname[4095] = 0;
+      name = mkname;
+    }
+  }
+#endif
+
   // Calculate TrackNr
   at->at_TrackNr = 0;
   for( i=0; i<at->at_PositionNr; i++ )
@@ -4284,6 +4350,10 @@ void rp_stop( void )
   rp_mainmsg->rpc_Data2   = 0;
 
   rp_send_command( rp_mainmsg );
+
+#ifdef __SDL_WRAPPER__
+  memset(rp_audiobuffer, 0, sizeof(rp_audiobuffer));
+#endif
 }
 
 void rp_zap_tracks( struct ahx_tune * at )

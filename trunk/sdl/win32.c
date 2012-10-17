@@ -50,7 +50,6 @@ char *filerequester( char *title, char *path, char *fname, int type )
   ZeroMemory( &ofn, sizeof( ofn ) );
   ofn.lStructSize = sizeof( ofn );
   ofn.hwndOwner   = hwnd;
-  ofn.lpstrFile   = fname;
   ofn.nMaxFile    = 4096;
   ofn.lpstrFile   = tmp;
 
