@@ -261,6 +261,7 @@ uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym)
     case SDLK_SLASH:     return 58;
     case SDLK_SPACE:     return 64;
     case SDLK_TAB:       return 0x42;
+    case SDLK_DELETE:    return 0x46;
   }
   
   return 0;
