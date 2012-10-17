@@ -11,7 +11,7 @@ CFLAGS += -I$(BASEDIR) \
           -I$(WRAPPERDIR) \
           -Ic:/mingw/include/SDL
 
-LFLAGS += -g -lm -mwindows -lmingw32 -lSDL_ttf -lSDLmain -lSDL -lSDL_image -lfreetype -lz
+LFLAGS += -g -lm -mwindows -lmingw32 -lSDL_ttf -lSDLmain -lSDL -lSDL_image -lfreetype -lz -lole32 -loleaut32
 
 TARGET = hivelytracker.exe
 

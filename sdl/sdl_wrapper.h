@@ -123,5 +123,6 @@ uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym);
 #define FR_INSLOAD 4
 
 char *filerequester( char *title, char *path, char *fname, int type );
+BOOL directoryrequester( char *title, char *path );
 
 #endif /* __SDL_WRAPPER_H__ */
