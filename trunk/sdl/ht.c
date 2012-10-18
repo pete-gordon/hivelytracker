@@ -11,6 +11,7 @@
 //#include <about.h>
 
 BOOL quitting = FALSE;
+extern BOOL pref_dorestart;
 extern BOOL needaflip;
 extern SDL_Surface *ssrf;
 int srfdepth = 16;
@@ -80,7 +81,7 @@ int main( int argc, char *argv[] )
   if( init() )
   {
     SDL_Flip(ssrf);
-    gui_req(0, "Here be dragons!", "This is beta software. Don't spread it.\nDon't expect it to work, or not to crash.\n\nBeta 3 (" __DATE__ " " __TIME__ ")", "OK");
+    gui_req(0, "Here be dragons!", "This is beta software. Don't spread it.\nDon't expect it to work, or not to crash.\n\nBeta 4 (" __DATE__ " " __TIME__ ")", "OK");
     quitting = FALSE;
     while( !quitting )
     {
@@ -106,6 +107,13 @@ int main( int argc, char *argv[] )
         }
       }
       while (SDL_PollEvent(&event));
+
+      if( pref_dorestart )
+      {
+        if( !gui_restart() )
+          quitting = TRUE;
+        pref_dorestart = FALSE;
+      }   
     }
     
     rp_stop();
