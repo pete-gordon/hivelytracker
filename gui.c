@@ -3011,6 +3011,15 @@ void gui_render_pcycle( int32 cn, BOOL pressed )
   printstr(&prefbm, ctxt, tx+1, pcyc[cn].y+5);
   set_fpen(&prefbm, PAL_BTNTEXT);
   printstr(&prefbm, ctxt, tx, pcyc[cn].y+4);
+
+#ifdef WIN32
+  if (cn == 0)
+  {
+    set_fpen(&prefbm, PAL_BACK);
+    for (w=0; w<24; w+=3)
+      fillrect_xy(&prefbm, pcyc[0].x, pcyc[0].y+w, pcyc[0].x+157, pcyc[0].y+w);
+  }
+#endif
 }
 
 void gui_render_prefs( void )
@@ -3142,7 +3151,7 @@ TEXT *gui_encode_pstr( TEXT *out, TEXT *in )
   ic=oc=0;
   while( in[ic] )
   {
-    if( in[ic] == 39 ) out[oc++] = '\\';
+    if(( in[ic] == 39 ) || ( in[ic] == '\\' )) out[oc++] = '\\';
     out[oc++] = in[ic++];
   }
   
@@ -3398,6 +3407,10 @@ void gui_load_prefs( void )
   }
 
   fclose(f);
+
+#ifdef WIN32
+  pref_fullscr = FALSE;
+#endif
 }
 
 void gui_pre_init( void )
@@ -3615,6 +3628,7 @@ BOOL gui_open( void )
   mainbm.h = 600;
 #ifndef __SDL_WRAPPER__
   memcpy(&mainbm.rp, mainwin->RPort, sizeof(struct RastPort));
+  mainbm.bm = mainwin->BitMap;
 #else
   mainbm.srf = ssrf;
 #endif
@@ -6063,6 +6077,9 @@ int32 gui_whichpc( int16 x, int16 y )
   
   for( i=0; i<PC_END; i++ )
   {
+#ifdef WIN32
+    if( i == 0 ) continue;
+#endif
     if( ( x >= pcyc[i].x ) && ( x < pcyc[i].x+160 ) &&
         ( y >= pcyc[i].y ) && ( y < pcyc[i].y+24 ) )
       return i;
@@ -6231,6 +6248,52 @@ BOOL gui_restart( void )
     IExec->ReleaseSemaphore( rp_list_ss );
     return FALSE;
   }
+#else
+  // Just reload the skin...
+  SDL_FreeSurface(bitmaps[BM_LOGO].srf );       bitmaps[BM_LOGO].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_TAB_AREA].srf );   bitmaps[BM_TAB_AREA].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_TAB_LEFT].srf );   bitmaps[BM_TAB_LEFT].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_TAB_MID] .srf) ;   bitmaps[BM_TAB_MID] .srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_TAB_RIGHT].srf );  bitmaps[BM_TAB_RIGHT].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_ITAB_LEFT].srf );  bitmaps[BM_ITAB_LEFT].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_ITAB_MID].srf );   bitmaps[BM_ITAB_MID].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_ITAB_RIGHT].srf ); bitmaps[BM_ITAB_RIGHT].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_BUTBANKR].srf );   bitmaps[BM_BUTBANKR].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_BUTBANKP].srf );   bitmaps[BM_BUTBANKP].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_BG_TRACKER].srf ); bitmaps[BM_BG_TRACKER].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_BG_INSED].srf );   bitmaps[BM_BG_INSED].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_PLUSMINUS].srf );  bitmaps[BM_PLUSMINUS].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_VUMETER] .srf) ;   bitmaps[BM_VUMETER] .srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_DEPTH].srf ) ;     bitmaps[BM_DEPTH].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_BLANK].srf ) ;     bitmaps[BM_BLANK].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_WAVEMETERS].srf ); bitmaps[BM_WAVEMETERS].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_PRF_BG].srf );     bitmaps[BM_PRF_BG].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_PRF_CYCLE].srf );  bitmaps[BM_PRF_CYCLE].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_TRKBANKR].srf );   bitmaps[BM_TRKBANKR].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_TRKBANKP].srf );   bitmaps[BM_TRKBANKP].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_CHANMUTE].srf );   bitmaps[BM_CHANMUTE].srf = NULL;
+  SDL_FreeSurface(bitmaps[BM_DIRPOPUP].srf );   bitmaps[BM_DIRPOPUP].srf = NULL;
+
+  if (bitmaps[BM_ITAB_TEXT].srf)
+  {
+    SDL_FreeSurface(bitmaps[BM_ITAB_TEXT].srf );
+    bitmaps[BM_ITAB_TEXT].srf = NULL;
+  }
+
+  if (bitmaps[BM_TAB_TEXT].srf)
+  {
+    SDL_FreeSurface(bitmaps[BM_TAB_TEXT].srf );
+    bitmaps[BM_TAB_TEXT].srf = NULL;
+  }
+
+  if( !gui_open_skin_images() )
+  {
+    printf( "Error loading skin. Reverting to SIDMonster-Light...\n" );
+    strcpy( skindir, "Skins/SIDMonster-Light" );
+    if( !gui_open_skin_images() ) return FALSE;
+  }
+
+  gui_render_everything();
 #endif
   return TRUE; 
 }
@@ -6419,8 +6482,6 @@ void gui_handler( uint32 gotsigs )
           switch( msg->Code )
           {
             case SELECTDOWN:
-              if( gui_checkpc_down( x, y ) ) break;
-              if( gui_checkpop_down( x, y ) ) break;
               if( gui_check_ptbox_press( x, y ) ) return;
 
               if( ptbx )
@@ -6431,9 +6492,10 @@ void gui_handler( uint32 gotsigs )
 #ifdef __SDL_WRAPPER__
                 bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
 #endif
-                break;
               }
-      
+
+              if( gui_checkpc_down( x, y ) ) break;
+              if( gui_checkpop_down( x, y ) ) break;
               break;
             case SELECTUP:
               if( ptbx != NULL ) break;
@@ -8468,13 +8530,6 @@ void gui_handler( uint32 gotsigs )
 #endif
     }
   }
-  
-  if( pref_dorestart )
-  {
-    if( !gui_restart() )
-      quitting = TRUE;
-    pref_dorestart = FALSE;
-  }   
 }
 
 void gui_shutdown( void )

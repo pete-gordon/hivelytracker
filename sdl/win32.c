@@ -76,13 +76,25 @@ BOOL directoryrequester( char *title, char *path )
 	bi.lpfn           = BrowseCallbackProc;
 	bi.lParam         = (LPARAM) tmp;
 
-  if ((pidl = SHBrowseForFolder(&bi)) == NULL)
+  if ((pidl = SHBrowseForFolder(&bi)) != NULL)
 	{
-		bResult = SHGetPathFromIDList(pidl, path);
-		CoTaskMemFree(pidl);
-    strncpy(path, tmp, 512);
-    path[511] = 0;
+		bResult = SHGetPathFromIDList(pidl, tmp);
+    CoTaskMemFree(pidl);
+    if (bResult)
+    {
+      strncpy(path, tmp, 512);
+      path[511] = 0;
+      SDL_WM_SetCaption(path, path);
+    }
+    else
+    {
+      SDL_WM_SetCaption("No", "No");
+    }
 	}
+  else
+  {
+    SDL_WM_SetCaption("No 2", "No 2");
+  }
 
 	return bResult;
 }
