@@ -38,11 +38,11 @@ BOOL init( void )
     srfdepth = info->vfmt->BitsPerPixel;
 
   // Try to setup the video display
-#ifndef WIN32
-  ssrf = SDL_SetVideoMode( 800, 600, srfdepth, pref_fullscr ? SDL_FULLSCREEN : SRFTYPE );
-#else
-  // requesters cause all kinds of problems for fullscreen on windows, so ignore it
+#if defined(WIN32) || defined(__APPLE__)
+  // requesters cause all kinds of problems for fullscreen on windows and OSX, so ignore it
   ssrf = SDL_SetVideoMode( 800, 600, srfdepth, SRFTYPE );
+#else
+  ssrf = SDL_SetVideoMode( 800, 600, srfdepth, pref_fullscr ? SDL_FULLSCREEN : SRFTYPE );
 #endif
   if( !ssrf )
   {
