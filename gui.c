@@ -3312,8 +3312,13 @@ void gui_loadskinsettings( void )
 
       pal[pen] = col;
 #ifdef __SDL_WRAPPER__
+#ifdef __APPLE__
+      // Work-around for SDL bug on OSX
+      mappal[pen] = SDL_MapRGB(ssrf->format, col&0xff, (col>>8)&0xff, (col>>16)&0xff) >> 8;
+#else
       mappal[pen] = SDL_MapRGB(ssrf->format, (col>>16)&0xff, (col>>8)&0xff, col&0xff);
-#endif  
+#endif
+#endif
       // Just in case the skin doesn't specify
       // tab colours
       if( pen == PAL_BTNTEXT )   pal[PAL_TABTEXT]   = col;
