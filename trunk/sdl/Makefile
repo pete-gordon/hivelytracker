@@ -21,7 +21,8 @@ OBJECTS = sdl_wrapper.o \
 	  ../gui.o \
 	  ../replay.o \
 	  ../util.o \
-	  ../undo.o
+	  ../undo.o \
+	  ../about.o
 
 
 

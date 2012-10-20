@@ -51,6 +51,11 @@ BOOL gui_restart( void );
 BOOL make_image( struct rawbm *bm, uint16 w, uint16 h );
 BOOL open_image( TEXT *name, struct rawbm *bm );
 
+void set_fcol(struct rawbm *bm, uint32 col);
+void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2);
+void bm_to_bm(struct rawbm *src, int sx, int sy, struct rawbm *dest, int dx, int dy, int w, int h);
+
+
 enum
 {
   D_IDLE = 0,
