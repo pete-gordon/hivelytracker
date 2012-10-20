@@ -6514,6 +6514,7 @@ void gui_handler( uint32 gotsigs )
           switch( msg->Code )
           {
             case 197:
+            case 13: // ESC is intermittently broken on my laptop :-/
               wantclose = TRUE;
               break;
           }
