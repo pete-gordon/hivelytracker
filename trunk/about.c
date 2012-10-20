@@ -442,7 +442,7 @@ void about_handler( uint32 gotsigs )
   struct IntuiMessage *msg;
   BOOL closeme;
   
-  closeme = FALS;
+  closeme = FALSE;
 
   if( gotsigs & about_timesig )
   {

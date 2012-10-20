@@ -27,6 +27,7 @@ struct MsgPort *rp_msgport     = NULL;
 uint32          rp_sigs        = 0;
 
 uint32          rp_freq        = FREQ;
+float64         rp_freqf       = FREQ;
 uint32          rp_audiobuflen;
 int8           *rp_audiobuffer[2]  = { NULL, NULL };
 
