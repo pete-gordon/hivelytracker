@@ -8,7 +8,7 @@
 #include <system_includes.h>
 #include <replay.h>
 #include <gui.h>
-//#include <about.h>
+#include <about.h>
 
 BOOL quitting = FALSE;
 extern BOOL pref_dorestart;
@@ -16,6 +16,7 @@ extern BOOL needaflip;
 extern SDL_Surface *ssrf;
 int srfdepth = 16;
 extern BOOL pref_fullscr;
+extern BOOL aboutwin_open;
 
 SDL_Event event;
 
@@ -24,10 +25,10 @@ BOOL init( void )
   const SDL_VideoInfo *info = NULL;
 
   gui_pre_init();
-//  about_pre_init();
+  about_pre_init();
 
   // Go SDL!
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
+  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER ) < 0 )
   {
     printf( "SDL init failed" );
     return FALSE;
@@ -64,15 +65,15 @@ BOOL init( void )
 
   if( !rp_init() )  return FALSE;
   if( !gui_init() ) return FALSE;  
-//  if( !about_init() ) return FALSE;
+  if( !about_init() ) return FALSE;
 
   return TRUE;
 }
 
 void shutdown( void )
 {
-//  about_shutdown();
-   gui_shutdown();
+  about_shutdown();
+  gui_shutdown();
   rp_shutdown();
 }
 
@@ -81,7 +82,7 @@ int main( int argc, char *argv[] )
   if( init() )
   {
     SDL_Flip(ssrf);
-    gui_req(0, "Here be dragons!", "This is beta software. Don't spread it.\nDon't expect it to work, or not to crash.\n\nBeta 4 (" __DATE__ " " __TIME__ ")", "OK");
+    gui_req(0, "Here be dragons!", "This is beta software. Don't spread it.\nDon't expect it to work, or not to crash.\n\nBeta 5 (" __DATE__ " " __TIME__ ")", "OK");
     quitting = FALSE;
     while( !quitting )
     {
@@ -102,7 +103,10 @@ int main( int argc, char *argv[] )
             break;
 
           default:
-            gui_handler(0);
+            if (aboutwin_open)
+              about_handler(0);
+            else
+              gui_handler(0);
             break;
         }
       }

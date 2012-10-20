@@ -28,6 +28,8 @@
 #include <proto/asl.h>
 #include <proto/keymap.h>
 
+#include <devices/timer.h>
+
 // Just for the requester...
 #define ALL_REACTION_CLASSES
 #define ALL_REACTION_MACROS

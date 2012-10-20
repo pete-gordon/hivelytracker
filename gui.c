@@ -51,6 +51,7 @@ extern int srfdepth;
 extern SDL_Event event;
 extern int16 rp_audiobuffer[];
 extern uint32 rp_audiobuflen;
+extern BOOL aboutwin_open;
 #endif
 
 BOOL gui_savethem;
@@ -450,7 +451,7 @@ BOOL prefwin_open = FALSE;
 
 int32 last_tbox = -1;
 
-struct rawbm      mainbm, prefbm, aboutbm;
+struct rawbm      mainbm, prefbm;
 struct rawbm      bitmaps[BM_END];
 struct czone      zones[MAX_ZONES], pzones[MAX_PZONES];
 struct numberbox  trk_nb[NB_END], ins_nb[INB_END];
@@ -608,6 +609,19 @@ void set_fpen(struct rawbm *bm, int pen)
   bm->fpenset = TRUE;
 }
 
+void set_fcol(struct rawbm *bm, uint32 col)
+{
+#ifndef __SDL_WRAPPER__
+  IGraphics->SetRPAttrs( &bm->rp, RPTAG_APenColor, col, TAG_DONE );
+#else
+  bm->fsc.r = col>>16;
+  bm->fsc.g = col>>8;
+  bm->fsc.b = col;
+#endif
+
+  bm->fpenset = FALSE;
+}
+
 void set_bpen(struct rawbm *bm, int pen)
 {
   if ((bm->bpenset) && (bm->bpen == pen))
@@ -637,7 +651,13 @@ void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2)
   IGraphics->RectFill( &bm->rp, x, y, x2, y2 );
 #else
   SDL_Rect rect = { .x = x+bm->offx, .y = y+bm->offy, .w = (x2-x)+1, .h = (y2-y)+1 };
-  SDL_FillRect(bm->srf, &rect, mappal[bm->fpen]);
+  Uint32 col;
+
+  if (bm->fpenset)
+    col = mappal[bm->fpen];
+  else
+    col = SDL_MapRGB(bm->srf->format, bm->fsc.r, bm->fsc.g, bm->fsc.b);
+  SDL_FillRect(bm->srf, &rect, col);
 #endif
 }
 
@@ -3012,7 +3032,7 @@ void gui_render_pcycle( int32 cn, BOOL pressed )
   set_fpen(&prefbm, PAL_BTNTEXT);
   printstr(&prefbm, ctxt, tx, pcyc[cn].y+4);
 
-#ifdef WIN32
+#if defined(WIN32) || defined(__APPLE__)
   if (cn == 0)
   {
     set_fpen(&prefbm, PAL_BACK);
@@ -3136,6 +3156,7 @@ void gui_close_prefs( void )
   prefbm.bm = NULL;
 #else
   prefwin_open = FALSE;
+  aboutwin_open = FALSE;
   gui_render_everything();
 #endif
 
@@ -3413,7 +3434,7 @@ void gui_load_prefs( void )
 
   fclose(f);
 
-#ifdef WIN32
+#if defined(WIN32) || defined(APPLE)
   pref_fullscr = FALSE;
 #endif
 }
@@ -3446,7 +3467,6 @@ void gui_pre_init( void )
 #endif
 
   memset(&prefbm, 0, sizeof(prefbm));
-  memset(&aboutbm, 0, sizeof(aboutbm));
 }
 
 void gui_save_prefs( void )
@@ -4349,9 +4369,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
   switch( b )
   {
     case BBA_ABOUT:
-#ifndef __SDL_WRAPPER__
       about_toggle();
-#endif
       break;
     
     case BBA_ZAP:
@@ -6082,7 +6100,7 @@ int32 gui_whichpc( int16 x, int16 y )
   
   for( i=0; i<PC_END; i++ )
   {
-#ifdef WIN32
+#if defined(WIN32) || defined(__APPLE__)
     if( i == 0 ) continue;
 #endif
     if( ( x >= pcyc[i].x ) && ( x < pcyc[i].x+160 ) &&
@@ -6435,6 +6453,8 @@ void gui_handler( uint32 gotsigs )
       gui_render_wavemeter();
 
 #ifdef __SDL_WRAPPER__
+    if (prefwin_open)
+      bm_to_bm(&prefbm, -4, -4, &mainbm, 196, 146, 408, 308);
     return;
 #endif
   }
