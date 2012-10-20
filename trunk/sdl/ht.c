@@ -38,6 +38,8 @@ BOOL init( void )
   if( (info = SDL_GetVideoInfo()) )
     srfdepth = info->vfmt->BitsPerPixel;
 
+  SDL_WM_SetIcon( SDL_LoadBMP( "winicon.bmp" ), NULL );
+
   // Try to setup the video display
 #if defined(WIN32) || defined(__APPLE__)
   // requesters cause all kinds of problems for fullscreen on windows and OSX, so ignore it
