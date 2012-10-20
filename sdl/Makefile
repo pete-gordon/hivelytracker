@@ -26,8 +26,11 @@ OBJECTS = sdl_wrapper.o \
 
 
 
-$(TARGET): $(OBJECTS)
-	$(CC) -o $(TARGET) $(OBJECTS) $(LFLAGS)
+$(TARGET): $(OBJECTS) winicon.o
+	$(CC) -o $(TARGET) $(OBJECTS) winicon.o $(LFLAGS)
+
+winicon.o: winicon.ico hivelytracker.rc
+	windres -i hivelytracker.rc -o winicon.o
 
 $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
