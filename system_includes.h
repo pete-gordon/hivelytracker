@@ -26,6 +26,7 @@
 #include <proto/graphics.h>
 #include <proto/diskfont.h>
 #include <proto/asl.h>
+#include <proto/ahi.h>
 #include <proto/keymap.h>
 
 #include <devices/timer.h>

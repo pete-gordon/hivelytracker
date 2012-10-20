@@ -1,5 +1,5 @@
 
-CFLAGS = -Wall -O3 -gstabs
+CFLAGS = -Wall -O3 -gstabs -I.
 
 CC = gcc
 AR = ar

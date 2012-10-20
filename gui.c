@@ -664,7 +664,7 @@ void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2)
 void bm_to_bm(struct rawbm *src, int sx, int sy, struct rawbm *dest, int dx, int dy, int w, int h)
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->BltBitMapRastPort(src->bm, sx, sy, &dest->rp, dx, dy, w, h);
+  IGraphics->BltBitMapRastPort(src->bm, sx, sy, &dest->rp, dx, dy, w, h, 0x0C0);
 #else
   SDL_Rect srect = { .x = sx+src->offx, .y = sy+src->offy, .w = w, .h = h };
   SDL_Rect drect = { .x = dx+dest->offx, .y = dy+dest->offy, .w = w, .h = h };
@@ -858,6 +858,9 @@ BOOL make_image( struct rawbm *bm, uint16 w, uint16 h )
 {
   bm->w = w;
   bm->h = h;
+  bm->fontset = FALSE;
+  bm->fpenset = FALSE;
+  bm->bpenset = FALSE;
 #ifndef __SDL_WRAPPER__
   IGraphics->InitRastPort( &bm->rp );
   bm->bm = IGraphics->AllocBitMap( bm->w, bm->h, 8, 0, mainwin->RPort->BitMap );
@@ -1138,7 +1141,7 @@ void gui_render_tbox( struct rawbm *bm, struct textbox *tb )
 void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL force )
 {
   TEXT pbuf[32];
-  int32 i, j, k, n, col;
+  int32 i, j, k, n;
   int32 cx, cy, mx, my;
 
   if( ins == NULL )
@@ -1574,7 +1577,7 @@ void gui_setup_trkbbank( int32 which )
     if( tbank[i].name != NULL )
     {
 #ifndef __SDL_WRAPPER__
-      tbank[i].xo = 26 - ( IGraphics->TextLength( mainwin->RPort, tbank[i].name, strlen( tbank[i].name ) ) >> 1 );
+      tbank[i].xo = 26 - ( IGraphics->TextLength( &mainbm.rp, tbank[i].name, strlen( tbank[i].name ) ) >> 1 );
 #else
       int w, h;
       TTF_SizeText(mainbm.font, tbank[i].name, &w, &h);
@@ -1666,7 +1669,7 @@ void gui_setup_buttonbank( int32 which )
     if( bbank[i].name != NULL )
     {
 #ifndef __SDL_WRAPPER__
-      bbank[i].xo = 40 - ( IGraphics->TextLength( mainwin->RPort, bbank[i].name, strlen( bbank[i].name ) ) >> 1 );
+      bbank[i].xo = 40 - ( IGraphics->TextLength( &mainbm.rp, bbank[i].name, strlen( bbank[i].name ) ) >> 1 );
 #else
       int w, h;
       TTF_SizeText(mainbm.font, bbank[i].name, &w, &h);
@@ -1807,7 +1810,7 @@ void gui_render_tabs( void )
     tname = at->at_Name[0] ? at->at_Name : "[Untitled]";
 
 #ifndef __SDL_WRAPPER__
-    n = IGraphics->TextLength( mainwin->RPort, tname, strlen( tname ) );
+    n = IGraphics->TextLength( &mainbm.rp, tname, strlen( tname ) );
 #else
     TTF_SizeText(mainbm.font, tname, &n, &k);
 #endif
@@ -2347,7 +2350,7 @@ void gui_render_tracked( BOOL force )
   
   if( at->at_editing == E_TRACK )
   {
-    int32 cx, cy, mx, my, col;
+    int32 cx, cy, mx, my;
 
     if( at->at_doing == D_EDITING )
       set_fpen(&bitmaps[BM_TRACKED], PAL_CURSEDIT);
@@ -3020,17 +3023,19 @@ void gui_render_pcycle( int32 cn, BOOL pressed )
   ctxt = pcyc[cn].options[pcyc[cn].copt];
   if( ctxt == NULL ) return;
 
+  set_font(&prefbm, FONT_PRP, FALSE);
+
 #ifndef __SDL_WRAPPER__
-  w = IGraphics->TextLength( prefwin->RPort, ctxt, strlen( ctxt ) );
+  w = IGraphics->TextLength( &prefbm.rp, ctxt, strlen( ctxt ) );
 #else
   TTF_SizeText(prefbm.font, ctxt, &w, &tx);
 #endif
   tx = pcyc[cn].x+pw_bl+(79-(w>>1));
 
   set_fpen(&prefbm, PAL_BTNSHADOW);
-  printstr(&prefbm, ctxt, tx+1, pcyc[cn].y+5);
+  printstr(&prefbm, ctxt, tx+1, pcyc[cn].y+pw_bt+5);
   set_fpen(&prefbm, PAL_BTNTEXT);
-  printstr(&prefbm, ctxt, tx, pcyc[cn].y+4);
+  printstr(&prefbm, ctxt, tx, pcyc[cn].y+pw_bt+4);
 
 #if defined(WIN32) || defined(__APPLE__)
   if (cn == 0)
@@ -3046,7 +3051,7 @@ void gui_render_prefs( void )
 {
   int32 i;
   
-  bm_to_bm( &bitmaps[BM_PRF_BG], 0, 0, &prefbm, 0, 0, 400, 300);
+  bm_to_bm( &bitmaps[BM_PRF_BG], 0, 0, &prefbm, pw_bl, pw_bt, 400, 300);
   
   for( i=0; i<PC_END; i++ )
     gui_render_pcycle( i, FALSE );
@@ -3098,15 +3103,19 @@ void gui_open_prefs( void )
     return;
   }
 
+  memset(&prefbm, 0, sizeof(struct rawbm));
   memcpy(&prefbm.rp, prefwin->RPort, sizeof(struct RastPort));
-  prefbm.bm = prefwin->BitMap;
+  prefbm.bm = prefwin->RPort->BitMap;
   
   pw_bl = prefwin->BorderLeft;
   pw_bt = prefwin->BorderTop;
+  
 #else
   pw_bl = 0;
   pw_bt = 0;
 #endif
+
+  set_font(&prefbm, FONT_PRP, FALSE);
 
   gui_set_pcycle( PC_WMODE,     220, 8     , pref_fullscr ? 1 : 0, pc_wmode_opts );
   gui_set_pcycle( PC_DEFSTEREO, 220, 8+24*1, pref_defstereo,  pc_defst_opts );
@@ -3122,7 +3131,6 @@ void gui_open_prefs( void )
 
   gui_set_pcycle( PC_MAXUNDOBUF, 220, 8+24*6, pref_maxundobuf, pc_mundo_opts );
 
-  set_font(&prefbm, FONT_PRP, FALSE);
   gui_render_prefs();
 
 #ifndef __SDL_WRAPPER__
@@ -3154,9 +3162,22 @@ void gui_close_prefs( void )
   prefwin_sig = 0;
   memset(&prefbm.rp, 0, sizeof(struct RastPort));
   prefbm.bm = NULL;
+
+  for( i=0; i<PTB_END; i++ )
+  {
+    if( ptb[i].bm.bm ) IGraphics->FreeBitMap( ptb[i].bm.bm );
+    ptb[i].bm.bm = NULL;
+  }
 #else
   prefwin_open = FALSE;
   aboutwin_open = FALSE;
+
+  for( i=0; i<PTB_END; i++ )
+  {
+    if( ptb[i].bm.srf ) SDL_FreeSurface( ptb[i].bm.srf );
+    ptb[i].bm.srf = NULL;
+  }
+
   gui_render_everything();
 #endif
 
@@ -3477,16 +3498,16 @@ void gui_save_prefs( void )
   f = fopen( "ht.prefs", "w" );
   if( !f ) return;
   
-  fprintf( f, "display = %ld\n",   pref_fullscr );
-  fprintf( f, "defstereo = %ld\n", pref_defstereo );
-  fprintf( f, "blankzero = %ld\n", pref_blankzeros );
-  fprintf( f, "maxundobf = %ld\n", pref_maxundobuf );
+  fprintf( f, "display = %d\n",   (int)pref_fullscr );
+  fprintf( f, "defstereo = %d\n", (int)pref_defstereo );
+  fprintf( f, "blankzero = %d\n", (int)pref_blankzeros );
+  fprintf( f, "maxundobf = %d\n", (int)pref_maxundobuf );
   fprintf( f, "songdir = '%s'\n",  gui_encode_pstr( tmp, songdir ) );
   fprintf( f, "instdir = '%s'\n",  gui_encode_pstr( tmp, instdir ) );
   fprintf( f, "skindir = '%s'\n",  gui_encode_pstr( tmp, skindir ) );
-  fprintf( f, "posedadvance = %ld\n", posedadvance );
-  fprintf( f, "notejump = %ld\n",  defnotejump );
-  fprintf( f, "inotejump = %ld\n",  definotejump );
+  fprintf( f, "posedadvance = %d\n", (int)posedadvance );
+  fprintf( f, "notejump = %d\n",  (int)defnotejump );
+  fprintf( f, "inotejump = %d\n",  (int)definotejump );
   fclose( f );
 }
 
@@ -3646,6 +3667,7 @@ BOOL gui_open( void )
     printf( "Unable to open main window!\n" );
     return FALSE;
   }
+
 #endif // __SDL_WRAPPER__
 
   memset(&mainbm, 0, sizeof(mainbm));
@@ -3653,7 +3675,7 @@ BOOL gui_open( void )
   mainbm.h = 600;
 #ifndef __SDL_WRAPPER__
   memcpy(&mainbm.rp, mainwin->RPort, sizeof(struct RastPort));
-  mainbm.bm = mainwin->BitMap;
+  mainbm.bm = mainwin->RPort->BitMap;
 #else
   mainbm.srf = ssrf;
 #endif
@@ -5988,7 +6010,6 @@ void gui_textbox_keypress( struct rawbm *bm, struct textbox **ttbx, struct Intui
 //        if( msg->Code < 128 )
 //          printf( "%d (%d)\n", msg->Code, msg->Code+128 );
       }
-      actual = event.key.keysym.sym;
       break;
   }
 }
@@ -6184,7 +6205,9 @@ void gui_render_everything( void )
   gui_render_main_buttonbank();
   gui_render_tunepanel( TRUE );
   gui_render_wavemeter();
+#ifdef __SDL_WRAPPER__
   if (prefwin_open) gui_render_prefs();
+#endif
 }
 
 BOOL gui_restart( void )
@@ -8555,6 +8578,15 @@ void gui_handler( uint32 gotsigs )
 #endif
     }
   }
+
+#ifndef __SDL_WRAPPER__
+  if( pref_dorestart )
+  {
+    if( !gui_restart() )
+      quitting = TRUE;
+    pref_dorestart = FALSE;
+  }
+#endif
 }
 
 void gui_shutdown( void )
