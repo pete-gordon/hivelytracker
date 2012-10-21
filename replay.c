@@ -3642,13 +3642,16 @@ BOOL rp_subtask_init( void )
 {
   if( !rp_alloc_buffers() ) return FALSE;
 
-  rp_msgport = IExec->CreateMsgPort();
+  rp_msgport = IExec->AllocSysObjectTags(ASOT_PORT, TAG_DONE);
   if( !rp_msgport ) return FALSE;
   
-  ahi_mp = IExec->CreateMsgPort();
+  ahi_mp = IExec->AllocSysObjectTags(ASOT_PORT, TAG_DONE);
   if( !ahi_mp ) return FALSE;
   
-  ahi_io[0] = (struct AHIRequest *)IExec->CreateIORequest( ahi_mp, sizeof( struct AHIRequest ) );
+  ahi_io[0] = (struct AHIRequest *)IExec->AllocSysObjectTags(ASOT_IOREQUEST,
+    ASOIOR_ReplyPort, ahi_mp,
+    ASOIOR_Size,      sizeof( struct AHIRequest ),
+    TAG_DONE);
   if( ahi_io[0] == NULL ) return FALSE;
 
   ahi_io[0]->ahir_Version = 4;
@@ -3660,29 +3663,27 @@ BOOL rp_subtask_init( void )
   IAHI = (struct AHIIFace *)IExec->GetInterface( AHIBase, "main", 1, NULL );
   if( !IAHI ) return FALSE;
   
-  ahi_io[1] = IExec->AllocVec( sizeof( struct AHIRequest ), MEMF_ANY );
+  ahi_io[1] = IExec->AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_Size, sizeof( struct AHIRequest ), ASOIOR_Duplicate, ahi_io[0], TAG_DONE );
   if( ahi_io[1] == NULL ) return FALSE;
   
-  IExec->CopyMem( ahi_io[0], ahi_io[1], sizeof( struct AHIRequest ) );
-
   return TRUE;
 }
 
 void rp_subtask_shut( void )
 {
-  if( ahi_io[1] )     IExec->FreeVec( ahi_io[1] );
   if( IAHI )          IExec->DropInterface( (struct Interface *)IAHI );
   if( ahi_dev != -1 )
   {
     IExec->CloseDevice( (struct IORequest *)ahi_io[0] );
-    IExec->DeleteIORequest( (struct IORequest *)ahi_io[0] );
+    IExec->FreeSysObject( ASOT_IOREQUEST, ahi_io[0] );
   }
-  if( ahi_mp )        IExec->DeleteMsgPort( ahi_mp );
+  if( ahi_io[1] )     IExec->FreeSysObject( ASOT_IOREQUEST, ahi_io[1] );
+  if( ahi_mp )        IExec->FreeSysObject( ASOT_PORT, ahi_mp );
   if( rp_msgport )
   {
     struct Message *msg;
     while( ( msg = IExec->GetMsg( rp_msgport ) ) ) IExec->ReplyMsg( msg );
-    IExec->DeleteMsgPort( rp_msgport );
+    IExec->FreeSysObject( ASOT_PORT, rp_msgport );
     rp_msgport = NULL;
   }
   if( rp_audiobuffer[0] ) IExec->FreePooled( rp_mempool, rp_audiobuffer[0], rp_audiobuflen * 2 );
@@ -4017,7 +4018,7 @@ BOOL rp_init( void )
   }
 
 #ifndef __SDL_WRAPPER__
-  rp_replyport = IExec->CreateMsgPort();
+  rp_replyport = IExec->AllocSysObject(ASOT_PORT, TAG_DONE);
   if( !rp_replyport )
   {
     printf( "Unable to create a message port\n" );
@@ -4119,7 +4120,7 @@ void rp_shutdown( void )
   
   if( rp_mainmsg )   IExec->FreeSysObject( ASOT_MESSAGE, rp_mainmsg );
   
-  if( rp_replyport ) IExec->DeleteMsgPort( rp_replyport );
+  if( rp_replyport ) IExec->FreeSysObject( ASOT_PORT, rp_replyport );
 
   if( rp_mempool )  IExec->FreeSysObject( ASOT_MEMPOOL, rp_mempool );  
 

@@ -55,7 +55,7 @@ struct rawbm stuff_bm;
 int16 slice[320/2];
 float64 sinpos = 0, cospos = 0;
 
-TEXT *scrtxt = " hivelytracker version 1.6  ::  code by xeron of iris  "
+TEXT *scrtxt = " hivelytracker version 1.7  ::  code by xeron of iris  "
                "::  gui design and skins created by spot of up rough  "
                "::  example tunes by xeron of iris, varthall of up rough, oxide of sonik and syphus  "
                "::  hivelytracker is based on ahx by dexter and pink of abyss  "
@@ -131,7 +131,7 @@ BOOL about_init( void )
   int32 r, g, b, i;
 
 #ifndef __SDL_WRAPPER__
-  ab_tioport = IExec->CreateMsgPort();
+  ab_tioport = IExec->AllocSysObjectTags(ASOT_PORT, TAG_DONE);
   if( !ab_tioport )
   {
     printf( "Unable to create message port\n" );
@@ -140,7 +140,10 @@ BOOL about_init( void )
   
   about_timesig = 1L<<ab_tioport->mp_SigBit;
   
-  ab_tioreq = (struct TimeRequest *)IExec->CreateIORequest( ab_tioport, sizeof( struct TimeRequest ) );
+  ab_tioreq = (struct TimeRequest *)IExec->AllocSysObjectTags(ASOT_IOREQUEST,
+    ASOIOR_ReplyPort, ab_tioport,
+    ASOIOR_Size,      sizeof( struct TimeRequest ),
+    TAG_DONE);
   if( !ab_tioreq )
   {
     printf( "Unable to create io request!\n" );
@@ -287,8 +290,8 @@ void about_shutdown( void )
     }
     IExec->CloseDevice( (struct IORequest *)ab_tioreq );
   }
-  if( ab_tioreq )   IExec->DeleteIORequest( (struct IORequest *)ab_tioreq );
-  if( ab_tioport )  IExec->DeleteMsgPort( ab_tioport );
+  if( ab_tioreq )   IExec->FreeSysObject( ASOT_IOREQUEST, ab_tioreq );
+  if( ab_tioport )  IExec->FreeSysObject( ASOT_PORT, ab_tioport );
 
   about_bm.bm = NULL;
   afont_bm.bm = NULL;
@@ -319,8 +322,8 @@ void about_open( void )
     WA_Top,         ab_y,
     WA_InnerWidth,  320,
     WA_InnerHeight, 240,
-    WA_Title,       "HivelyTracker v1.6",
-    WA_ScreenTitle, "HivelyTracker (c)2008 IRIS & Up Rough! - http://www.irishq.dk - http://www.uprough.net - http://www.hivelytracker.com",
+    WA_Title,       "HivelyTracker v1.7",
+    WA_ScreenTitle, "HivelyTracker (c)2012 IRIS & Up Rough! - http://www.irishq.dk - http://www.uprough.net - http://www.hivelytracker.com",
     WA_RMBTrap,     TRUE,
     WA_IDCMP,       IDCMP_CLOSEWINDOW,  //|IDCMP_MOUSEBUTTONS,
     WA_Activate,    TRUE,
