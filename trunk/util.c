@@ -9,7 +9,7 @@
 */
 BOOL getLibIFace( struct Library **libbase, TEXT *libname, uint32 version, void *ifaceptr )
 {
-  struct Interface **ifptr = (struct interface **)ifaceptr;
+  struct Interface **ifptr = (struct Interface **)ifaceptr;
 
   *libbase = IExec->OpenLibrary( libname, version );
   if( *libbase == NULL )

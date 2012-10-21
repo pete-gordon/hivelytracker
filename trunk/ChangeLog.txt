@@ -1,3 +1,19 @@
+1.7 xx-xxx-2012
+===============
+
+All platforms:
+
+- Fixed some crash bugs when closing tabs under certain circumstances
+- Fixed some memory leaks
+- Added an SDL wrapper that allows HivelyTracker to build for other
+  platforms (Windows, OSX..)
+
+
+OS4:
+
+- Replaced some deprecated system calls with newer OS4 APIs
+
+
 1.6 22-Oct-2008
 ===============
 
