@@ -3654,7 +3654,7 @@ BOOL gui_open( void )
     WA_Width,       800,
     WA_Height,      600,
     WA_Borderless,  TRUE,
-    WA_ScreenTitle, "HivelyTracker (c)2008 IRIS & Up Rough! - http://www.irishq.dk - http://www.uprough.net - http://www.hivelytracker.com",
+    WA_ScreenTitle, "HivelyTracker (c)2012 IRIS & Up Rough! - http://www.irishq.dk - http://www.uprough.net - http://www.hivelytracker.com",
     WA_RMBTrap,     TRUE,
     WA_IDCMP,       IDCMP_MOUSEBUTTONS|IDCMP_RAWKEY|IDCMP_GADGETUP|IDCMP_EXTENDEDMOUSE,
     WA_Activate,    TRUE,
