@@ -4978,19 +4978,22 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
 void gui_press_any_bbank( int32 z, int32 button )
 {
   gui_press_bbank( &bbank[0], 16, z, button );
-  gui_press_bbank( &tbank[0], 12, z, button );
+  if (curtune->at_curpanel == PN_TRACKER)
+    gui_press_bbank( &tbank[0], 12, z, button );
 }
 
 void gui_release_any_bbank( int32 z, int32 button )
 {
   gui_release_bbank( &bbank[0], 16, z, button );
-  gui_release_bbank( &tbank[0], 12, z, button );
+  if (curtune->at_curpanel == PN_TRACKER)
+    gui_release_bbank( &tbank[0], 12, z, button );
 }
 
 BOOL gui_check_any_bbank( int32 z, int32 button )
 {
   if( gui_check_bbank( &bbank[0], 16, z, button ) ) return TRUE;
-  if( gui_check_bbank( &tbank[0], 12, z, button ) ) return TRUE;
+  if (curtune->at_curpanel == PN_TRACKER)
+    if( gui_check_bbank( &tbank[0], 12, z, button ) ) return TRUE;
   return FALSE;
 }
 
