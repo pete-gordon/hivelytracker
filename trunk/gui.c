@@ -656,7 +656,12 @@ void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2)
   if (bm->fpenset)
     col = mappal[bm->fpen];
   else
+#ifdef __APPLE__
+    // Work-around for SDL bug on OSX
+    col = SDL_MapRGB(bm->srf->format, bm->fsc.b, bm->fsc.g, bm->fsc.r) >> 8;
+#else
     col = SDL_MapRGB(bm->srf->format, bm->fsc.r, bm->fsc.g, bm->fsc.b);
+#endif
   SDL_FillRect(bm->srf, &rect, col);
 #endif
 }
@@ -1204,7 +1209,7 @@ void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL forc
     n = ins->ins_PList.pls_Entries[j].ple_Note;
     if( n > 60 ) n = 0;
     
-    sprintf( pbuf, "%03ld %s%c %01d %01X%02X %01X%02X ",
+    sprintf( pbuf, "%03d %s%c %01d %01X%02X %01X%02X ",
       j,
       notenames[n],
       ins->ins_PList.pls_Entries[j].ple_Fixed ? '*' : ' ',
@@ -1294,7 +1299,7 @@ void gui_render_inslistb( BOOL force )
     set_pens(&bitmaps[BM_INSLISTB], PAL_TEXT, PAL_BACK);
     for( i=0, j=at->at_topinsb; i<(INSLSTB_H>>4); i++, j++ )
     {
-      sprintf( tmp, "%02ld                   ", j );
+      sprintf( tmp, "%02d                   ", j );
       in = &at->at_Instruments[j];
 
       for( k=0; k<18; k++ )
@@ -2077,7 +2082,7 @@ void gui_render_tracked( BOOL force )
      
       if( ( i >= 0 ) && ( i < trklen ) )
       {
-        sprintf( pbuf, "%02ld ", i );
+        sprintf( pbuf, "%02d ", i );
         for( k=lch, l=0; k<ech; k++, l++ )
         {
           stp = &at->at_Tracks[at->at_Positions[posnr].pos_Track[k]&0xff][i];
@@ -2143,7 +2148,7 @@ void gui_render_tracked( BOOL force )
         { 
           if( k < ech )
           {
-            sprintf( pbuf, "Track %ld", k+1 );
+            sprintf( pbuf, "Track %d", k+1 );
             set_fpen(&bitmaps[BM_TRACKBAR], PAL_BTNSHADOW);
             printstr(&bitmaps[BM_TRACKBAR], pbuf, j+1, 2);
             set_fpen(&bitmaps[BM_TRACKBAR], PAL_BTNTEXT);
@@ -2208,7 +2213,7 @@ void gui_render_tracked( BOOL force )
 
         if( ( i >= 0 ) && ( i < trklen ) )
         {
-          sprintf( pbuf, "%02ld ", i );
+          sprintf( pbuf, "%02d ", i );
           for( k=lch, l=0; k<ech; k++, l++ )
           {
             stp = &at->at_Tracks[at->at_Positions[posnr].pos_Track[k]&0xff][i];
@@ -2413,7 +2418,7 @@ void gui_render_inslist( BOOL force )
     set_pens(&bitmaps[BM_INSLIST], PAL_TEXT, PAL_BACK);
     for( i=0, j=at->at_topins; i<9; i++, j++ )
     {
-      sprintf( tmp, "%02ld                      ", j );
+      sprintf( tmp, "%02d                      ", j );
       in = &at->at_Instruments[j];
 
       for( k=0; k<21; k++ )
@@ -2526,7 +2531,7 @@ void gui_render_posed( BOOL force )
      
       if( ( i >= 0 ) && ( i < 1000 ) )
       {
-        sprintf( pbuf, "%03ld ", i );
+        sprintf( pbuf, "%03d ", i );
         for( k=lch, l=0; k<ech; k++, l++ )
           sprintf( &pbuf[l*7+4], "%03d %02X ",
             at->at_Positions[i].pos_Track[k]&0xff,
@@ -2612,7 +2617,7 @@ void gui_render_posed( BOOL force )
     set_pens(&bitmaps[BM_POSED], PAL_POSEDCHIND, PAL_BARMID);
     for( k=lch, l=0; k<ech; k++, l++ )
     {
-      sprintf( pbuf, "%ld ", k+1 );
+      sprintf( pbuf, "%d ", k+1 );
       printstr(&bitmaps[BM_POSED], pbuf, l*49+25, 0);
     }      
     set_bpen(&bitmaps[BM_POSED], PAL_BACK);
