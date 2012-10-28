@@ -22,7 +22,7 @@ int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 	{
 		[alert addButtonWithTitle:btnStr];
 	}
-	
+
 	return [alert runModal] - 1000;
 }
 
@@ -42,7 +42,7 @@ char *filerequester( char *title, char *path, char *fname, int type )
 			fileTypes = [NSArray arrayWithObjects:@"hvl", @"HVL", nil];
 			break;
 		case FR_AHXSAVE:
-            fileTypes = [NSArray arrayWithObjects:@"ahx", @"AHX", nil];
+			fileTypes = [NSArray arrayWithObjects:@"ahx", @"AHX", nil];
 			break;
 		case FR_INSSAVE:
 		case FR_INSLOAD:
@@ -51,10 +51,10 @@ char *filerequester( char *title, char *path, char *fname, int type )
 		case FR_MODLOAD:
 			fileTypes = [NSArray arrayWithObjects:@"hvl", @"HVL", @"ahx", @"AHX", nil];
 			break;
-      default:
-        return NULL;
+		default:
+			return NULL;
 	}
-	
+
 	if ((type == FR_INSLOAD) || (type == FR_MODLOAD)) {
 		panel = [NSOpenPanel openPanel];
 	} else {
@@ -62,19 +62,19 @@ char *filerequester( char *title, char *path, char *fname, int type )
 		panel = (NSOpenPanel*) savePanel;
 	}
 
-  [panel setAllowedFileTypes:fileTypes];
-  [panel setAllowsOtherFileTypes:YES];
-  [panel setTitle:[NSString stringWithUTF8String:title]];
-  [panel setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path] isDirectory:YES]];
-  [panel setNameFieldStringValue:[NSString stringWithUTF8String:fname]];
-  int i = [panel runModal];
+	[panel setAllowedFileTypes:fileTypes];
+	[panel setAllowsOtherFileTypes:YES];
+	[panel setTitle:[NSString stringWithUTF8String:title]];
+	[panel setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path] isDirectory:YES]];
+	[panel setNameFieldStringValue:[NSString stringWithUTF8String:fname]];
+	int i = [panel runModal];
 	if (i == 1) {
 		const char *cstr = [[[panel URL] path] UTF8String];
 		char *rval = (char *) malloc(strlen(cstr) + 1);
 		strcpy(rval, cstr);
 		return rval;
 	};
-	
+
 	return NULL;
 }
 
@@ -90,12 +90,12 @@ BOOL directoryrequester( char *title, char *path )
 		const char *cstr = [[[panel URL] path] UTF8String];
 		strncpy(path, cstr, 512);
 		return TRUE;
-	 };
-	 
-	 return FALSE;
+	};
+
+	return FALSE;
 }
 
 char* osxGetPrefsPath()
 {
-  return NULL;
+	return NULL;
 }
