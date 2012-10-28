@@ -5,6 +5,8 @@
 //  Created by Christopher O'Neill on 15/10/2012.
 //
 
+#import "NSFileManager+DirectoryLocations.h"
+
 typedef Uint32   uint32;
 typedef Sint32   int32;
 typedef char     TEXT;
@@ -97,5 +99,13 @@ BOOL directoryrequester( char *title, char *path )
 
 char* osxGetPrefsPath()
 {
-	return NULL;
+	static char *path;
+
+	if(!path) {
+		NSString *strPath = [[NSFileManager defaultManager] applicationSupportDirectory];
+		strPath = [strPath stringByAppendingPathComponent:@"ht.prefs"];
+		path = malloc([strPath length] + 1);
+		strcpy(path, [strPath UTF8String]);
+	}
+	return path;
 }
