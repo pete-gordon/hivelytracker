@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		002F3A2E09D0888800EBEB88 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = 002F3A2C09D0888800EBEB88 /* SDLMain.m */; };
+		830D2602163DCF880045F28B /* NSFileManager+DirectoryLocations.m in Sources */ = {isa = PBXBuildFile; fileRef = 830D2601163DCF880045F28B /* NSFileManager+DirectoryLocations.m */; };
 		830E7A9D162F353000AF00A8 /* SDL_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7A9C162F353000AF00A8 /* SDL_image.framework */; };
 		830E7A9F162F353000AF00A8 /* SDL_ttf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7A9E162F353000AF00A8 /* SDL_ttf.framework */; };
 		830E7AA1162F353000AF00A8 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7AA0162F353000AF00A8 /* SDL.framework */; };
@@ -52,6 +53,8 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		830D2600163DCF880045F28B /* NSFileManager+DirectoryLocations.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSFileManager+DirectoryLocations.h"; sourceTree = "<group>"; };
+		830D2601163DCF880045F28B /* NSFileManager+DirectoryLocations.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSFileManager+DirectoryLocations.m"; sourceTree = "<group>"; };
 		830E7A9C162F353000AF00A8 /* SDL_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_image.framework; path = /Library/Frameworks/SDL_image.framework; sourceTree = "<absolute>"; };
 		830E7A9E162F353000AF00A8 /* SDL_ttf.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_ttf.framework; path = /Library/Frameworks/SDL_ttf.framework; sourceTree = "<absolute>"; };
 		830E7AA0162F353000AF00A8 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
@@ -91,6 +94,8 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				830D2600163DCF880045F28B /* NSFileManager+DirectoryLocations.h */,
+				830D2601163DCF880045F28B /* NSFileManager+DirectoryLocations.m */,
 				002F3A2B09D0888800EBEB88 /* SDLMain.h */,
 				002F3A2C09D0888800EBEB88 /* SDLMain.m */,
 				83961E54162CCBE800B4B9E0 /* osx.m */,
@@ -279,6 +284,7 @@
 				83961D31162C9CBD00B4B9E0 /* sdl_wrapper.c in Sources */,
 				83961E55162CCBE800B4B9E0 /* osx.m in Sources */,
 				8367E2D616342BEF00E0C1C1 /* about.c in Sources */,
+				830D2602163DCF880045F28B /* NSFileManager+DirectoryLocations.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -15,6 +15,9 @@
 #include "util.h"
 #include "about.h"
 #include "undo.h"
+#ifdef __APPLE__
+char *osxGetPrefsPath();
+#endif
 
 #ifndef __SDL_WRAPPER__
 struct Library *IntuitionBase = NULL;
@@ -3384,7 +3387,11 @@ void gui_load_prefs( void )
   int32 i;
   TEXT tmp[256];
   
+#ifdef __APPLE__
+  f = fopen( osxGetPrefsPath(), "r");
+#else
   f = fopen( "ht.prefs", "r" );
+#endif
   if( !f ) return;
   
   while( fgets(tmp, 256, f) )
@@ -3500,7 +3507,11 @@ void gui_save_prefs( void )
   FILE *f;
   TEXT tmp[1024];
   
+#ifdef __APPLE__
+  f = fopen( osxGetPrefsPath(), "w" );
+#else
   f = fopen( "ht.prefs", "w" );
+#endif
   if( !f ) return;
   
   fprintf( f, "display = %d\n",   (int)pref_fullscr );
