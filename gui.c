@@ -17,6 +17,7 @@
 #include "undo.h"
 #ifdef __APPLE__
 char *osxGetPrefsPath();
+char *osxGetResourcesPath(char *, const char*);
 #endif
 
 #ifndef __SDL_WRAPPER__
@@ -962,7 +963,12 @@ BOOL open_image( TEXT *name, struct rawbm *bm )
   SDL_Surface *tmpsrf;
   TEXT tmp[1024];
   
+#ifdef __APPLE__
+  if (strncmp(skindir, "Skins/", 6) == 0)
+    osxGetResourcesPath(tmp, skindir);
+#else
   strncpy( tmp, skindir, 1024 );
+#endif
   strncat( tmp, "/", 1024 );
   strncat( tmp, name, 1024 );
   strncat( tmp, skinext, 1024 );
@@ -3137,6 +3143,7 @@ void gui_open_prefs( void )
   gui_set_popup( PP_INSTDIR, 360, 8+24*4+3 );
   gui_set_popup( PP_SKINDIR, 360, 8+24*5+3 );
 
+
   gui_set_pcycle( PC_MAXUNDOBUF, 220, 8+24*6, pref_maxundobuf, pc_mundo_opts );
 
   gui_render_prefs();
@@ -3289,7 +3296,13 @@ void gui_loadskinsettings( void )
   tabtextback = FALSE;
   tabtextshad = TRUE;
 
-  strcpy( tmp, skindir );
+#ifdef __APPLE__
+  if (strncmp(skindir, "Skins/", 6) == 0)
+    osxGetResourcesPath(tmp, skindir);
+#else
+  strncpy( tmp, skindir, 1024 );
+#endif
+
 #ifndef __SDL_WRAPPER__
   IDOS->AddPart( tmp, "Settings_os4", 1024 );
 #else
@@ -3875,9 +3888,15 @@ BOOL gui_init( void )
   strcpy( sfxfontname, "Bitstream Vera Sans Mono.font" );
   strcpy( prpfontname, "Bitstream Vera Sans.font" );
 #else
+#ifdef __APPLE__
+  osxGetResourcesPath(fixfontname, "DejaVuSansMono.ttf");
+  osxGetResourcesPath(sfxfontname, "DejaVuSansMono.ttf");
+  osxGetResourcesPath(prpfontname, "DejaVuSans.ttf");
+#else
   strcpy( fixfontname, "ttf/DejaVuSansMono.ttf" );
   strcpy( sfxfontname, "ttf/DejaVuSansMono.ttf" );
   strcpy( prpfontname, "ttf/DejaVuSans.ttf" );
+#endif  
 #endif  
 
   strcpy( skinext,     ".png" );
@@ -6117,7 +6136,16 @@ BOOL gui_checkpop_up( int16 x, int16 y )
           
           strncpy( skindir, dir_req->fr_Drawer, 512 );
 #else
+#ifdef __APPLE__
+          osxGetResourcesPath(skindir, "Skins");
           directoryrequester("Select skin directory", skindir);
+          // Convert absolute path to relative path for bundle resources
+          char *resPath = osxGetResourcesPath(NULL, "");
+          if(strncmp(resPath, skindir, strlen(resPath)) == 0)
+            strcpy(skindir, skindir + strlen(resPath) + 1);
+#else
+          directoryrequester("Select skin directory", skindir);
+#endif
 #endif
           gui_render_tbox( &prefbm, &ptb[PTB_SKINDIR] );  
           break;
