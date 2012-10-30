@@ -109,3 +109,14 @@ char* osxGetPrefsPath()
 	}
 	return path;
 }
+
+char *osxGetResourcesPath(char *path, const char *pathAppend)
+{
+	NSBundle* bundle = [NSBundle mainBundle];
+	NSString *strPath = [bundle resourcePath];
+	strPath = [strPath stringByAppendingPathComponent:[NSString stringWithUTF8String:pathAppend]];
+	if(!path)
+		path = malloc([strPath length] + 1);
+	strcpy(path, [strPath UTF8String]);
+	return path;
+}

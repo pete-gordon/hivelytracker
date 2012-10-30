@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		002F3A2E09D0888800EBEB88 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = 002F3A2C09D0888800EBEB88 /* SDLMain.m */; };
 		830D2602163DCF880045F28B /* NSFileManager+DirectoryLocations.m in Sources */ = {isa = PBXBuildFile; fileRef = 830D2601163DCF880045F28B /* NSFileManager+DirectoryLocations.m */; };
+		830D277F163E13A70045F28B /* DejaVuSans.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 830D277D163E13A70045F28B /* DejaVuSans.ttf */; };
+		830D2780163E13A70045F28B /* DejaVuSansMono.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 830D277E163E13A70045F28B /* DejaVuSansMono.ttf */; };
 		830E7A9D162F353000AF00A8 /* SDL_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7A9C162F353000AF00A8 /* SDL_image.framework */; };
 		830E7A9F162F353000AF00A8 /* SDL_ttf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7A9E162F353000AF00A8 /* SDL_ttf.framework */; };
 		830E7AA1162F353000AF00A8 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7AA0162F353000AF00A8 /* SDL.framework */; };
@@ -25,7 +27,6 @@
 		83961D31162C9CBD00B4B9E0 /* sdl_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 83961D2E162C9CBD00B4B9E0 /* sdl_wrapper.c */; };
 		83961E55162CCBE800B4B9E0 /* osx.m in Sources */ = {isa = PBXBuildFile; fileRef = 83961E54162CCBE800B4B9E0 /* osx.m */; };
 		839620BA162EC0D300B4B9E0 /* Skins in Resources */ = {isa = PBXBuildFile; fileRef = 8396202E162EC0D200B4B9E0 /* Skins */; };
-		839620BB162EC0D300B4B9E0 /* ttf in Resources */ = {isa = PBXBuildFile; fileRef = 839620A3162EC0D300B4B9E0 /* ttf */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 /* End PBXBuildFile section */
@@ -55,6 +56,8 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		830D2600163DCF880045F28B /* NSFileManager+DirectoryLocations.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSFileManager+DirectoryLocations.h"; sourceTree = "<group>"; };
 		830D2601163DCF880045F28B /* NSFileManager+DirectoryLocations.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSFileManager+DirectoryLocations.m"; sourceTree = "<group>"; };
+		830D277D163E13A70045F28B /* DejaVuSans.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = DejaVuSans.ttf; path = ../../../ttf/DejaVuSans.ttf; sourceTree = SOURCE_ROOT; };
+		830D277E163E13A70045F28B /* DejaVuSansMono.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = DejaVuSansMono.ttf; path = ../../../ttf/DejaVuSansMono.ttf; sourceTree = SOURCE_ROOT; };
 		830E7A9C162F353000AF00A8 /* SDL_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_image.framework; path = /Library/Frameworks/SDL_image.framework; sourceTree = "<absolute>"; };
 		830E7A9E162F353000AF00A8 /* SDL_ttf.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_ttf.framework; path = /Library/Frameworks/SDL_ttf.framework; sourceTree = "<absolute>"; };
 		830E7AA0162F353000AF00A8 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
@@ -72,7 +75,6 @@
 		83961D52162C9EDC00B4B9E0 /* sdl_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sdl_wrapper.h; path = ../../sdl_wrapper.h; sourceTree = SOURCE_ROOT; };
 		83961E54162CCBE800B4B9E0 /* osx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = osx.m; sourceTree = "<group>"; };
 		8396202E162EC0D200B4B9E0 /* Skins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Skins; path = ../../../Skins; sourceTree = SOURCE_ROOT; };
-		839620A3162EC0D300B4B9E0 /* ttf */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ttf; path = ../../../ttf; sourceTree = SOURCE_ROOT; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -134,8 +136,6 @@
 		29B97314FDCFA39411CA2CEA /* Hivelytracker */ = {
 			isa = PBXGroup;
 			children = (
-				8396202E162EC0D200B4B9E0 /* Skins */,
-				839620A3162EC0D300B4B9E0 /* ttf */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
@@ -164,6 +164,8 @@
 			isa = PBXGroup;
 			children = (
 				8367E314163607FA00E0C1C1 /* hivelytracker.icns */,
+				8396202E162EC0D200B4B9E0 /* Skins */,
+				830D277C163E13920045F28B /* ttf */,
 				8D1107310486CEB800E47090 /* Info.plist */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
 			);
@@ -177,6 +179,15 @@
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		830D277C163E13920045F28B /* ttf */ = {
+			isa = PBXGroup;
+			children = (
+				830D277D163E13A70045F28B /* DejaVuSans.ttf */,
+				830D277E163E13A70045F28B /* DejaVuSansMono.ttf */,
+			);
+			name = ttf;
 			sourceTree = "<group>";
 		};
 		83961D2C162C9CA200B4B9E0 /* SDL */ = {
@@ -246,8 +257,9 @@
 			files = (
 				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
 				839620BA162EC0D300B4B9E0 /* Skins in Resources */,
-				839620BB162EC0D300B4B9E0 /* ttf in Resources */,
 				8367E315163607FA00E0C1C1 /* hivelytracker.icns in Resources */,
+				830D277F163E13A70045F28B /* DejaVuSans.ttf in Resources */,
+				830D2780163E13A70045F28B /* DejaVuSansMono.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -266,7 +278,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "function relocateLibraryPath() {\n  install_name_tool -change @rpath/$2.framework/Versions/A/$2 @executable_path/../Frameworks/$2.framework/Versions/A/$2 $CONFIGURATION_BUILD_DIR/$1\n}\n\nrelocateLibraryPath $EXECUTABLE_PATH SDL_image\nrelocateLibraryPath $EXECUTABLE_PATH SDL_ttf\nrelocateLibraryPath $FRAMEWORKS_FOLDER_PATH/SDL_image.framework/SDL_image SDL\nrelocateLibraryPath $FRAMEWORKS_FOLDER_PATH/SDL_ttf.framework/SDL_ttf SDL";
+			shellScript = "function relocateLibraryPath() {\n  install_name_tool -change @rpath/$2.framework/Versions/A/$2 @executable_path/../Frameworks/$2.framework/Versions/A/$2 $CONFIGURATION_BUILD_DIR/$1\n}\n\nfunction stripFramework() {\n  prefix=$CONFIGURATION_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/$1.framework\n  if [ -h $prefix/Headers ]\n  then\n    ditto --arch x86_64 $prefix/Versions/A/$1 $prefix/Versions/A/$1.64\n    mv $prefix/Versions/A/$1.64 $prefix/Versions/A/$1\n    rm -r $prefix/Versions/A/Headers\n    rm -r $prefix/Versions/A/Resources\n    rm $prefix/Headers $prefix/Resources\n  fi\n}\n\nrelocateLibraryPath $EXECUTABLE_PATH SDL_image\nrelocateLibraryPath $EXECUTABLE_PATH SDL_ttf\nrelocateLibraryPath $FRAMEWORKS_FOLDER_PATH/SDL_image.framework/SDL_image SDL\nrelocateLibraryPath $FRAMEWORKS_FOLDER_PATH/SDL_ttf.framework/SDL_ttf SDL\nstripFramework SDL\nstripFramework SDL_image\nstripFramework SDL_ttf";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -369,11 +381,13 @@
 		C01FCF5008A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(HOME)/Library/Frameworks",
 					/Library/Frameworks,
 					"$(FRAMEWORK_SEARCH_PATHS)",
 				);
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = __SDL_WRAPPER__;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -386,8 +400,9 @@
 					/Library/Frameworks/SDL_image.framework/Headers,
 					"$(HEADER_SEARCH_PATHS)",
 				);
-				ONLY_ACTIVE_ARCH = NO;
+				LD_GENERATE_MAP_FILE = YES;
 				PREBINDING = NO;
+				SDKROOT = macosx10.6;
 			};
 			name = Release;
 		};
