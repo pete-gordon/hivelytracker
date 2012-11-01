@@ -76,6 +76,15 @@ static NSString *getApplicationName(void)
     event.type = SDL_QUIT;
     SDL_PushEvent(&event);
 }
+/* Prevent OSX beeping on unrecognised keystrokes */
+- (void)sendEvent:(NSEvent *)anEvent {
+	if( NSKeyDown == [anEvent type] || NSKeyUp ==
+	   [anEvent type] ) {
+		if( [anEvent modifierFlags] & NSCommandKeyMask ) 
+			[super sendEvent: anEvent];
+	} else 
+		[super sendEvent: anEvent];
+}
 @end
 
 /* The main class of the application, the application's delegate */
@@ -296,6 +305,8 @@ static void CustomApplicationMain (int argc, char **argv)
     [self fixMenu:[NSApp mainMenu] withAppName:getApplicationName()];
 #endif
 
+	/* Enable menu shortcuts */
+	setenv ("SDL_ENABLEAPPEVENTS", "1", 1);
     /* Hand off to main application code */
     gCalledAppMainline = TRUE;
     status = SDL_main (gArgc, gArgv);
