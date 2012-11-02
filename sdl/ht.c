@@ -100,7 +100,7 @@ int main( int argc, char *argv[] )
         switch( event.type )
         {
           case SDL_QUIT:
-            quitting = TRUE;
+            quitting = gui_maybe_quit();
             break;
 
           default:

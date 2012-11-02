@@ -40,6 +40,7 @@ static int    gArgc;
 static char  **gArgv;
 static BOOL   gFinderLaunch;
 static BOOL   gCalledAppMainline = FALSE;
+BOOL   enableKeys = FALSE;
 
 static NSString *getApplicationName(void)
 {
@@ -80,7 +81,7 @@ static NSString *getApplicationName(void)
 - (void)sendEvent:(NSEvent *)anEvent {
 	if( NSKeyDown == [anEvent type] || NSKeyUp ==
 	   [anEvent type] ) {
-		if( [anEvent modifierFlags] & NSCommandKeyMask ) 
+		if( enableKeys || [anEvent modifierFlags] & NSCommandKeyMask ) 
 			[super sendEvent: anEvent];
 	} else 
 		[super sendEvent: anEvent];

@@ -11,8 +11,11 @@ typedef Uint32   uint32;
 typedef Sint32   int32;
 typedef char     TEXT;
 
+extern BOOL enableKeys;
+
 int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 {
+	int i;
 	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
 	[alert setMessageText:[NSString stringWithUTF8String:title]];
 	[alert setInformativeText:[NSString stringWithUTF8String:reqtxt]];
@@ -25,7 +28,10 @@ int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 		[alert addButtonWithTitle:btnStr];
 	}
 
-	return [alert runModal] - 1000;
+	enableKeys = TRUE;
+	i = [alert runModal] - 1000;
+	enableKeys = FALSE;
+	return i;
 }
 
 #define FR_HVLSAVE 0
@@ -69,7 +75,10 @@ char *filerequester( char *title, char *path, char *fname, int type )
 	[panel setTitle:[NSString stringWithUTF8String:title]];
 	[panel setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path] isDirectory:YES]];
 	[panel setNameFieldStringValue:[NSString stringWithUTF8String:fname]];
+	
+	enableKeys = TRUE;
 	int i = [panel runModal];
+	enableKeys = FALSE;
 	if (i == 1) {
 		const char *cstr = [[[panel URL] path] UTF8String];
 		char *rval = (char *) malloc(strlen(cstr) + 1);
@@ -87,7 +96,9 @@ BOOL directoryrequester( char *title, char *path )
 	[panel setCanChooseDirectories:YES];
 	[panel setTitle: [NSString stringWithUTF8String:title]];
 	[panel setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path] isDirectory:YES]];
+	enableKeys = FALSE;
 	int i = [panel runModal];
+	enableKeys = FALSE;
 	if (i == 1) {
 		const char *cstr = [[[panel URL] path] UTF8String];
 		strncpy(path, cstr, 512);
