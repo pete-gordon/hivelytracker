@@ -602,7 +602,7 @@ void set_fpen(struct rawbm *bm, int pen)
     return;
 
 #ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( &bm->rp, RPTAG_APenColor, pal[pen], TAG_DONE );
+  IGraphics->SetRPAttrs( &bm->rp, RPTAG_APenColor, pal[pen]|0xff000000, TAG_DONE );
 #else
   bm->fsc.r = pal[pen]>>16;
   bm->fsc.g = pal[pen]>>8;
@@ -616,7 +616,7 @@ void set_fpen(struct rawbm *bm, int pen)
 void set_fcol(struct rawbm *bm, uint32 col)
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( &bm->rp, RPTAG_APenColor, col, TAG_DONE );
+  IGraphics->SetRPAttrs( &bm->rp, RPTAG_APenColor, col|0xff000000, TAG_DONE );
 #else
   bm->fsc.r = col>>16;
   bm->fsc.g = col>>8;
@@ -632,7 +632,7 @@ void set_bpen(struct rawbm *bm, int pen)
     return;
 
 #ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( &bm->rp, RPTAG_BPenColor, pal[pen], TAG_DONE );
+  IGraphics->SetRPAttrs( &bm->rp, RPTAG_BPenColor, pal[pen]|0xff000000, TAG_DONE );
 #else
   bm->bsc.r = pal[pen]>>16;
   bm->bsc.g = pal[pen]>>8;
