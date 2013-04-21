@@ -81,6 +81,11 @@ void shutdown( void )
 
 int main( int argc, char *argv[] )
 {
+  #ifdef __HAIKU__
+    // Fix for haiku not starting apps in their home directory
+	find_home();
+  #endif
+
   if( init() )
   {
     SDL_Flip(ssrf);
