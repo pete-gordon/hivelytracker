@@ -1,0 +1,37 @@
+
+WRAPPERDIR := $(CURDIR)
+BASEDIR = $(CURDIR)/..
+
+CC = gcc
+
+CFLAGS = -g -D__SDL_WRAPPER__
+
+
+CFLAGS += -I$(BASEDIR) \
+          -I$(WRAPPERDIR) \
+          `sdl-config --cflags`
+
+LFLAGS += -g -lSDL_ttf `sdl-config --libs` -lSDL_image -lfreetype -lz -lbe -ltracker
+
+TARGET = hivelytracker
+
+OBJECTS = sdl_wrapper.o \
+          ht.o \
+	  ../gui.o \
+	  ../replay.o \
+	  ../util.o \
+	  ../undo.o \
+	  ../about.o
+
+
+
+$(TARGET): $(OBJECTS) haiku.o
+	$(CC) -o $(TARGET) $(OBJECTS) haiku.o $(LFLAGS)
+
+$(OBJECTS): %.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+	@$(CC) -MM $(CFLAGS) $< > $*.d
+
+%.o: %.cpp
+	$(CC) -c $(CFLAGS) $< -o $@
+	@$(CC) -MM $(CFLAGS) $< > $*.d

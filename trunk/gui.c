@@ -976,7 +976,7 @@ BOOL open_image( TEXT *name, struct rawbm *bm )
   tmpsrf = IMG_Load(tmp);
   if (!tmpsrf)
   {
-    printf("Error loading '%s'\n", tmp);
+    printf("Error loading '%s': %s\n", tmp, IMG_GetError());
     return FALSE;
   }
 
@@ -3892,6 +3892,10 @@ BOOL gui_init( void )
   osxGetResourcesPath(fixfontname, "DejaVuSansMono.ttf");
   osxGetResourcesPath(sfxfontname, "DejaVuSansMono.ttf");
   osxGetResourcesPath(prpfontname, "DejaVuSans.ttf");
+#elif defined(__HAIKU__)
+  strcpy( fixfontname, "/boot/system/data/fonts/ttfonts/DejaVuSansMono.ttf" );
+  strcpy( sfxfontname, "/boot/system/data/fonts/ttfonts/DejaVuSansMono.ttf" );
+  strcpy( prpfontname, "/boot/system/data/fonts/ttfonts/DejaVuSans.ttf" );
 #else
   strcpy( fixfontname, "ttf/DejaVuSansMono.ttf" );
   strcpy( sfxfontname, "ttf/DejaVuSansMono.ttf" );
