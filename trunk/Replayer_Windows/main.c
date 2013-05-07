@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   int nextbuf = 0;
   sigset_t base_mask, waiting_mask;
 
-  printf( "Hively Tracker command line player 1.6\n" );  
+  printf( "Hively Tracker command line player 1.8\n" );  
 
   if( argc < 2 )
   {

@@ -88,35 +88,6 @@ void hvl_GenPanningTables( void )
   }
   panning_left[255] = 0;
   panning_right[0] = 0;
-
-  {
-    FILE *f;
-    int c,d;
-
-    f = fopen( "panning.s", "w" );
-    if( f )
-    {
-      fprintf( f, "hvlPanningLeft\tdc.l\t" );
-      for( c=0; c<256; c++ )
-      {
-        fprintf( f, "%ld", panning_left[c] );
-        if( (c&15)==15 )
-          fprintf( f, "\n\t\tdc.l\t" );
-        else
-          fprintf( f, "," );
-      }
-      fprintf( f, "\n\nhvlPanningRight\tdc.l\t" );
-      for( c=0; c<256; c++ )
-      {
-        fprintf( f, "%ld", panning_right[c] );
-        if( (c&15)==15 )
-          fprintf( f, "\n\t\tdc.l\t" );
-        else
-          fprintf( f, "," );
-      }
-      fclose( f );
-    }
-  }
 }
 
 void hvl_GenSawtooth( int8 *buf, uint32 len )
