@@ -2837,7 +2837,7 @@ void gui_update_from_nbox( int32 panel, struct numberbox *bp, int32 i )
         case NB_SPEEDMULT:
           j = bp[NB_SPEEDMULT].cnum;
           if( j < 1 ) j = 1;
-          if( j > 6 ) j = 6;
+          if( j > 4 ) j = 4;
           modify_tune_b( at, UNT_SPMUL, j );
           break;
         
@@ -3827,7 +3827,7 @@ BOOL gui_open( void )
 
   gui_set_nbox( &trk_nb[NB_CHANS],       219, 132,      58, 16, 4, MAX_CHANNELS, 0, " %02d", NBF_ENABLED );
   gui_set_nbox( &trk_nb[NB_MIXG],        219, 132+20*1, 58, 16, 0, 200, 0, "%03d", NBF_ENABLED|NBF_UDDURINGPLAY );
-  gui_set_nbox( &trk_nb[NB_SPEEDMULT],   219, 132+20*2, 58, 16, 1,   6, 0, " %02d", NBF_ENABLED );
+  gui_set_nbox( &trk_nb[NB_SPEEDMULT],   219, 132+20*2, 58, 16, 1,   4, 0, " %02d", NBF_ENABLED );
   gui_set_nbox( &trk_nb[NB_DRUMPADMODE], 219, 132+20*3, 58, 16, 0,   1, 0,      "", NBF_ENABLED|NBF_ONOFF|NBF_UDDURINGPLAY );
 
   gui_set_nbox( &ins_nb[INB_INS],     9,  128,      58, 16, 0,  63, 0, " %02d", NBF_ENABLED|NBF_UDDURINGPLAY );
