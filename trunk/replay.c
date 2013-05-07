@@ -2269,12 +2269,12 @@ void rp_process_stepfx_3( struct ahx_tune *at, struct ahx_voice *voice, int32 FX
       switch( FXParam >> 4 )
       {
         case 0x1: // Fineslide up
-          voice->vc_PeriodSlidePeriod = -(FXParam & 0x0f);
+          voice->vc_PeriodSlidePeriod -= (FXParam & 0x0f);
           voice->vc_PlantPeriod = 1;
           break;
         
         case 0x2: // Fineslide down
-          voice->vc_PeriodSlidePeriod = (FXParam & 0x0f);
+          voice->vc_PeriodSlidePeriod += (FXParam & 0x0f);
           voice->vc_PlantPeriod = 1;
           break;
         
