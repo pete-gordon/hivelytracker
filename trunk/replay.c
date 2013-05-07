@@ -1687,7 +1687,7 @@ struct ahx_tune *rp_load_ahx( struct ahx_tune *at, uint8 *buf, uint32 buflen, BO
       if( ( buf[3] == 0 ) && ( l == 4 ) && ( (bptr[2]&0xf0) != 0 ) )
         at->at_Instruments[i].ins_PList.pls_Entries[j].ple_FXParam[0] &= 0x0f;
       if( ( buf[3] == 0 ) && ( k == 4 ) && ( (bptr[3]&0xf0) != 0 ) )
-        at->at_Instruments[i].ins_PList.pls_Entries[j].ple_FXParam[0] &= 0x0f;
+        at->at_Instruments[i].ins_PList.pls_Entries[j].ple_FXParam[1] &= 0x0f;
       
       bptr += 4;
     }
