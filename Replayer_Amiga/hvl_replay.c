@@ -75,14 +75,6 @@ CONST uint16 period_tab[] =
 
 uint32 panning_left[256], panning_right[256];
 
-static inline void clr_l( uint32 *src, uint32 longs)
-{
-  do {
-    *src++ = 0;
-    longs--;
-  } while (longs > 0);
-}
-
 void hvl_GenPanningTables( void )
 {
   uint32 i;
@@ -294,10 +286,10 @@ void hvl_reset_some_stuff( struct hvl_tune *ht )
     ht->ht_Voices[i].vc_RingMixSource = NULL;
     ht->ht_Voices[i].vc_RingAudioSource = NULL;
 
-    clr_l((ULONG *)&ht->ht_Voices[i].vc_SquareTempBuffer,0x80/4);
-    clr_l((ULONG *)&ht->ht_Voices[i].vc_ADSR,sizeof(struct hvl_envelope)/4);
-    clr_l((ULONG *)&ht->ht_Voices[i].vc_VoiceBuffer,0x281/4);
-    clr_l((ULONG *)&ht->ht_Voices[i].vc_RingVoiceBuffer,0x281/4);
+    memset(&ht->ht_Voices[i].vc_SquareTempBuffer,0,0x80);
+    memset(&ht->ht_Voices[i].vc_ADSR,0,sizeof(struct hvl_envelope));
+    memset(&ht->ht_Voices[i].vc_VoiceBuffer,0,0x281);
+    memset(&ht->ht_Voices[i].vc_RingVoiceBuffer,0,0x281);
   }
   
   for( i=0; i<MAX_CHANNELS; i++ )
@@ -2068,8 +2060,8 @@ void hvl_DecodeFrame( struct hvl_tune *ht, int8 *buf1, int8 *buf2, int32 bufmod 
   {
     hvl_play_irq( ht );
     hvl_mixchunk( ht, samples, buf1, buf2, bufmod );
-    buf1 += samples * 4;
-    buf2 += samples * 4;
+    buf1 += samples * bufmod;
+    buf2 += samples * bufmod;
     loops--;
   } while( loops );
 }
