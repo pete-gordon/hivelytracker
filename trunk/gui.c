@@ -7244,41 +7244,59 @@ void gui_handler( uint32 gotsigs )
                   }                    
                   gui_render_tracked( TRUE );
                   break;
-                case 79:  // Alt+Left (pos up)
+
+                case 79:  // Alt+Left (decrement currently selected track number)
                   donkey = TRUE;
                   if( !curtune ) break;
-                  
-                  if( curtune->at_doing == D_PLAYING )
+
+                  chan = -1;
+                  switch( curtune->at_editing )
                   {
-                    if( curtune->at_NextPosNr == -1 )
-                      next = curtune->at_PosNr-1;
-                    else
-                      next = curtune->at_NextPosNr-1;
-                    if( next < 0 ) next = 999;
-                    curtune->at_NextPosNr = next;
-                  } else {
-                    curtune->at_PosNr--;
-                    if( curtune->at_PosNr < 0 )
-                      curtune->at_PosNr = 999;
+                    case E_TRACK:
+                      chan = (curtune->at_tracked_curs/9)+curtune->at_curlch;    
+                      break;
+                    
+                    case E_POS:
+                      chan  = curtune->at_posed_curs/5 + curtune->at_curlch;
+                      break;
                   }
-                  gui_render_posed( TRUE );
-                  gui_render_tracked( TRUE );
+                  
+                  if( chan != -1 )
+                  {
+                    track = curtune->at_Positions[curtune->at_PosNr].pos_Track[chan]-1;
+                    if (track < 0) track = 0;
+                    modify_pos_b( curtune, &curtune->at_Positions[curtune->at_PosNr], chan, UNT_POS_TRACK, track );
+
+                    gui_render_posed( TRUE );
+                    gui_render_tracked( TRUE );
+                  }
                   break;
                   
-                case 78:  // Alt+Right (pos down)
+                case 78:  // Alt+Right (increment currently selected track number)
                   donkey = TRUE;
                   if( !curtune ) break;
-                  
-                  if( curtune->at_doing == D_PLAYING )
+
+                  chan = -1;
+                  switch( curtune->at_editing )
                   {
-                    if( curtune->at_NextPosNr == -1 )
-                      next = curtune->at_PosNr+1;
-                    else
-                      next = curtune->at_NextPosNr+1;
-                    if( next > 999 ) next = 0;
-                    curtune->at_NextPosNr = next;
+                    case E_TRACK:
+                      chan = (curtune->at_tracked_curs/9)+curtune->at_curlch;    
+                      break;
+                    
+                    case E_POS:
+                      chan  = curtune->at_posed_curs/5 + curtune->at_curlch;
+                      break;
                   }
-                  gui_render_tracker( FALSE );
+                  
+                  if( chan != -1 )
+                  {
+                    track = curtune->at_Positions[curtune->at_PosNr].pos_Track[chan]+1;
+                    if (track > 255) track = 255;
+                    modify_pos_b( curtune, &curtune->at_Positions[curtune->at_PosNr], chan, UNT_POS_TRACK, track );
+
+                    gui_render_posed( TRUE );
+                    gui_render_tracked( TRUE );
+                  }
                   break;
 
                 case 85:  // Alt+F6 (play from pos 0)
