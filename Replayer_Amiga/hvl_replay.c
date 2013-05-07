@@ -6,6 +6,8 @@
 ** Changes for 1.5 are marked also.
 **
 ** ... as are those for 1.6
+**
+** ... and for 1.8
 */
 
 
@@ -574,7 +576,7 @@ struct hvl_tune *hvl_load_ahx( uint8 *buf, uint32 buflen, uint32 defstereo, uint
       if( ( buf[3] == 0 ) && ( l == 4 ) && ( (bptr[2]&0xf0) != 0 ) )
         ht->ht_Instruments[i].ins_PList.pls_Entries[j].ple_FXParam[0] &= 0x0f;
       if( ( buf[3] == 0 ) && ( k == 4 ) && ( (bptr[3]&0xf0) != 0 ) )
-        ht->ht_Instruments[i].ins_PList.pls_Entries[j].ple_FXParam[0] &= 0x0f;
+        ht->ht_Instruments[i].ins_PList.pls_Entries[j].ple_FXParam[1] &= 0x0f; //1.8
 
       bptr += 4;
     }
@@ -1036,12 +1038,12 @@ void hvl_process_stepfx_3( struct hvl_tune *ht, struct hvl_voice *voice, int32 F
       switch( FXParam >> 4 )
       {
         case 0x1: // Fineslide up
-          voice->vc_PeriodSlidePeriod = -(FXParam & 0x0f);
+          voice->vc_PeriodSlidePeriod -= (FXParam & 0x0f); // 1.8
           voice->vc_PlantPeriod = 1;
           break;
         
         case 0x2: // Fineslide down
-          voice->vc_PeriodSlidePeriod = (FXParam & 0x0f);
+          voice->vc_PeriodSlidePeriod += (FXParam & 0x0f); // 1.8
           voice->vc_PlantPeriod = 1;
           break;
         
