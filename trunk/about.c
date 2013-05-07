@@ -323,7 +323,7 @@ void about_open( void )
     WA_InnerWidth,  320,
     WA_InnerHeight, 240,
     WA_Title,       "HivelyTracker v1.8",
-    WA_ScreenTitle, "HivelyTracker (c)2013 IRIS & Up Rough! - http://www.irishq.dk - http://www.uprough.net - http://www.hivelytracker.co.uk",
+    WA_ScreenTitle, "HivelyTracker (c)2013 IRIS & Up Rough! - http://www.uprough.net - http://www.hivelytracker.co.uk",
     WA_RMBTrap,     TRUE,
     WA_IDCMP,       IDCMP_CLOSEWINDOW,  //|IDCMP_MOUSEBUTTONS,
     WA_Activate,    TRUE,
