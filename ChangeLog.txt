@@ -1,3 +1,19 @@
+1.8 07-May-2013
+===============
+
+- Fixed some warnings
+- Fixed E1x and E2x fine slide commands (thanks to passing_by and kode54)
+- Fixed broken stripping of 4xx upper nibble (thanks to passing_by). Due to
+  a copy/paste bug, the fix for this in 1.6 only affected the left instrument
+  column.
+- Speed multiplier range is now 1-4 in the GUI. The HVL and AHX module formats
+  only support this range anyway, so you couldn't save a module with a mult.
+  of 5 or 6 (thanks to javamannen)
+- Fixed some keyboard documentation bugs (thanks to javamannen)
+- "Alt+Cursor Left" and "Alt+Cursor Right" now behave the same as AHX (suggested
+  by javamannen)
+
+
 1.7 27-Oct-2012
 ===============
 
