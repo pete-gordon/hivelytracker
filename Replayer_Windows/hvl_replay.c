@@ -916,7 +916,7 @@ void hvl_process_stepfx_2( struct hvl_tune *ht, struct hvl_voice *voice, int32 F
   {
     case 0x9: // Set squarewave offset
       voice->vc_SquarePos    = FXParam >> (5 - voice->vc_WaveLength);
-      voice->vc_PlantSquare  = 1;
+//      voice->vc_PlantSquare  = 1;
       voice->vc_IgnoreSquare = 1;
       break;
     
