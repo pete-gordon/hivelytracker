@@ -23,7 +23,7 @@ extern uint32 about_sigs;
 
 extern struct List *rp_tunelist;
 
-TEXT __attribute((used)) ver[] = "$VER: HivelyTracker 1.7 (27.10.2012)";
+TEXT __attribute((used)) ver[] = "$VER: HivelyTracker 1.8 (7.5.2013)";
 
 void SetAmiUpdateENVVariable( TEXT *varname )
 {
