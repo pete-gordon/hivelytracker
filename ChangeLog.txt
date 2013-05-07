@@ -12,6 +12,8 @@
 - Fixed some keyboard documentation bugs (thanks to javamannen)
 - "Alt+Cursor Left" and "Alt+Cursor Right" now behave the same as AHX (suggested
   by javamannen)
+- Updated all copyright dates and updated all URLs to hivelytracker.co.uk
+- Removed all mentions of the sadly defunct IRIS homepage
 
 
 1.7 27-Oct-2012
