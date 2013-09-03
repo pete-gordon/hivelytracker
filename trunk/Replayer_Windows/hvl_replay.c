@@ -1996,6 +1996,11 @@ void hvl_mixchunk( struct hvl_tune *ht, uint32 samples, int8 *buf1, int8 *buf2, 
       
       a = (a*ht->ht_mixgain)>>8;
       b = (b*ht->ht_mixgain)>>8;
+
+      if (a<-0x8000) a=-0x8000;
+      if (a> 0x7fff) a= 0x7fff;
+      if (b<-0x8000) b=-0x8000;
+      if (b> 0x7fff) b= 0x7fff;
       
       *(int16 *)buf1 = a;
       *(int16 *)buf2 = b;
