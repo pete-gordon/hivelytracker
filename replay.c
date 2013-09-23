@@ -328,10 +328,10 @@ void rp_GenWhiteNoise( int8 *buf, uint32 len )
 
     if( ays & 0x100 )
     {
-      s = 0x80;
+      s = 0x7f;
 
-      if( (LONG)(ays & 0xffff) >= 0 )
-        s = 0x7f;
+      if( ays & 0x8000 )
+        s = 0x80;
     }
 
     *buf++ = s;
