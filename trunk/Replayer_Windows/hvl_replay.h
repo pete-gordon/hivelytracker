@@ -15,7 +15,17 @@ typedef int BOOL;
 // Woohoo!
 #define MAX_CHANNELS 16
 
-#define Period2Freq(period) ((3546897.f * 65536.f) / (period)) 
+// Some handy constants. Thanks eightbitbubsy.
+#define AMIGA_PAL_XTAL            28375160
+#define AMIGA_NTSC_XTAL           28636360
+#define AMIGA_CPU_PAL_CLK         ((AMIGA_PAL_XTAL / 4))
+#define AMIGA_CPU_NTSC_CLK        ((AMIGA_NTSC_XTAL / 4))
+#define AMIGA_CIA_PAL_CLK         ((AMIGA_CPU_PAL_CLK / 10))
+#define AMIGA_CIA_NTSC_CLK        ((AMIGA_CPU_NTSC_CLK / 10))
+#define AMIGA_PAULA_PAL_CLK       ((AMIGA_CPU_PAL_CLK / 2))
+#define AMIGA_PAULA_NTSC_CLK      ((AMIGA_CPU_NTSC_CLK / 2))
+
+#define Period2Freq(period) ((AMIGA_PAULA_PAL_CLK * 65536.f) / (period))
 
 struct hvl_envelope
 {
