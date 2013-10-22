@@ -25,6 +25,7 @@ struct star stars[NUMSTARS];
 
 #ifndef __SDL_WRAPPER__
 extern struct Screen *scr;
+extern struct rawbm bitmaps[BM_END];
 struct Window *aboutwin = NULL;
 extern struct Window *mainwin;
 
@@ -33,7 +34,7 @@ uint32 about_sigs = 0;
 uint32 about_timesig;
 
 struct MsgPort     *ab_tioport = NULL;
-struct TimeRequest *ab_tioreq = NULL;
+struct timerequest *ab_tioreq = NULL;
 BOOL                ab_tiopen = FALSE;
 BOOL                ab_tiopending = FALSE;
 #else
@@ -49,11 +50,12 @@ SDL_TimerID thetimer = 0;
 int16 ab_x = -1, ab_y = -1;
 
 struct rawbm about_bm;
-struct rawbm afont_bm;
 struct rawbm stuff_bm;
 
 int16 slice[320/2];
 float64 sinpos = 0, cospos = 0;
+
+static int32 pens[325];
 
 TEXT *scrtxt = " hivelytracker version 1.8  ::  code by xeron of iris  "
                "::  gui design and skins created by spot of up rough  "
@@ -115,7 +117,6 @@ void about_pre_init( void )
 
 #ifndef __SDL_WRAPPER__
   about_bm.bm = NULL;
-  afont_bm.bm = NULL;
   stuff_bm.bm = NULL;
 #else
   about_bm.srf = NULL;
@@ -128,10 +129,10 @@ void about_pre_init( void )
 
 BOOL about_init( void )
 {
-  int32 r, g, b, i;
+  int32 r, g, b, i, pen;
 
 #ifndef __SDL_WRAPPER__
-  ab_tioport = IExec->AllocSysObjectTags(ASOT_PORT, TAG_DONE);
+  ab_tioport = CreateMsgPort();
   if( !ab_tioport )
   {
     printf( "Unable to create message port\n" );
@@ -140,10 +141,7 @@ BOOL about_init( void )
   
   about_timesig = 1L<<ab_tioport->mp_SigBit;
   
-  ab_tioreq = (struct TimeRequest *)IExec->AllocSysObjectTags(ASOT_IOREQUEST,
-    ASOIOR_ReplyPort, ab_tioport,
-    ASOIOR_Size,      sizeof( struct TimeRequest ),
-    TAG_DONE);
+  ab_tioreq = (struct timerequest *)CreateIORequest( ab_tioport, sizeof( struct timerequest ) );
   if( !ab_tioreq )
   {
     printf( "Unable to create io request!\n" );
@@ -151,7 +149,7 @@ BOOL about_init( void )
   }
 
   // Get timer.device
-  ab_tiopen = !IExec->OpenDevice( "timer.device", UNIT_MICROHZ, (struct IORequest *)ab_tioreq, 0 );
+  ab_tiopen = !OpenDevice( "timer.device", UNIT_MICROHZ, (struct IORequest *)ab_tioreq, 0 );
   if( !ab_tiopen )
   {
     printf( "Unable to open timer.device\n" );
@@ -170,9 +168,8 @@ BOOL about_init( void )
 #endif
 
   if( !make_image( &stuff_bm, 640,   2 ) ) return FALSE;
-  if( !open_image( "aboutfont", &afont_bm ) ) return FALSE;
-
-  set_fcol(&stuff_bm, 0x000000);
+  pens[0] = ObtainBestPen( mainwin->WScreen->ViewPort.ColorMap, 0, 0, 0, TAG_DONE );
+  SetRPAttrs( &stuff_bm.rp, RPTAG_APenColor, pens[0], TAG_DONE );
   fillrect_xy(&stuff_bm, 0, 0, 639, 1);
 
   r = 255<<8;
@@ -181,9 +178,10 @@ BOOL about_init( void )
 
   for( i=0; i<106; i++ )
   {
-    set_fcol(&stuff_bm, ((r&0xff00)<<8)|(g&0xff00)|((b&0xff00)>>8));
+    pens[i+1] = ObtainBestPen( mainwin->WScreen->ViewPort.ColorMap, r<<16, g<<16, b<<16, TAG_DONE );
+    SetRPAttrs( &stuff_bm.rp, RPTAG_APenColor, pens[i+1], TAG_DONE );
 #ifndef __SDL_WRAPPER__
-    IGraphics->WritePixel( &stuff_bm.rp, i, 0 );
+    WritePixel( &stuff_bm.rp, i, 0 );
 #else
     fillrect_xy(&stuff_bm, i, 0, i, 0);
 #endif
@@ -197,9 +195,10 @@ BOOL about_init( void )
 
   for( i=106; i<213; i++ )
   {
-    set_fcol(&stuff_bm, ((r&0xff00)<<8)|(g&0xff00)|((b&0xff00)>>8));
+    pens[i+1] = ObtainBestPen( mainwin->WScreen->ViewPort.ColorMap, r<<16, g<<16, b<<16, TAG_DONE );
+    SetRPAttrs( &stuff_bm.rp, RPTAG_APenColor, pens[i+1], TAG_DONE );
 #ifndef __SDL_WRAPPER__
-    IGraphics->WritePixel( &stuff_bm.rp, i, 0 );
+    WritePixel( &stuff_bm.rp, i, 0 );
 #else
     fillrect_xy(&stuff_bm, i, 0, i, 0);
 #endif
@@ -213,9 +212,10 @@ BOOL about_init( void )
 
   for( i=213; i<320; i++ )
   {
-    set_fcol(&stuff_bm, ((r&0xff00)<<8)|(g&0xff00)|((b&0xff00)>>8));
+    pens[i+1] = ObtainBestPen(mainwin->WScreen->ViewPort.ColorMap, r<<16, g<<16, b<<16, TAG_DONE );
+    SetRPAttrs( &stuff_bm.rp, RPTAG_APenColor, pens[i+1], TAG_DONE );
 #ifndef __SDL_WRAPPER__
-    IGraphics->WritePixel( &stuff_bm.rp, i, 0 );
+    WritePixel( &stuff_bm.rp, i, 0 );
 #else
     fillrect_xy(&stuff_bm, i, 0, i, 0);
 #endif
@@ -223,14 +223,21 @@ BOOL about_init( void )
     r += ((255*256)/107);
   }
 
-  set_fcol(&stuff_bm, 0xffffff);
-  fillrect_xy(&stuff_bm, 0, 1, 0, 1);
-  set_fcol(&stuff_bm, 0xaaaaaa);
-  fillrect_xy(&stuff_bm, 1, 1, 1, 1);
-  set_fcol(&stuff_bm, 0x888888);
-  fillrect_xy(&stuff_bm, 2, 1, 2, 1);
-  set_fcol(&stuff_bm, 0x444444);
-  fillrect_xy(&stuff_bm, 3, 1, 3, 1);
+  pens[321]=ObtainBestPen(mainwin->WScreen->ViewPort.ColorMap, 0xff<<24 , 0xff<<24, 0xff<<24, TAG_DONE);
+  SetRPAttrs( &stuff_bm.rp, RPTAG_APenColor, pens[321], TAG_DONE );
+  WritePixel( &stuff_bm.rp, 0, 1 );
+
+  pens[322]=ObtainBestPen(mainwin->WScreen->ViewPort.ColorMap, 0xaa<<24, 0xaa<<24, 0xaa<<24, TAG_DONE);
+  SetRPAttrs( &stuff_bm.rp, RPTAG_APenColor, pens[322], TAG_DONE );
+  WritePixel( &stuff_bm.rp, 1, 1 );
+
+  pens[323]=ObtainBestPen(mainwin->WScreen->ViewPort.ColorMap, 0x88<<24, 0x88<<24, 0x88<<24, TAG_DONE);
+  SetRPAttrs( &stuff_bm.rp, RPTAG_APenColor, pens[323], TAG_DONE );
+  WritePixel( &stuff_bm.rp, 2, 1 );
+
+  pens[324]=ObtainBestPen(mainwin->WScreen->ViewPort.ColorMap, 0x44<<24, 0x44<<24, 0x44<<24, TAG_DONE);
+  SetRPAttrs( &stuff_bm.rp, RPTAG_APenColor, pens[324], TAG_DONE );
+  WritePixel( &stuff_bm.rp, 3, 1 );
 
   for( i=0; i<NUMSTARS; i++ )
   {
@@ -251,7 +258,7 @@ void about_close( void )
   
   ab_x = aboutwin->LeftEdge;
   ab_y = aboutwin->TopEdge;
-  IIntuition->CloseWindow( aboutwin );
+  CloseWindow( aboutwin );
   aboutwin = NULL;
   
   about_sigs &= ~about_winsig;
@@ -259,8 +266,8 @@ void about_close( void )
 
   if( ab_tiopending )
   {
-    IExec->AbortIO( (struct IORequest *)ab_tioreq );
-    IExec->WaitIO( (struct IORequest *)ab_tioreq );
+    AbortIO( (struct IORequest *)ab_tioreq );
+    WaitIO( (struct IORequest *)ab_tioreq );
     ab_tiopending = FALSE;
   }
 #else
@@ -273,28 +280,29 @@ void about_close( void )
 
 void about_shutdown( void )
 {
+  int i;
+  for( i=0; i<325; i++) ReleasePen( mainwin->WScreen->ViewPort.ColorMap, pens[i] );
+
   about_close();
 
 #ifndef __SDL_WRAPPER__
-  if( about_bm.bm ) IGraphics->FreeBitMap( about_bm.bm );
-  if( afont_bm.bm ) IGraphics->FreeBitMap( afont_bm.bm );
-  if( stuff_bm.bm ) IGraphics->FreeBitMap( stuff_bm.bm );
+  if( about_bm.bm ) FreeBitMap( about_bm.bm );
+  if( stuff_bm.bm ) FreeBitMap( stuff_bm.bm );
   
   if( ab_tiopen )
   {
     if( ab_tiopending )
     {
-      IExec->AbortIO( (struct IORequest *)ab_tioreq );
-      IExec->WaitIO( (struct IORequest *)ab_tioreq );
+      AbortIO( (struct IORequest *)ab_tioreq );
+      WaitIO( (struct IORequest *)ab_tioreq );
       ab_tiopending = FALSE;
     }
-    IExec->CloseDevice( (struct IORequest *)ab_tioreq );
+    CloseDevice( (struct IORequest *)ab_tioreq );
   }
-  if( ab_tioreq )   IExec->FreeSysObject( ASOT_IOREQUEST, ab_tioreq );
-  if( ab_tioport )  IExec->FreeSysObject( ASOT_PORT, ab_tioport );
+  if( ab_tioreq )   DeleteIORequest( (struct IORequest *)ab_tioreq );
+  if( ab_tioport )  DeleteMsgPort( ab_tioport );
 
   about_bm.bm = NULL;
-  afont_bm.bm = NULL;
   stuff_bm.bm = NULL;
 #else
   if (about_bm.srf) SDL_FreeSurface(about_bm.srf);
@@ -317,7 +325,7 @@ void about_open( void )
     ab_y = mainwin->TopEdge + 40;
   }
   
-  aboutwin = IIntuition->OpenWindowTags( NULL,
+  aboutwin = OpenWindowTags( NULL,
     WA_Left,        ab_x,
     WA_Top,         ab_y,
     WA_InnerWidth,  320,
@@ -340,15 +348,15 @@ void about_open( void )
 
   if( ab_tiopending )
   {
-    IExec->AbortIO( (struct IORequest *)ab_tioreq );
-    IExec->WaitIO( (struct IORequest *)ab_tioreq );
+    AbortIO( (struct IORequest *)ab_tioreq );
+    WaitIO( (struct IORequest *)ab_tioreq );
     ab_tiopending = FALSE;
   }
 
-  ab_tioreq->Request.io_Command = TR_ADDREQUEST;
-  ab_tioreq->Time.Seconds      = 0;
-  ab_tioreq->Time.Microseconds = 20000;
-  IExec->SendIO( (struct IORequest *)ab_tioreq );
+  ab_tioreq->tr_node.io_Command = TR_ADDREQUEST;
+  ab_tioreq->tr_time.tv_secs  = 0;
+  ab_tioreq->tr_time.tv_micro = 20000;
+  SendIO( (struct IORequest *)ab_tioreq );
   ab_tiopending = TRUE;
 #else
   thetimer = SDL_AddTimer( 20, (SDL_NewTimerCallback)about_timing, NULL );
@@ -379,7 +387,7 @@ void about_frame( void )
   if( !aboutwin_open ) return;
 #endif
 
-  set_fcol(&about_bm, 0x000000);
+  SetRPAttrs( &about_bm.rp, RPTAG_APenColor, pens[0], TAG_DONE );
   fillrect_xy(&about_bm, 0, 0, 319, 239);
 
   for( i=0; i<158; i++ )
@@ -419,7 +427,7 @@ void about_frame( void )
 
   for( i=0, stmp=sinpos, ctmp=cospos; i<160; i++, stmp+=0.015f, ctmp -= 0.021f )
     if( slice[i] != -1 )
-      bm_to_bm(&afont_bm, slice[i], 0, &about_bm, i<<1, ((int32)(sin(stmp)*cos(ctmp)*85))+101, 2, 38);
+      BltBitMapRastPort( bitmaps[BM_ABOUTFONT].bm, slice[i], 0, &about_bm.rp, i<<1, ((int32)(sin(stmp)*cos(ctmp)*85))+101, 2, 38, 0x0C0 );
 
   sinpos += 0.1f;
   cospos -= 0.0712f;
@@ -431,7 +439,7 @@ void about_frame( void )
   bx2 = (bx2+316)%320;
 
 #ifndef __SDL_WRAPPER__
-  IGraphics->BltBitMapRastPort( about_bm.bm, 0, 0, aboutwin->RPort, aboutwin->BorderLeft, aboutwin->BorderTop, 320, 240, 0x0C0 );
+  BltBitMapRastPort( about_bm.bm, 0, 0, aboutwin->RPort, aboutwin->BorderLeft, aboutwin->BorderTop, 320, 240, 0x0C0 );
 #else
   bm_to_bm(&about_bm, -4, -4, &mainbm, 236, 176, 328, 248);
 #endif
@@ -451,7 +459,7 @@ void about_handler( uint32 gotsigs )
   {
     if( ab_tiopending )
     {
-      IExec->WaitIO( (struct IORequest *)ab_tioreq );
+      WaitIO( (struct IORequest *)ab_tioreq );
       ab_tiopending = FALSE;
     }
 
@@ -460,17 +468,17 @@ void about_handler( uint32 gotsigs )
 //      if( !pause )
       about_frame();
 
-      ab_tioreq->Request.io_Command = TR_ADDREQUEST;
-      ab_tioreq->Time.Seconds      = 0;
-      ab_tioreq->Time.Microseconds = 28571;  // 35 FPS
-      IExec->SendIO( (struct IORequest *)ab_tioreq );
+      ab_tioreq->tr_node.io_Command = TR_ADDREQUEST;
+      ab_tioreq->tr_time.tv_secs  = 0;
+      ab_tioreq->tr_time.tv_micro = 28571;  // 35 FPS
+      SendIO( (struct IORequest *)ab_tioreq );
       ab_tiopending = TRUE;
     }
   }
 
   if( gotsigs & about_winsig )
   {
-    while( ( msg = (struct IntuiMessage *)IExec->GetMsg( aboutwin->UserPort ) ) )
+    while( ( msg = (struct IntuiMessage *)GetMsg( aboutwin->UserPort ) ) )
     {
       switch( msg->Class )
       {
@@ -483,7 +491,7 @@ void about_handler( uint32 gotsigs )
           closeme = TRUE;
           break;
       }
-      IExec->ReplyMsg( (struct Message *)msg );
+      ReplyMsg( (struct Message *)msg );
     }
   }
   

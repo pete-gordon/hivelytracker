@@ -25,30 +25,8 @@ extern struct List *rp_tunelist;
 
 TEXT __attribute((used)) ver[] = "$VER: HivelyTracker 1.8 (7.5.2013)";
 
-void SetAmiUpdateENVVariable( TEXT *varname )
-{
-  BPTR lock;
-  APTR oldwin;
-  
-  
-  if(( lock = IDOS->GetProgramDir() ))
-  {
-    TEXT progpath[2048];
-    TEXT varpath[1024] = "AppPaths";
-    
-    if( IDOS->DevNameFromLock( lock, progpath, sizeof( progpath ), DN_FULLPATH ) )
-    {
-      oldwin = IDOS->SetProcWindow( (APTR)-1 );
-      IDOS->AddPart( varpath, varname, 1024 );
-      IDOS->SetVar( varpath, progpath, -1, GVF_GLOBAL_ONLY|GVF_SAVE_VAR );
-      IDOS->SetProcWindow( oldwin );
-    }
-  }
-}
-
 BOOL init( void )
 {
-  SetAmiUpdateENVVariable( "HivelyTracker" );
   gui_pre_init();
   about_pre_init();
   if( !rp_init() )  return FALSE;
@@ -73,7 +51,7 @@ int main( void )
 
     while( !quitting )
     {
-      gotsigs = IExec->Wait( gui_sigs | rp_sigs | about_sigs | SIGBREAKF_CTRL_C );
+      gotsigs = Wait( gui_sigs | rp_sigs | about_sigs | SIGBREAKF_CTRL_C );
       
       if( gotsigs & rp_sigs )
       {

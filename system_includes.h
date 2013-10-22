@@ -20,8 +20,15 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+
+#define NO_INLINE_STDARG
 #include <proto/intuition.h>
+#undef NO_INLINE_STDARG
+
+#ifndef __OS3_WRAPPER__
 #include <proto/picasso96api.h>
+#endif
+
 #include <proto/datatypes.h>
 #include <proto/graphics.h>
 #include <proto/diskfont.h>
@@ -35,6 +42,18 @@
 #define ALL_REACTION_CLASSES
 #define ALL_REACTION_MACROS
 #include <reaction/reaction.h>
+
+#ifdef __OS3_WRAPPER__
+#include <newmouse.h>
+#include <dos/dostags.h>
+#include <devices/ahi.h>
+#include <proto/cybergraphics.h>
+#include <proto/guigfx.h>
+#include <libraries/asl.h>
+#include <cybergraphx/cybergraphics.h>
+#include <guigfx/guigfx.h>
+#include <os3_wrapper.h>
+#endif
 
 #else
 
