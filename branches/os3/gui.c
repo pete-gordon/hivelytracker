@@ -12,7 +12,6 @@
 
 #include "replay.h"
 #include "gui.h"
-#include "util.h"
 #include "about.h"
 #include "undo.h"
 #ifdef __APPLE__
@@ -21,23 +20,9 @@ char *osxGetResourcesPath(char *, const char*);
 #endif
 
 #ifndef __SDL_WRAPPER__
-struct Library *IntuitionBase = NULL;
-struct Library *P96Base       = NULL;
-struct Library *GfxBase       = NULL;
-struct Library *DataTypesBase = NULL;
-struct Library *DiskfontBase  = NULL;
-struct Library *AslBase       = NULL;
-struct Library *KeymapBase    = NULL;
-struct Library *RequesterBase = NULL;
-
-struct IntuitionIFace *IIntuition = NULL;
-struct P96IFace       *IP96       = NULL;
-struct GraphicsIFace  *IGraphics  = NULL;
-struct DataTypesIFace *IDataTypes = NULL;
-struct DiskfontIFace  *IDiskfont  = NULL;
-struct AslIFace       *IAsl       = NULL;
-struct KeymapIFace    *IKeymap    = NULL;
-struct RequesterIFace *IRequester = NULL;
+struct Library *KeymapBase = NULL;
+struct Library *GuiGFXBase = NULL;
+struct Library *CyberGfxBase = NULL;
 
 struct InputEvent iev;
 
@@ -45,9 +30,14 @@ struct Window *mainwin = NULL;
 struct Window *prefwin = NULL;
 struct Screen *scr = NULL;
 
+APTR drawhandle = NULL;
+APTR psm = NULL;
+uint16 screenpens[] = {~0} ;
+
 struct Gadget gad_drag;
 struct Gadget gad_drag2;
 struct Gadget gad_depth;
+extern uint32 rp_freq;
 #else
 struct SDL_Surface *ssrf = NULL;
 BOOL needaflip = FALSE;
@@ -145,14 +135,21 @@ int32 wm_count = 0;
 
 int32 pref_defstereo  = 4;
 int32 pref_maxundobuf = 2;
-BOOL  pref_fullscr    = FALSE;
+BOOL  pref_fullscr    = TRUE;
 BOOL  pref_blankzeros = FALSE;
 
 BOOL  pref_dorestart = FALSE;
 BOOL  pref_oldfullscr;
 TEXT  pref_oldskindir[512];
 
-BOOL fullscr = FALSE;
+BOOL  pref_wavemeter  = FALSE;
+BOOL  pref_vumeters   = FALSE;
+int32 pref_scrdepth   = 0;
+int32 pref_scrmodeid  = 0;
+int32 pref_oldscrmodeid = 0;
+TEXT  pref_freq[256];
+
+BOOL fullscr = TRUE;
 
 extern BOOL quitting;
 
@@ -176,7 +173,8 @@ enum
   PAL_END
 };
 
-uint32 pal[] = { 0x000000, 0x500000, 0x780000, 0xff5555, 0xffffff, 0x808080, 0xff88ff, 0xffffff, 0xffff88, 0xffffff, 0x000000, 0xffffff, 0xffffff, 0xffffff, 0x000000 };
+uint32 pal_argb[] = { 0x000000, 0x500000, 0x780000, 0xff5555, 0xffffff, 0x808080, 0xff88ff, 0xffffff, 0xffff88, 0xffffff, 0x000000, 0xffffff, 0xffffff, 0xffffff, 0x000000 };
+uint32 pal[PAL_END];
 #ifdef __SDL_WRAPPER__
 uint32 mappal[sizeof(pal)/sizeof(uint32)];
 #endif
@@ -349,7 +347,8 @@ enum
 
 enum
 {
-  PTB_SONGDIR = 0,
+  PTB_FREQ = 0,
+  PTB_SONGDIR,
   PTB_INSTDIR,
   PTB_SKINDIR,
   PTB_END
@@ -375,46 +374,12 @@ struct buttonbank
 
 enum
 {
-  BM_LOGO = 0,
-  BM_TAB_AREA,
-  BM_TAB_LEFT,
-  BM_TAB_MID,
-  BM_TAB_RIGHT,
-  BM_TAB_TEXT,
-  BM_ITAB_LEFT,
-  BM_ITAB_MID,
-  BM_ITAB_RIGHT,
-  BM_ITAB_TEXT,
-  BM_BUTBANKR,
-  BM_BUTBANKP,
-  BM_BG_TRACKER,
-  BM_BG_INSED,
-  BM_PLUSMINUS,
-  BM_POSED,
-  BM_TRACKED,
-  BM_TRACKBAR,
-  BM_PERF,
-  BM_VUMETER,
-  BM_WAVEMETERS,
-  BM_DEPTH,
-  BM_PRF_BG,
-  BM_PRF_CYCLE,
-  BM_INSLIST,
-  BM_INSLISTB,
-  BM_TRKBANKR,
-  BM_TRKBANKP,
-  BM_CHANMUTE,
-  BM_BLANK,
-  BM_DIRPOPUP,
-  BM_END
-};
-
-enum
-{
   PC_WMODE = 0,
   PC_DEFSTEREO,
   PC_BLANKZERO,
   PC_MAXUNDOBUF,
+  PC_WAVEMETER,
+  PC_VUMETERS,
   PC_END
 };
 
@@ -471,6 +436,7 @@ TEXT *pc_wmode_opts[] = { "Windowed", "Fullscreen", NULL };
 TEXT *pc_defst_opts[] = { "0% (mono)", "25%", "50%", "75%", "100% (paula)", NULL };
 TEXT *pc_bzero_opts[] = { "No", "Yes", NULL };
 TEXT *pc_mundo_opts[] = { "Unlimited", "256Kb", "512Kb", "1Mb", "2Mb", "4Mb", NULL };
+TEXT *pc_wavemeter_opts[] = { "Off", "On", NULL };
 
 struct ahx_tune *posed_lasttune  = NULL;
 int16            posed_lastposnr = 1000;
@@ -509,6 +475,7 @@ struct FileRequester *ins_sreq;
 struct FileRequester *sng_lreq;
 struct FileRequester *sng_sreq;
 struct FileRequester *dir_req;
+struct ScreenModeRequester *scr_req;
 #endif
 
 #define CBB_NOTES 0
@@ -577,22 +544,13 @@ BOOL ishex( TEXT c )
 #ifndef __SDL_WRAPPER__
 int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 {
-  Object *req_obj;
-  int32 n;
-
-  req_obj = (Object *)IIntuition->NewObject( IRequester->REQUESTER_GetClass(), NULL,
-    REQ_TitleText,  title,
-    REQ_BodyText,   reqtxt,
-    REQ_GadgetText, buttons,
-    REQ_Image,      img,
-    REQ_WrapBorder, 40,
-    TAG_DONE );
-    
-  if( !req_obj ) return 1;
-
-  n = IIntuition->IDoMethod( req_obj, RM_OPENREQ, NULL, NULL, scr );
-  IIntuition->DisposeObject( req_obj );
-  return n;
+  struct EasyStruct es;
+  es.es_StructSize=sizeof(struct EasyStruct);
+  es.es_Flags=0;
+  es.es_Title=title;
+  es.es_TextFormat=reqtxt;
+  es.es_GadgetFormat=buttons;
+  return EasyRequest(mainwin, &es, NULL);
 }
 #endif
 
@@ -602,7 +560,7 @@ void set_fpen(struct rawbm *bm, int pen)
     return;
 
 #ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( &bm->rp, RPTAG_APenColor, pal[pen]|0xff000000, TAG_DONE );
+  SetRPAttrs( &bm->rp, RPTAG_APenColor, pal[pen]|0xff000000, TAG_DONE );
 #else
   bm->fsc.r = pal[pen]>>16;
   bm->fsc.g = pal[pen]>>8;
@@ -616,7 +574,7 @@ void set_fpen(struct rawbm *bm, int pen)
 void set_fcol(struct rawbm *bm, uint32 col)
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( &bm->rp, RPTAG_APenColor, col|0xff000000, TAG_DONE );
+  SetRPAttrs( &bm->rp, RPTAG_APenColor, col|0xff000000, TAG_DONE );
 #else
   bm->fsc.r = col>>16;
   bm->fsc.g = col>>8;
@@ -632,7 +590,7 @@ void set_bpen(struct rawbm *bm, int pen)
     return;
 
 #ifndef __SDL_WRAPPER__
-  IGraphics->SetRPAttrs( &bm->rp, RPTAG_BPenColor, pal[pen]|0xff000000, TAG_DONE );
+  SetRPAttrs( &bm->rp, RPTAG_BPenColor, pal[pen]|0xff000000, TAG_DONE );
 #else
   bm->bsc.r = pal[pen]>>16;
   bm->bsc.g = pal[pen]>>8;
@@ -652,7 +610,7 @@ void set_pens(struct rawbm *bm, int fpen, int bpen)
 void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2)
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->RectFill( &bm->rp, x, y, x2, y2 );
+  RectFill( &bm->rp, x, y, x2, y2 );
 #else
   SDL_Rect rect = { .x = x+bm->offx, .y = y+bm->offy, .w = (x2-x)+1, .h = (y2-y)+1 };
   Uint32 col;
@@ -673,7 +631,7 @@ void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2)
 void bm_to_bm(struct rawbm *src, int sx, int sy, struct rawbm *dest, int dx, int dy, int w, int h)
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->BltBitMapRastPort(src->bm, sx, sy, &dest->rp, dx, dy, w, h, 0x0C0);
+  BltBitMapRastPort(src->bm, sx, sy, &dest->rp, dx, dy, w, h, 0x0C0);
 #else
   SDL_Rect srect = { .x = sx+src->offx, .y = sy+src->offy, .w = w, .h = h };
   SDL_Rect drect = { .x = dx+dest->offx, .y = dy+dest->offy, .w = w, .h = h };
@@ -696,7 +654,7 @@ void set_font(struct rawbm *bm, int findex, BOOL jam2)
     default:       thefont = fixfont; break;
   }
    
-  IGraphics->SetRPAttrs( &bm->rp, RPTAG_DrMd, jam2 ? JAM2 : JAM1, RPTAG_Font, thefont, TAG_DONE );
+  SetRPAttrs( &bm->rp, RPTAG_DrMd, jam2 ? JAM2 : JAM1, RPTAG_Font, thefont, TAG_DONE );
   bm->baseline = thefont->tf_Baseline;
 #else
   switch (findex)
@@ -715,8 +673,8 @@ void set_font(struct rawbm *bm, int findex, BOOL jam2)
 void printstr(struct rawbm *bm, char *str, int x, int y)
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->Move(&bm->rp, x, y+bm->baseline);
-  IGraphics->Text(&bm->rp, str, strlen(str));
+  Move(&bm->rp, x, y+bm->baseline);
+  Text(&bm->rp, str, strlen(str));
 #else
   SDL_Surface *srf;
   SDL_Rect rect = { .x = x+bm->offx, .y = y+bm->offy };
@@ -737,8 +695,8 @@ void printstr(struct rawbm *bm, char *str, int x, int y)
 void printstrlen(struct rawbm *bm, char *str, int len, int x, int y)
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->Move(&bm->rp, x, y+bm->baseline);
-  IGraphics->Text(&bm->rp, str, len);
+  Move(&bm->rp, x, y+bm->baseline);
+  Text(&bm->rp, str, len);
 #else
   char tmp[len+1];
   SDL_Surface *srf;
@@ -763,7 +721,7 @@ int textfit( struct rawbm *bm, char *str, int w )
 {
 #ifndef __SDL_WRAPPER__
   struct TextExtent te;
-  return IGraphics->TextFit( &bm->rp, str, strlen(str), &te, NULL, 1, w, 24 );
+  return TextFit( &bm->rp, str, strlen(str), &te, NULL, 1, w, 24 );
 #else
   int tw, th, c;
   char tmp[512];
@@ -871,13 +829,14 @@ BOOL make_image( struct rawbm *bm, uint16 w, uint16 h )
   bm->fpenset = FALSE;
   bm->bpenset = FALSE;
 #ifndef __SDL_WRAPPER__
-  IGraphics->InitRastPort( &bm->rp );
-  bm->bm = IGraphics->AllocBitMap( bm->w, bm->h, 8, 0, mainwin->RPort->BitMap );
+  InitRastPort( &bm->rp );
+  bm->bm = CreatePictureBitMap( drawhandle, NULL, GGFX_DestWidth, w, GGFX_DestHeight, h, TAG_DONE);
   if( !bm->bm )
   {
     printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
     return FALSE;
   }
+  InitRastPort( &bm->rp );
   bm->rp.BitMap = bm->bm;
 #else
   bm->offx = 0;
@@ -894,102 +853,45 @@ BOOL make_image( struct rawbm *bm, uint16 w, uint16 h )
 
 BOOL open_image( TEXT *name, struct rawbm *bm )
 {
-#ifndef __SDL_WRAPPER__
-  uint8 *data;
-  Object *io = NULL;
-  struct BitMapHeader *bmh;
-  struct RenderInfo ri;
+  APTR picture;
+  BOOL ret;
+
+  if ( !(picture=load_picture(name) ) )
+  {
+    printf( "Error opening '%s'\n", name );
+    ret=FALSE;
+  } else {
+    AddPicture(psm, picture, TAG_DONE);
+  }
+
+  if( ret )
+  {
+    GetPictureAttrs(picture,PICATTR_Width,bm->w,PICATTR_Height,bm->h, TAG_DONE);
+    if (bm->bm = CreatePictureBitMap(drawhandle, picture, GGFX_DitherMode, DITHERMODE_NONE, TAG_DONE) )
+    {
+      InitRastPort( &bm->rp );
+      bm->rp.BitMap = bm->bm;
+    } else {
+      printf( "Error creating bitmap\n");
+      ret=FALSE;
+    }
+  }
+
+  DeletePicture(picture);
+
+  return ret;
+}
+
+APTR load_picture(TEXT *name)
+{
   TEXT tmp[1024];
   
   strcpy( tmp, skindir );
-  IDOS->AddPart( tmp, name, 1024 );
+  AddPart( tmp, name, 1024 );
   strcat( tmp, skinext );
-  
-  io = IDataTypes->NewDTObject( tmp,
-    DTA_SourceType,        DTST_FILE,
-    DTA_GroupID,           GID_PICTURE,
-    PDTA_FreeSourceBitMap, TRUE,
-    PDTA_DestMode,         PMODE_V43,
-    TAG_DONE );
 
-  if( !io )
-  {
-    printf( "Error opening '%s'\n", tmp );
-    return FALSE;
-  }
-  
-  if( IDataTypes->GetDTAttrs( io,
-    PDTA_BitMapHeader,     &bmh,
-    TAG_DONE ) == 0 )
-  {
-    IDataTypes->DisposeDTObject( io );
-    printf( "Unable to get information about '%s'\n", tmp );
-    return FALSE;
-  }
-  
-  bm->w      = bmh->bmh_Width;
-  bm->h      = bmh->bmh_Height;
-  
-  IGraphics->InitRastPort( &bm->rp );
-  bm->bm = IGraphics->AllocBitMap( bm->w, bm->h, 8, 0, mainwin->RPort->BitMap );
-  if( !bm->bm )
-  {
-    IDataTypes->DisposeDTObject( io );
-    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
-    return FALSE;
-  }
-  
-  bm->rp.BitMap = bm->bm;
-  
-  data   = IExec->AllocVecTags( bm->w*bm->h*4, TAG_DONE );
-  if( !data )
-  {
-    IDataTypes->DisposeDTObject( io );
-    IGraphics->FreeBitMap( bm->bm );
-    printf( "Out of memory @ %s:%d\n", __FILE__, __LINE__ );
-    return FALSE;
-  }
-  
-  IIntuition->IDoMethod( io, PDTM_READPIXELARRAY, data, PBPAFMT_ARGB, bm->w<<2, 0, 0, bm->w,bm->h );
+  return LoadPicture( tmp, TAG_DONE);
 
-  ri.Memory      = data;
-  ri.BytesPerRow = bm->w<<2;
-  ri.RGBFormat   = RGBFB_A8R8G8B8;
-  IP96->p96WritePixelArray( &ri, 0, 0, &bm->rp, 0, 0, bm->w, bm->h );  
-  
-  IExec->FreeVec( data );
-  IDataTypes->DisposeDTObject( io );
-#else
-  SDL_Surface *tmpsrf;
-  TEXT tmp[1024];
-  
-#ifdef __APPLE__
-  if (strncmp(skindir, "Skins/", 6) == 0)
-    osxGetResourcesPath(tmp, skindir);
-#else
-  strncpy( tmp, skindir, 1024 );
-#endif
-  strncat( tmp, "/", 1024 );
-  strncat( tmp, name, 1024 );
-  strncat( tmp, skinext, 1024 );
-
-  tmpsrf = IMG_Load(tmp);
-  if (!tmpsrf)
-  {
-    printf("Error loading '%s': %s\n", tmp, IMG_GetError());
-    return FALSE;
-  }
-
-  if (!make_image(bm, tmpsrf->w, tmpsrf->h))
-  {
-    SDL_FreeSurface(tmpsrf);
-    return FALSE;
-  }
-  /* Convert to the screen surface format */
-  SDL_BlitSurface(tmpsrf, NULL, bm->srf, NULL);
-  SDL_FreeSurface(tmpsrf);
-#endif
-  return TRUE;
 }
 
 BOOL gui_set_tbox( struct textbox *tb, int16 x, int16 y, int16 w, TEXT *content, int32 maxlen, int16 flags, int16 inpanel )
@@ -1013,7 +915,7 @@ BOOL gui_set_tbox( struct textbox *tb, int16 x, int16 y, int16 w, TEXT *content,
 void put_partbitmap( uint32 bm, uint16 bx, uint16 by, uint16 x, uint16 y, uint16 w, uint16 h )
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->BltBitMapRastPort( bitmaps[bm].bm, bx, by, mainwin->RPort, x, y, w, h, 0x0C0 );
+  BltBitMapRastPort( bitmaps[bm].bm, bx, by, mainwin->RPort, x, y, w, h, 0x0C0 );
 #else
   SDL_Rect srect = { .x = bx+bitmaps[bm].offx, .y = by+bitmaps[bm].offy, .w = w, .h = h };
   SDL_Rect drect = { .x = x , .y =  y, .w = w, .h = h };
@@ -1025,7 +927,7 @@ void put_partbitmap( uint32 bm, uint16 bx, uint16 by, uint16 x, uint16 y, uint16
 void put_bitmap( uint32 bm, uint16 x, uint16 y, uint16 w, uint16 h )
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->BltBitMapRastPort( bitmaps[bm].bm, 0, 0, mainwin->RPort, x, y, w, h, 0x0C0 );
+  BltBitMapRastPort( bitmaps[bm].bm, 0, 0, mainwin->RPort, x, y, w, h, 0x0C0 );
 #else
   SDL_Rect srect = { .x = bitmaps[bm].offx, .y = bitmaps[bm].offy, .w = w, .h = h };
   SDL_Rect drect = { .x = x, .y = y, .w = w, .h = h };
@@ -1037,7 +939,7 @@ void put_bitmap( uint32 bm, uint16 x, uint16 y, uint16 w, uint16 h )
 void put_ppartbitmap( uint32 bm, uint16 bx, uint16 by, uint16 x, uint16 y, uint16 w, uint16 h )
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->BltBitMapRastPort( bitmaps[bm].bm, bx, by, prefwin->RPort, x+pw_bl, y+pw_bt, w, h, 0x0C0 );
+  BltBitMapRastPort( bitmaps[bm].bm, bx, by, prefwin->RPort, x+pw_bl, y+pw_bt, w, h, 0x0C0 );
 #else
   SDL_Rect srect = { .x = bx+bitmaps[bm].offx, .y = by+bitmaps[bm].offy, .w = w, .h = h };
   SDL_Rect drect = { .x = x+4 , .y =  y+4, .w = w, .h = h };
@@ -1048,7 +950,7 @@ void put_ppartbitmap( uint32 bm, uint16 bx, uint16 by, uint16 x, uint16 y, uint1
 void put_pbitmap( uint32 bm, uint16 x, uint16 y, uint16 w, uint16 h )
 {
 #ifndef __SDL_WRAPPER__
-  IGraphics->BltBitMapRastPort( bitmaps[bm].bm, 0, 0, prefwin->RPort, x+pw_bl, y+pw_bt, w, h, 0x0C0 );
+  BltBitMapRastPort( bitmaps[bm].bm, 0, 0, prefwin->RPort, x+pw_bl, y+pw_bt, w, h, 0x0C0 );
 #else
   SDL_Rect srect = { .x = bitmaps[bm].offx, .y = bitmaps[bm].offy, .w = w, .h = h };
   SDL_Rect drect = { .x = x+4, .y = y+4, .w = w, .h = h };
@@ -1591,7 +1493,7 @@ void gui_setup_trkbbank( int32 which )
     if( tbank[i].name != NULL )
     {
 #ifndef __SDL_WRAPPER__
-      tbank[i].xo = 26 - ( IGraphics->TextLength( &mainbm.rp, tbank[i].name, strlen( tbank[i].name ) ) >> 1 );
+      tbank[i].xo = 26 - ( TextLength( &mainbm.rp, tbank[i].name, strlen( tbank[i].name ) ) >> 1 );
 #else
       int w, h;
       TTF_SizeText(mainbm.font, tbank[i].name, &w, &h);
@@ -1683,7 +1585,7 @@ void gui_setup_buttonbank( int32 which )
     if( bbank[i].name != NULL )
     {
 #ifndef __SDL_WRAPPER__
-      bbank[i].xo = 40 - ( IGraphics->TextLength( &mainbm.rp, bbank[i].name, strlen( bbank[i].name ) ) >> 1 );
+      bbank[i].xo = 40 - ( TextLength( &mainbm.rp, bbank[i].name, strlen( bbank[i].name ) ) >> 1 );
 #else
       int w, h;
       TTF_SizeText(mainbm.font, bbank[i].name, &w, &h);
@@ -1764,25 +1666,25 @@ void gui_render_tabs( void )
     gui_zap_zone( &zones[0], &numzones, MAX_ZONES, &ttab[i].zone );
   }
 
-  IExec->ObtainSemaphore( rp_list_ss );
+  ObtainSemaphore( rp_list_ss );
 
   ntabs = 0;
-  at = (struct ahx_tune *)IExec->GetHead(rp_tunelist);
+  at = (struct ahx_tune *)GetHead(rp_tunelist);
   while( at )
   {
     ntabs++;
-    at = (struct ahx_tune *)IExec->GetSucc(&at->at_ln);
+    at = (struct ahx_tune *)GetSucc(&at->at_ln);
   }
   
   if( ntabs == 0 )
   {
     curtune = NULL;
-    IExec->ReleaseSemaphore( rp_list_ss );
+    ReleaseSemaphore( rp_list_ss );
     return;
   }
   
   if( curtune == NULL )
-    curtune = (struct ahx_tune *)IExec->GetHead(rp_tunelist);
+    curtune = (struct ahx_tune *)GetHead(rp_tunelist);
   
   // Ensure phantom tab!
   rtabs = ntabs;
@@ -1802,7 +1704,7 @@ void gui_render_tabs( void )
   set_font(&mainbm, FONT_PRP, FALSE);
 
   // Draw them!
-  at = (struct ahx_tune *)IExec->GetHead(rp_tunelist);
+  at = (struct ahx_tune *)GetHead(rp_tunelist);
   for( i=0, j=k; i<rtabs; i++, j+=tabsw )
   {
     if( i >= ntabs ) break;
@@ -1824,7 +1726,7 @@ void gui_render_tabs( void )
     tname = at->at_Name[0] ? at->at_Name : "[Untitled]";
 
 #ifndef __SDL_WRAPPER__
-    n = IGraphics->TextLength( &mainbm.rp, tname, strlen( tname ) );
+    n = TextLength( &mainbm.rp, tname, strlen( tname ) );
 #else
     TTF_SizeText(mainbm.font, tname, &n, &k);
 #endif
@@ -1848,10 +1750,10 @@ void gui_render_tabs( void )
 
     set_fpen(&mainbm, PAL_TABTEXT);
     printstrlen(&mainbm, tname, k, (j>>8)+24, 99);
-    at = (struct ahx_tune *)IExec->GetSucc(&at->at_ln);
+    at = (struct ahx_tune *)GetSucc(&at->at_ln);
   }
   
-  IExec->ReleaseSemaphore( rp_list_ss );
+  ReleaseSemaphore( rp_list_ss );
 }
 
 void gui_render_wavemeter( void )
@@ -1881,9 +1783,9 @@ void gui_render_wavemeter( void )
     if( v > (31+10) ) v = 31+10;
 #ifndef __SDL_WRAPPER__
     if( i == 9 )
-      IGraphics->Move( &bitmaps[BM_WAVEMETERS].rp, 9, v );
+      Move( &bitmaps[BM_WAVEMETERS].rp, 9, v );
     else
-      IGraphics->Draw( &bitmaps[BM_WAVEMETERS].rp, i, v );
+      Draw( &bitmaps[BM_WAVEMETERS].rp, i, v );
 #else
      fillrect_xy(&bitmaps[BM_WAVEMETERS], i, v, i, v);
 #endif
@@ -1898,9 +1800,9 @@ void gui_render_wavemeter( void )
     if( v > (31+52) ) v = 31+52;
 #ifndef __SDL_WRAPPER__
     if( i == 9 )
-      IGraphics->Move( &bitmaps[BM_WAVEMETERS].rp, 9, v );
+      Move( &bitmaps[BM_WAVEMETERS].rp, 9, v );
     else
-      IGraphics->Draw( &bitmaps[BM_WAVEMETERS].rp, i, v );
+      Draw( &bitmaps[BM_WAVEMETERS].rp, i, v );
 #else
      fillrect_xy(&bitmaps[BM_WAVEMETERS], i, v, i, v);
 #endif
@@ -1929,7 +1831,7 @@ void gui_render_vumeters( void )
     if( ( vum_needclr ) && ( v < vum_last[i+lch] ) && ( v < 64 ) )
     {
 #ifndef __SDL_WRAPPER__
-      IGraphics->BltBitMapRastPort( bitmaps[BM_TRACKED].bm, 64+i*120, 64, mainwin->RPort, TRACKED_X+64+i*120, TRACKED_Y+64, 32, 64-v, 0x0C0 );
+      BltBitMapRastPort( bitmaps[BM_TRACKED].bm, 64+i*120, 64, mainwin->RPort, TRACKED_X+64+i*120, TRACKED_Y+64, 32, 64-v, 0x0C0 );
 #else
       SDL_Rect srect = { .x = 64+i*120, .y = 64, .w = 32, .h = 64-v };
       SDL_Rect drect = { .x = TRACKED_X+64+i*120, .y = TRACKED_Y+64, .w = 32, .h = 64-v };
@@ -2044,7 +1946,7 @@ void gui_render_tracked( BOOL force )
     bw = (3*8)+(dch*15*8)-1;
     if( bw > TRACKED_W ) bw = TRACKED_W;
 #ifndef __SDL_WRAPPER__
-    IGraphics->ScrollRaster( &bitmaps[BM_TRACKED].rp, 0, 16, 0, 0, bw, TRACKED_MY );
+    ScrollRaster( &bitmaps[BM_TRACKED].rp, 0, 16, 0, 0, bw, TRACKED_MY );
 #else
     {
       SDL_Rect srect = { .x = 0, .y = 16, .w = bw, .h = TRACKED_H-16 };
@@ -2056,8 +1958,8 @@ void gui_render_tracked( BOOL force )
     set_fpen(&bitmaps[BM_TRACKED], PAL_BACK);
     fillrect_xy(&bitmaps[BM_TRACKED], 0, 256, TRACKED_MX, TRACKED_MY );
     fillrect_xy(&bitmaps[BM_TRACKED], 0, 7*16-2, TRACKED_MX, 7*16-1 );
-//    IGraphics->Move( &bitmaps[BM_TRACKED].rp, 0, 7*16-1 );
-//    IGraphics->Draw( &bitmaps[BM_TRACKED].rp, bw, 7*16-1 );
+//    Move( &bitmaps[BM_TRACKED].rp, 0, 7*16-1 );
+//    Draw( &bitmaps[BM_TRACKED].rp, bw, 7*16-1 );
 
     hrestore = FALSE;
     set_fpen(&bitmaps[BM_TRACKED], PAL_TEXT);
@@ -3040,7 +2942,7 @@ void gui_render_pcycle( int32 cn, BOOL pressed )
   set_font(&prefbm, FONT_PRP, FALSE);
 
 #ifndef __SDL_WRAPPER__
-  w = IGraphics->TextLength( &prefbm.rp, ctxt, strlen( ctxt ) );
+  w = TextLength( &prefbm.rp, ctxt, strlen( ctxt ) );
 #else
   TTF_SizeText(prefbm.font, ctxt, &w, &tx);
 #endif
@@ -3089,13 +2991,15 @@ void gui_open_prefs( void )
 {
   pref_dorestart = FALSE;
   pref_oldfullscr = pref_fullscr;
+  pref_oldscrmodeid = pref_scrmodeid;
+
   strcpy( pref_oldskindir, skindir );
 
 #ifndef __SDL_WRAPPER__
   if( pw_x == -1 ) pw_x = mainwin->LeftEdge + 150;
   if( pw_y == -1 ) pw_y = mainwin->TopEdge + 100;
 
-  prefwin = IIntuition->OpenWindowTags( NULL,
+  prefwin = OpenWindowTags( NULL,
     WA_Left,        pw_x,
     WA_Top,         pw_y,
     WA_InnerWidth,  400,
@@ -3103,7 +3007,7 @@ void gui_open_prefs( void )
     WA_Title,       "Preferences",
     WA_ScreenTitle, "HivelyTracker (c)2013 IRIS & Up Rough! - http://www.uprough.net - http://www.hivelytracker.co.uk",
     WA_RMBTrap,     TRUE,
-    WA_IDCMP,       IDCMP_CLOSEWINDOW|IDCMP_MOUSEBUTTONS|IDCMP_RAWKEY|IDCMP_GADGETUP|IDCMP_EXTENDEDMOUSE,
+    WA_IDCMP,       IDCMP_CLOSEWINDOW|IDCMP_MOUSEBUTTONS|IDCMP_RAWKEY|IDCMP_GADGETUP,
     WA_Activate,    TRUE,
     WA_DragBar,     TRUE,
     WA_CloseGadget, TRUE,
@@ -3132,19 +3036,21 @@ void gui_open_prefs( void )
   set_font(&prefbm, FONT_PRP, FALSE);
 
   gui_set_pcycle( PC_WMODE,     220, 8     , pref_fullscr ? 1 : 0, pc_wmode_opts );
-  gui_set_pcycle( PC_DEFSTEREO, 220, 8+24*1, pref_defstereo,  pc_defst_opts );
-  gui_set_pcycle( PC_BLANKZERO, 220, 8+24*2, pref_blankzeros, pc_bzero_opts ); 
+  gui_set_pcycle( PC_DEFSTEREO, 220, 8+24*1, pref_defstereo, pc_defst_opts );
+  gui_set_pcycle( PC_WAVEMETER, 220, 8+24*2, pref_wavemeter ? 1 : 0, pc_wavemeter_opts );
+  gui_set_pcycle( PC_VUMETERS,  220, 8+24*3, pref_vumeters ? 1 : 0, pc_wavemeter_opts );
+  gui_set_pcycle( PC_BLANKZERO, 220, 8+24*4, pref_blankzeros, pc_bzero_opts );
 
-  gui_set_tbox( &ptb[PTB_SONGDIR], 220+pw_bl, 8+24*3+4+pw_bt, 136, songdir, 511, TBF_ENABLED|TBF_VISIBLE, 0 );
-  gui_set_tbox( &ptb[PTB_INSTDIR], 220+pw_bl, 8+24*4+4+pw_bt, 136, instdir, 511, TBF_ENABLED|TBF_VISIBLE, 0 );
-  gui_set_tbox( &ptb[PTB_SKINDIR], 220+pw_bl, 8+24*5+4+pw_bt, 136, skindir, 511, TBF_ENABLED|TBF_VISIBLE, 0 );
+  gui_set_tbox( &ptb[PTB_FREQ],    220+pw_bl, 8+24*5+4+pw_bt, 136, pref_freq, 511, TBF_ENABLED|TBF_VISIBLE, 0 );
+  gui_set_tbox( &ptb[PTB_SONGDIR], 220+pw_bl, 8+24*6+4+pw_bt, 136, songdir, 511, TBF_ENABLED|TBF_VISIBLE, 0 );
+  gui_set_tbox( &ptb[PTB_INSTDIR], 220+pw_bl, 8+24*7+4+pw_bt, 136, instdir, 511, TBF_ENABLED|TBF_VISIBLE, 0 );
+  gui_set_tbox( &ptb[PTB_SKINDIR], 220+pw_bl, 8+24*8+4+pw_bt, 136, skindir, 511, TBF_ENABLED|TBF_VISIBLE, 0 );
 
-  gui_set_popup( PP_SONGDIR, 360, 8+24*3+3 );
-  gui_set_popup( PP_INSTDIR, 360, 8+24*4+3 );
-  gui_set_popup( PP_SKINDIR, 360, 8+24*5+3 );
-
-
-  gui_set_pcycle( PC_MAXUNDOBUF, 220, 8+24*6, pref_maxundobuf, pc_mundo_opts );
+  gui_set_popup( PP_SONGDIR, 360, 8+24*6+3 );
+  gui_set_popup( PP_INSTDIR, 360, 8+24*7+3 );
+  gui_set_popup( PP_SKINDIR, 360, 8+24*8+3 );
+ 
+  gui_set_pcycle( PC_MAXUNDOBUF, 220, 8+24*9, pref_maxundobuf, pc_mundo_opts );
 
   gui_render_prefs();
 
@@ -3169,7 +3075,7 @@ void gui_close_prefs( void )
   {
     pw_x = prefwin->LeftEdge;
     pw_y = prefwin->TopEdge;
-    IIntuition->CloseWindow( prefwin );
+    CloseWindow( prefwin );
   }
   
   prefwin = NULL;
@@ -3180,7 +3086,7 @@ void gui_close_prefs( void )
 
   for( i=0; i<PTB_END; i++ )
   {
-    if( ptb[i].bm.bm ) IGraphics->FreeBitMap( ptb[i].bm.bm );
+    if( ptb[i].bm.bm ) FreeBitMap( ptb[i].bm.bm );
     ptb[i].bm.bm = NULL;
   }
 #else
@@ -3197,7 +3103,9 @@ void gui_close_prefs( void )
 #endif
 
   if( ( pref_oldfullscr != pref_fullscr ) ||
-      ( strcmp( pref_oldskindir, skindir ) != 0 ) )
+      ( strcmp( pref_oldskindir, skindir ) != 0 ) ||
+      ( pref_oldscrmodeid != pref_scrmodeid )
+    )
     pref_dorestart = TRUE;
 }
 
@@ -3291,7 +3199,7 @@ void gui_loadskinsettings( void )
 {
   FILE *f;
   TEXT tmp[1024];
-  int32 pen, col, i;
+  int32 pen, col, i, r, g, b;
   
   tabtextback = FALSE;
   tabtextshad = TRUE;
@@ -3304,7 +3212,7 @@ void gui_loadskinsettings( void )
 #endif
 
 #ifndef __SDL_WRAPPER__
-  IDOS->AddPart( tmp, "Settings_os4", 1024 );
+  AddPart( tmp, "Settings_os3", 1024 );
 #else
   strncat( tmp, "/Settings_os4", 1024 );
 #endif
@@ -3326,16 +3234,34 @@ void gui_loadskinsettings( void )
 //      strcpy( prpfontname, tmp );
       continue;
     }
-    
+
+    if( gui_decode_num( "font1size", tmp, &i ) )
+    {
+      prpfontattr.ta_YSize = i;
+      continue;
+    }
+
     if( gui_decode_pstr( "font2", tmp ) )
     {
 //      strcpy( fixfontname, tmp );
       continue;
     }
 
+    if( gui_decode_num( "font2size", tmp, &i ) )
+    {
+      fixfontattr.ta_YSize = i;
+      continue;
+    }
+
     if( gui_decode_pstr( "font3", tmp ) )
     {
 //      strcpy( sfxfontname, tmp );
+      continue;
+    }
+
+    if( gui_decode_num( "font3size", tmp, &i ) )
+    {
+      sfxfontattr.ta_YSize = i;
       continue;
     }
 
@@ -3373,7 +3299,7 @@ void gui_loadskinsettings( void )
         i++;
       }
 
-      pal[pen] = col;
+      pal_argb[pen] = col;
 #ifdef __SDL_WRAPPER__
 #ifdef __APPLE__
       // Work-around for SDL bug on OSX
@@ -3384,14 +3310,24 @@ void gui_loadskinsettings( void )
 #endif
       // Just in case the skin doesn't specify
       // tab colours
-      if( pen == PAL_BTNTEXT )   pal[PAL_TABTEXT]   = col;
-      if( pen == PAL_BTNSHADOW ) pal[PAL_TABSHADOW] = col;
+      if( pen == PAL_BTNTEXT ) { pal_argb[PAL_TABTEXT]   = col; }
+      if( pen == PAL_BTNSHADOW ) { pal_argb[PAL_TABSHADOW] = col; }
 
       pen++;
     }    
   }
   
   fclose(f);
+
+  // allocate pens for display
+  for( pen=0; pen<PAL_END; pen++ )
+  {
+    r = (pal_argb[pen]<<8) & 0xff000000;
+    g = (pal_argb[pen]<<16) & 0xff000000;
+    b = pal_argb[pen]<<24;
+    pal[pen] = ObtainBestPen( mainwin->WScreen->ViewPort.ColorMap, r, g, b, TAG_DONE );
+  }
+
 }
 
 void gui_load_prefs( void )
@@ -3414,7 +3350,39 @@ void gui_load_prefs( void )
       pref_fullscr = (i!=0);
       continue;
     }
-    
+
+    if( gui_decode_num( "modeid", tmp, &i ) )
+    {
+      pref_scrmodeid = i;
+      continue;
+    }
+
+    if( gui_decode_num( "depth", tmp, &i ) )
+    {
+      pref_scrdepth = i;
+      continue;
+    }
+
+    if( gui_decode_num( "wavemeter", tmp, &i ) )
+    {
+      pref_wavemeter = (i!=0);
+      continue;
+    }
+
+    if( gui_decode_num( "vumeters", tmp, &i ) )
+    {
+      pref_vumeters = (i!=0);
+      continue;
+    }
+
+    if( gui_decode_num( "frequency", tmp, &i ) )
+    {
+      rp_freq = i;
+      sprintf(pref_freq,"%ld",i);
+      if(rp_freq==0 || rp_freq>48000) rp_freq=22050;
+      continue;
+    }
+
     if( gui_decode_num( "defstereo", tmp, &i ) )
     {
       if( i < 0 ) i = 0;
@@ -3497,9 +3465,10 @@ void gui_pre_init( void )
   for( i=0; i<TB_END; i++ ) tbx[i].bm.srf = NULL;
 #endif
 
-  strcpy( songdir, "Songs" );
-  strcpy( instdir, "Instruments" );
-  strcpy( skindir, "Skins/SIDMonster-Light" );
+  strcpy( songdir, "PROGDIR:Songs" );
+  strcpy( instdir, "PROGDIR:Instruments" );
+  strcpy( skindir, "PROGDIR:Skins/SIDMonster-Light" );
+  sprintf(pref_freq,"%ld", rp_freq);
 
   gui_load_prefs();
 
@@ -3527,55 +3496,108 @@ void gui_save_prefs( void )
 #endif
   if( !f ) return;
   
-  fprintf( f, "display = %d\n",   (int)pref_fullscr );
-  fprintf( f, "defstereo = %d\n", (int)pref_defstereo );
-  fprintf( f, "blankzero = %d\n", (int)pref_blankzeros );
-  fprintf( f, "maxundobf = %d\n", (int)pref_maxundobuf );
+  fprintf( f, "display = %ld\n",   pref_fullscr );
+  fprintf( f, "modeid = %ld\n",    pref_scrmodeid );
+  fprintf( f, "depth = %ld\n",     pref_scrdepth );
+  fprintf( f, "defstereo = %ld\n", pref_defstereo );
+  fprintf( f, "blankzero = %ld\n", pref_blankzeros );
+  fprintf( f, "maxundobf = %ld\n", pref_maxundobuf );
+  fprintf( f, "wavemeter = %ld\n", pref_wavemeter );
+  fprintf( f, "vumeters = %ld\n",  pref_wavemeter );
+  fprintf( f, "frequency = %s\n",  gui_encode_pstr( tmp, pref_freq ) );
   fprintf( f, "songdir = '%s'\n",  gui_encode_pstr( tmp, songdir ) );
   fprintf( f, "instdir = '%s'\n",  gui_encode_pstr( tmp, instdir ) );
   fprintf( f, "skindir = '%s'\n",  gui_encode_pstr( tmp, skindir ) );
-  fprintf( f, "posedadvance = %d\n", (int)posedadvance );
-  fprintf( f, "notejump = %d\n",  (int)defnotejump );
-  fprintf( f, "inotejump = %d\n",  (int)definotejump );
+  fprintf( f, "posedadvance = %ld\n", posedadvance );
+  fprintf( f, "notejump = %ld\n",  defnotejump );
+  fprintf( f, "inotejump = %ld\n",  definotejump );
   fclose( f );
 }
 
 BOOL gui_open_skin_images( void )
 {
+  TEXT *files[BM_END];
+  APTR pictures[BM_END];
+  int32 i,j;
+  BOOL ret=TRUE;
+
   gui_loadskinsettings();
 
-  if( !open_image( "logo",        &bitmaps[BM_LOGO] ) ) return FALSE;
-  if( !open_image( "tab_area",    &bitmaps[BM_TAB_AREA] ) )    return FALSE;
-  if( !open_image( "tab_left",    &bitmaps[BM_TAB_LEFT] ) )    return FALSE;
-  if( !open_image( "tab_mid",     &bitmaps[BM_TAB_MID] ) )     return FALSE;
-  if( !open_image( "tab_right",   &bitmaps[BM_TAB_RIGHT] ) )   return FALSE;
-  if( !open_image( "itab_left",   &bitmaps[BM_ITAB_LEFT] ) )   return FALSE;
-  if( !open_image( "itab_mid",    &bitmaps[BM_ITAB_MID] ) )    return FALSE;
-  if( !open_image( "itab_right",  &bitmaps[BM_ITAB_RIGHT] ) )  return FALSE;
+  for( i=0; i<BM_END; i++ )
+  {
+    files[i]=NULL;
+    pictures[i]=NULL;
+  }
+
+  files[BM_LOGO]="logo";
+  files[BM_TAB_AREA]="tab_area";
+  files[BM_TAB_LEFT]="tab_left";
+  files[BM_TAB_RIGHT]="tab_right";
+  files[BM_TAB_MID]="tab_mid";
+  files[BM_ITAB_LEFT]="itab_left";
+  files[BM_ITAB_MID]="itab_mid";
+  files[BM_ITAB_RIGHT]="itab_right";
+  files[BM_BUTBANKR]="butbankr";
+  files[BM_BUTBANKP]="butbankp";
+  files[BM_BG_TRACKER]="bg_tracker";
+  files[BM_BG_INSED]="bg_insed";
+  files[BM_VUMETER]="vumeter";
+  files[BM_PLUSMINUS]="plusminus";
+  files[BM_DEPTH]="depth";
+  files[BM_BLANK]="blank";
+  files[BM_WAVEMETERS]="wavemeter";
+  files[BM_PRF_BG]="prefs_os3";
+  files[BM_PRF_CYCLE]="prefs_cycle";
+  files[BM_TRKBANKR]="trkbankr";
+  files[BM_TRKBANKP]="trkbankp";
+  files[BM_CHANMUTE]="chanmute";
+  files[BM_DIRPOPUP]="dir_popup";
+  files[BM_ABOUTFONT]="aboutfont";
 
   if( tabtextback )
   {
-    if( !open_image( "itab_text",   &bitmaps[BM_ITAB_TEXT] ) )   return FALSE;
-    if( !open_image( "tab_text",    &bitmaps[BM_TAB_TEXT] ) )    return FALSE;
+    files[BM_ITAB_TEXT]="itab_text";
+    files[BM_TAB_TEXT]="tab_text";
   }
 
-  if( !open_image( "butbankr",    &bitmaps[BM_BUTBANKR] ) )    return FALSE;
-  if( !open_image( "butbankp",    &bitmaps[BM_BUTBANKP] ) )    return FALSE;
-  if( !open_image( "bg_tracker",  &bitmaps[BM_BG_TRACKER] ) )  return FALSE;
-  if( !open_image( "bg_insed",    &bitmaps[BM_BG_INSED] ) )    return FALSE;
-  if( !open_image( "plusminus",   &bitmaps[BM_PLUSMINUS] ) )   return FALSE;
-  if( !open_image( "vumeter",     &bitmaps[BM_VUMETER] ) )     return FALSE;
-  if( !open_image( "depth",       &bitmaps[BM_DEPTH] ) )       return FALSE;
-  if( !open_image( "blank",       &bitmaps[BM_BLANK] ) )       return FALSE;
-  if( !open_image( "wavemeter",   &bitmaps[BM_WAVEMETERS] ) )  return FALSE;
-  if( !open_image( "prefs_os4",   &bitmaps[BM_PRF_BG] ) )      return FALSE;
-  if( !open_image( "prefs_cycle", &bitmaps[BM_PRF_CYCLE] ) )   return FALSE;
-  if( !open_image( "trkbankr",    &bitmaps[BM_TRKBANKR] ) )    return FALSE;
-  if( !open_image( "trkbankp",    &bitmaps[BM_TRKBANKP] ) )    return FALSE;
-  if( !open_image( "chanmute",    &bitmaps[BM_CHANMUTE] ) )    return FALSE;
-  if( !open_image( "dir_popup",   &bitmaps[BM_DIRPOPUP] ) )    return FALSE;
+  for( i=0; i<BM_END; i++ )
+  {
+    if ( files[i]!=NULL ) {
+      if ( !(pictures[i]=load_picture(files[i])) )
+      {
+        printf( "Error opening '%s'\n", files[i] );
+        ret=FALSE;
+      } else {
+        AddPicture(psm, pictures[i], TAG_DONE);
+      }
+    }
+  }
 
-  return TRUE;
+  if ( ret )
+    drawhandle = ObtainDrawHandle(psm, mainwin->RPort, mainwin->WScreen->ViewPort.ColorMap, TAG_DONE);
+
+  if( drawhandle && ret )
+  {
+    for( i=0;i<BM_END; i++ ) 
+    {
+      if ( pictures[i] ) {
+        GetPictureAttrs(pictures[i],PICATTR_Width,bitmaps[i].w,PICATTR_Height,bitmaps[i].h, TAG_DONE);
+	      if (bitmaps[i].bm = CreatePictureBitMap(drawhandle, pictures[i], GGFX_DitherMode, DITHERMODE_NONE, TAG_DONE) )
+        {
+          InitRastPort( &bitmaps[i].rp );
+          bitmaps[i].rp.BitMap = bitmaps[i].bm;
+        } else {
+          printf( "Error creating bitmap\n");
+          ret=FALSE;
+        }
+      }
+    }
+  }
+
+  for( i=0; i<BM_END; i++ )
+    if ( pictures[i] ) DeletePicture(pictures[i]);
+
+  return ret;
 }
 
 BOOL gui_open( void )
@@ -3637,39 +3659,29 @@ BOOL gui_open( void )
 
   if( fullscr )
   {
-    uint32 modeid, depth;
+    if ( !pref_scrmodeid || !pref_scrdepth)
+    {
+      set_default_modeid_depth();
+      set_screen_mode();
+    }
 
-    modeid = IP96->p96BestModeIDTags( P96BIDTAG_NominalWidth,   800,
-                                      P96BIDTAG_NominalHeight,  600,
-                                      P96BIDTAG_FormatsAllowed, RGBFF_R8G8B8|
-                                                                RGBFF_B8G8R8|
-                                                                RGBFF_A8R8G8B8|
-                                                                RGBFF_A8B8G8R8|
-                                                                RGBFF_R8G8B8A8|
-                                                                RGBFF_B8G8R8A8|
-                                                                RGBFF_R5G6B5|
-                                                                RGBFF_R5G6B5PC|
-                                                                RGBFF_R5G5B5|
-                                                                RGBFF_R5G5B5PC|
-                                                                RGBFF_B5G6R5PC|
-                                                                RGBFF_B5G5R5PC,
-                                      TAG_DONE );
-    if( modeid == INVALID_ID )
+    if( pref_scrmodeid == INVALID_ID )
     {
       printf( "Unable to get a suitable screenmode. Falling back to windowed mode...\n" );
       fullscr = FALSE;
     } else {
-    
-      depth = IP96->p96GetModeIDAttr( modeid, P96IDA_DEPTH );
-    
-      scr = IIntuition->OpenScreenTags( NULL,
+        
+      scr = OpenScreenTags( NULL,
         SA_Width,     800,
         SA_Height,    600,
-        SA_Depth,     depth,
+        SA_Depth,     pref_scrdepth,
         SA_Title,     "HivelyTracker",
         SA_ShowTitle, FALSE,
-        SA_DisplayID, modeid,
-        SA_Pens,      -1,
+        SA_DisplayID, pref_scrmodeid,
+        SA_SharePens, TRUE,
+        SA_Overscan, OSCAN_TEXT,
+        SA_AutoScroll, TRUE,
+        SA_Pens,      screenpens,
         TAG_DONE );
       if( !scr )
       {
@@ -3679,13 +3691,13 @@ BOOL gui_open( void )
     }
   }
 
-  mainwin = IIntuition->OpenWindowTags( NULL,
+  mainwin = OpenWindowTags( NULL,
     WA_Width,       800,
     WA_Height,      600,
     WA_Borderless,  TRUE,
     WA_ScreenTitle, "HivelyTracker (c)2013 IRIS & Up Rough! - http://www.uprough.net - http://www.hivelytracker.co.uk",
     WA_RMBTrap,     TRUE,
-    WA_IDCMP,       IDCMP_MOUSEBUTTONS|IDCMP_RAWKEY|IDCMP_GADGETUP|IDCMP_EXTENDEDMOUSE,
+    WA_IDCMP,       IDCMP_MOUSEBUTTONS|IDCMP_RAWKEY|IDCMP_GADGETUP,
     WA_Activate,    TRUE,
     WA_Gadgets,     fullscr ? NULL : &gad_drag,
     fullscr ? WA_CustomScreen : TAG_IGNORE, scr,
@@ -3694,6 +3706,13 @@ BOOL gui_open( void )
   if( !mainwin )
   {
     printf( "Unable to open main window!\n" );
+    return FALSE;
+  }
+
+  psm = CreatePenShareMap(TAG_DONE);
+  if( !psm )
+  {
+    printf( "Error creating PenShareMap\n");
     return FALSE;
   }
 
@@ -3732,21 +3751,21 @@ BOOL gui_open( void )
 #endif
 
 #ifndef __SDL_WRAPPER__
-  fixfont = IDiskfont->OpenDiskFont( &fixfontattr );
+  fixfont = OpenDiskFont( &fixfontattr );
   if( !fixfont )
   {
     printf( "Unable to open '%s'\n", fixfontattr.ta_Name );
     return FALSE;
   }
 
-  sfxfont = IDiskfont->OpenDiskFont( &sfxfontattr );
+  sfxfont = OpenDiskFont( &sfxfontattr );
   if( !sfxfont )
   {
     printf( "Unable to open '%s'\n", sfxfontattr.ta_Name );
     return FALSE;
   }
 
-  prpfont = IDiskfont->OpenDiskFont( &prpfontattr );
+  prpfont = OpenDiskFont( &prpfontattr );
   if( !prpfont )
   {
     printf( "Unable to open '%s'\n", prpfontattr.ta_Name );
@@ -3866,8 +3885,8 @@ BOOL gui_open( void )
   
   gui_setup_trkbbank( 0 );
   gui_setup_buttonbank( 0 );
-  if( IExec->GetHead(rp_tunelist) )
-    gui_set_various_things( (struct ahx_tune *)IExec->GetHead(rp_tunelist) );
+  if( GetHead(rp_tunelist) )
+    gui_set_various_things( (struct ahx_tune *)GetHead(rp_tunelist) );
   gui_render_everything();
   gui_render_tunepanel( TRUE );
 
@@ -3875,6 +3894,45 @@ BOOL gui_open( void )
   cz_rmb = -1;
   
   return TRUE;
+}
+
+void set_default_modeid_depth()
+{
+
+  if ( CyberGfxBase!=NULL )
+  {
+    pref_scrdepth = 8;
+    pref_scrmodeid = BestCModeIDTags(CYBRBIDTG_NominalWidth,  800,
+                                CYBRBIDTG_NominalHeight, 600,
+                                CYBRBIDTG_Depth,         pref_scrdepth,
+                                TAG_DONE);
+    pref_scrdepth=GetCyberIDAttr(CYBRIDATTR_DEPTH,pref_scrmodeid);
+  } else {
+    pref_scrdepth=2;
+    pref_scrmodeid = BestModeID(BIDTAG_NominalWidth, 640,
+                           BIDTAG_NominalHeight, 512,
+                           BIDTAG_Depth, pref_scrdepth,
+                           TAG_DONE);
+  }
+
+}
+
+void set_screen_mode()
+{
+  BOOL ok;
+
+  ok = AslRequestTags( scr_req,
+    ASLSM_Window, mainwin,
+    ASLSM_SleepWindow, TRUE,
+    ASLSM_InitialDisplayID, pref_scrmodeid,
+    ASLSM_InitialDisplayDepth, pref_scrdepth,
+    TAG_DONE );
+
+  if (ok) {
+    pref_scrmodeid=scr_req->sm_DisplayID;
+    pref_scrdepth=scr_req->sm_DisplayDepth;
+  }
+
 }
 
 BOOL gui_init( void )
@@ -3906,16 +3964,23 @@ BOOL gui_init( void )
   strcpy( skinext,     ".png" );
 
 #ifndef __SDL_WRAPPER__
-  if( !getLibIFace( &IntuitionBase, "intuition.library",    51, &IIntuition ) ) return FALSE;
-  if( !getLibIFace( &GfxBase,       "graphics.library",     51, &IGraphics ) )  return FALSE;
-  if( !getLibIFace( &P96Base,       "Picasso96API.library",  2, &IP96) )        return FALSE;
-  if( !getLibIFace( &DataTypesBase, "datatypes.library",    51, &IDataTypes ) ) return FALSE;
-  if( !getLibIFace( &DiskfontBase,  "diskfont.library",     51, &IDiskfont ) )  return FALSE;
-  if( !getLibIFace( &AslBase,       "asl.library",          51, &IAsl) )        return FALSE;
-  if( !getLibIFace( &KeymapBase,    "keymap.library",       51, &IKeymap) )     return FALSE;
-  if( !getLibIFace( &RequesterBase, "requester.class",      51, &IRequester ) ) return FALSE;
+  KeymapBase = OpenLibrary("keymap.library",36);
+  if (KeymapBase == NULL)
+  {
+    printf("Unable to open keymap.library\n");
+    return FALSE; 
+  }
 
-  gui_tick_signum = IExec->AllocSignal( -1 );
+  GuiGFXBase = OpenLibrary("guigfx.library", 0);
+  if (GuiGFXBase == NULL)
+  {
+    printf("Unable to open guigfx.library\n");
+    return FALSE; 
+  }
+
+  CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
+
+  gui_tick_signum = AllocSignal( -1 );
   if( gui_tick_signum == -1 )
   {
     printf( "Unable to allocate signal\n" );
@@ -3923,7 +3988,7 @@ BOOL gui_init( void )
   }
   gui_tick_sig = (1L<<gui_tick_signum);
 
-  ins_lreq = IAsl->AllocAslRequestTags( ASL_FileRequest,
+  ins_lreq = AllocAslRequestTags( ASL_FileRequest,
                ASLFR_TitleText,     "Load Instrument",
                ASLFR_InitialDrawer, instdir,
                ASLFR_DoSaveMode,    FALSE,
@@ -3935,7 +4000,7 @@ BOOL gui_init( void )
     return FALSE;
   }
 
-  ins_sreq = IAsl->AllocAslRequestTags( ASL_FileRequest,
+  ins_sreq = AllocAslRequestTags( ASL_FileRequest,
                ASLFR_TitleText,     "Save Instrument",
                ASLFR_InitialDrawer, instdir,
                ASLFR_DoSaveMode,    TRUE,
@@ -3947,7 +4012,7 @@ BOOL gui_init( void )
     return FALSE;
   }
 
-  sng_lreq = IAsl->AllocAslRequestTags( ASL_FileRequest,
+  sng_lreq = AllocAslRequestTags( ASL_FileRequest,
                ASLFR_TitleText,     "Load Song",
                ASLFR_InitialDrawer, songdir,
                ASLFR_DoSaveMode,    FALSE,
@@ -3959,7 +4024,7 @@ BOOL gui_init( void )
     return FALSE;
   }
 
-  sng_sreq = IAsl->AllocAslRequestTags( ASL_FileRequest,
+  sng_sreq = AllocAslRequestTags( ASL_FileRequest,
                ASLFR_TitleText,     songdir,
                ASLFR_InitialDrawer, "Songs",
                ASLFR_DoSaveMode,    TRUE,
@@ -3971,11 +4036,21 @@ BOOL gui_init( void )
     return FALSE;
   }
 
-  dir_req  = IAsl->AllocAslRequestTags( ASL_FileRequest,
+  scr_req = AllocAslRequestTags( ASL_ScreenModeRequest,
+               ASLSM_DoDepth, TRUE,
+               TAG_DONE);
+
+  if( !scr_req )
+  {
+    printf( "Error allocating Asl request\n" );
+    return FALSE;
+  }
+
+  dir_req  = AllocAslRequestTags( ASL_FileRequest,
                ASLFR_DoSaveMode,    FALSE,
                ASLFR_DrawersOnly,   TRUE,
                TAG_DONE );
-  if( !ins_lreq )
+  if( !dir_req )
   {
     printf( "Error allocating Asl request\n" );
     return FALSE;
@@ -4077,16 +4152,16 @@ void gui_copyposregion( struct ahx_tune *at, BOOL cutting )
 
   if( cbpbuf == NULL )
   {
-    cbpbuf  = IExec->AllocVecTags( size, TAG_DONE );
+    cbpbuf  = AllocVec( size, MEMF_ANY );
     if( cbpbuf == NULL ) return;
     cbpblen = size;
   }
   
   if( cbpblen < size )
   {
-    IExec->FreeVec( cbpbuf );
+    FreeVec( cbpbuf );
     cbpblen = 0;
-    cbpbuf  = IExec->AllocVecTags( size, TAG_DONE );
+    cbpbuf  = AllocVec( size, MEMF_ANY );
     if( cbpbuf == NULL ) return;
     cbpblen = size;
   }
@@ -4245,7 +4320,7 @@ BOOL optimise( struct ahx_tune *from, struct ahx_tune *to, BOOL optimise_more )
   for( i=0; i<63; i++ )
     imap[i] = 0;
   
-  IExec->CopyMem( from->at_Name, to->at_Name, 128 );
+  CopyMem( from->at_Name, to->at_Name, 128 );
   strncat( to->at_Name, "[opt]", 128 );
   to->at_Name[127]       = 0;
   to->at_Restart         = from->at_Restart;
@@ -4254,7 +4329,7 @@ BOOL optimise( struct ahx_tune *from, struct ahx_tune *to, BOOL optimise_more )
   to->at_TrackLength     = from->at_TrackLength;
   to->at_SubsongNr       = from->at_SubsongNr;
   to->at_Stereo          = from->at_Stereo;
-  IExec->CopyMem( from->at_Subsongs, to->at_Subsongs, 256*2 );
+  CopyMem( from->at_Subsongs, to->at_Subsongs, 256*2 );
   to->at_Channels        = from->at_Channels;
   to->at_mixgain         = from->at_mixgain;
   to->at_mixgainP        = from->at_mixgainP;
@@ -4616,7 +4691,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       at = rp_new_tune( TRUE );
       if( at )
       {
-        IExec->CopyMem( &curtune->at_Name[0], &at->at_Name[0], sizeof( struct ahx_tune ) - offsetof( struct ahx_tune, at_Name ) );
+        CopyMem( &curtune->at_Name[0], &at->at_Name[0], sizeof( struct ahx_tune ) - offsetof( struct ahx_tune, at_Name ) );
         at->at_doing    = D_IDLE;
         at->at_editing  = E_TRACK;
         at->at_idoing   = D_IDLE;
@@ -4639,19 +4714,19 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       curtune->at_doing = D_IDLE;
 
 #ifndef __SDL_WRAPPER__
-      ok = IAsl->AslRequestTags( ins_lreq,
+      ok = AslRequestTags( ins_lreq,
         ASLFR_Window,      mainwin,
         ASLFR_SleepWindow, TRUE,
         TAG_DONE );
       if( !ok ) break;
       
-      lock = IDOS->Lock( ins_lreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      lock = Lock( ins_lreq->fr_Drawer, ACCESS_READ );
+      olddir = CurrentDir( lock );
       
       rp_load_ins( ins_lreq->fr_File, curtune, curtune->at_curins );
     
-      IDOS->CurrentDir( olddir );
-      IDOS->UnLock( lock );
+      CurrentDir( olddir );
+      UnLock( lock );
 #else
       if (!(gfname = filerequester("Load instrument", reminstdir, "", FR_INSLOAD))) break;
       setpathpart(reminstdir, gfname);
@@ -4692,7 +4767,7 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
     
         strcat( wtxt, "\nSaving as AHX would strip these out. Are you sure?" );
 
-        if( gui_req( REQIMAGE_WARNING, "HivelyTracker", wtxt, "_OK|_Noooo!" ) == 0 )
+        if( gui_req( REQIMAGE_WARNING, "HivelyTracker", wtxt, "OK|Noooo!" ) == 0 )
           break;
       }
       
@@ -4700,23 +4775,23 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       strcat( tmp, curtune->at_Name );
 
 #ifndef __SDL_WRAPPER__
-      ok = IAsl->AslRequestTags( sng_sreq,
+      ok = AslRequestTags( sng_sreq,
         ASLFR_Window,      mainwin,
         ASLFR_InitialFile, tmp,
         ASLFR_SleepWindow, TRUE,
         TAG_DONE );
       if( !ok ) break;
       
-      lock = IDOS->Lock( sng_sreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      lock = Lock( sng_sreq->fr_Drawer, ACCESS_READ );
+      olddir = CurrentDir( lock );
       
       rp_save_ahx( sng_sreq->fr_File, curtune );
       
       if( i == 0 )
         curtune->at_modified = FALSE;
       
-      IDOS->CurrentDir( olddir );
-      IDOS->UnLock( lock );
+      CurrentDir( olddir );
+      UnLock( lock );
 #else
       if (!(gfname = filerequester("Save AHX module", remsongdir, "", FR_AHXSAVE))) break;
       setpathpart(remsongdir, gfname);
@@ -4739,22 +4814,22 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       strcat( tmp, curtune->at_Name );
 
 #ifndef __SDL_WRAPPER__
-      ok = IAsl->AslRequestTags( sng_sreq,
+      ok = AslRequestTags( sng_sreq,
         ASLFR_Window,      mainwin,
         ASLFR_InitialFile, tmp,
         ASLFR_SleepWindow, TRUE,
         TAG_DONE );
       if( !ok ) break;
       
-      lock = IDOS->Lock( sng_sreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      lock = Lock( sng_sreq->fr_Drawer, ACCESS_READ );
+      olddir = CurrentDir( lock );
       
       rp_save_hvl( sng_sreq->fr_File, curtune );
       
       curtune->at_modified = FALSE;
       
-      IDOS->CurrentDir( olddir );
-      IDOS->UnLock( lock );
+      CurrentDir( olddir );
+      UnLock( lock );
 #else
       if (!(gfname = filerequester("Save HVL module", remsongdir, "", FR_HVLSAVE))) break;
       setpathpart(remsongdir, gfname);
@@ -4776,21 +4851,21 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       strcat( tmp, curtune->at_Instruments[curtune->at_curins].ins_Name );
 
 #ifndef __SDL_WRAPPER__
-      ok = IAsl->AslRequestTags( ins_sreq,
+      ok = AslRequestTags( ins_sreq,
         ASLFR_Window,      mainwin,
         ASLFR_InitialFile, tmp,
         ASLFR_SleepWindow, TRUE,
         TAG_DONE );
       if( !ok ) break;
       
-      lock = IDOS->Lock( ins_sreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      lock = Lock( ins_sreq->fr_Drawer, ACCESS_READ );
+      olddir = CurrentDir( lock );
       
       rp_save_ins( ins_sreq->fr_File, curtune, curtune->at_curins );
       gui_set_various_things( curtune );
       
-      IDOS->CurrentDir( olddir );
-      IDOS->UnLock( lock );
+      CurrentDir( olddir );
+      UnLock( lock );
 #else
       if (!(gfname = filerequester("Save instrument", reminstdir, "", FR_INSSAVE))) break;
       setpathpart(reminstdir, gfname);
@@ -4802,11 +4877,11 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
 
     case BBA_LOADTUNE:
       if( ( curtune != NULL ) && ( curtune->at_modified ) )
-        if( gui_req( REQIMAGE_QUESTION, "HivelyTracker", "This song has been modified. Continue?", "_Yep!|Arrgh.. _No!" ) == 0 )
+        if( gui_req( REQIMAGE_QUESTION, "HivelyTracker", "This song has been modified. Continue?", "Yep!|Arrgh.. No!" ) == 0 )
           break;
 
 #ifndef __SDL_WRAPPER__
-      ok = IAsl->AslRequestTags( sng_lreq,
+      ok = AslRequestTags( sng_lreq,
         ASLFR_Window,      mainwin,
         ASLFR_SleepWindow, TRUE,
         TAG_DONE );
@@ -4821,14 +4896,14 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       if( curtune ) curtune->at_doing = D_IDLE;
 
 #ifndef __SDL_WRAPPER__
-      lock = IDOS->Lock( sng_lreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      lock = Lock( sng_lreq->fr_Drawer, ACCESS_READ );
+      olddir = CurrentDir( lock );
 
       at = rp_load_tune( sng_lreq->fr_File, curtune );
       if( at ) curtune = at;
       
-      IDOS->CurrentDir( olddir );
-      IDOS->UnLock( lock );
+      CurrentDir( olddir );
+      UnLock( lock );
 #else
       at = rp_load_tune( gfname, curtune );
       free( gfname );
@@ -5410,7 +5485,7 @@ BOOL gui_maybe_quit( void )
   
   anymod = FALSE;
 
-  at = (struct ahx_tune *)IExec->GetHead(rp_tunelist);
+  at = (struct ahx_tune *)GetHead(rp_tunelist);
   while( at )
   {
     if( at->at_modified )
@@ -5418,13 +5493,13 @@ BOOL gui_maybe_quit( void )
       anymod = TRUE;
       break;
     }
-    at = (struct ahx_tune *)IExec->GetSucc(&at->at_ln);
+    at = (struct ahx_tune *)GetSucc(&at->at_ln);
   }
   
   if( anymod )
-    return gui_req( REQIMAGE_QUESTION, "HivelyTracker", "One or more songs have been modified. Really quit?", "_Yep!|Arrgh.. _No!" );
+    return gui_req( REQIMAGE_QUESTION, "HivelyTracker", "One or more songs have been modified. Really quit?", "Yep!|Arrgh.. No!" );
     
-  return gui_req( REQIMAGE_QUESTION, "HivelyTracker", "Are you sure you want to quit?", "_Yep!|Arrgh.. _No!" );
+  return gui_req( REQIMAGE_QUESTION, "HivelyTracker", "Are you sure you want to quit?", "Yep!|Arrgh.. No!" );
 }
 
 void gui_wheelybin( int16 mousex, int16 mousey, int16 wheeldir )
@@ -5740,7 +5815,7 @@ void gui_mouse_handler( int16 x, int16 y, uint32 code )
           quitting = gui_maybe_quit();
         } else if( cz_lmb == zn_scrdep ) {
 #ifndef __SDL_WRAPPER__
-          if( scr ) IIntuition->ScreenToBack( scr );
+          if( scr ) ScreenToBack( scr );
 #endif
         } else {
         
@@ -5755,12 +5830,12 @@ void gui_mouse_handler( int16 x, int16 y, uint32 code )
               if( x < (zones[ttab[i].zone].x+20) )
               {
                 if( ttab[i].tune->at_modified )
-                  if( gui_req( REQIMAGE_QUESTION, "HivelyTracker", "This song has been modified. Continue?", "_Yep!|Arrgh.. _No!" ) == 0 )
+                  if( gui_req( REQIMAGE_QUESTION, "HivelyTracker", "This song has been modified. Continue?", "Yep!|Arrgh.. No!" ) == 0 )
                     break;
 
                 // Only one tune?
-                IExec->ObtainSemaphore( rp_list_ss );
-                if( IExec->GetSucc(IExec->GetHead(rp_tunelist)) == NULL )
+                ObtainSemaphore( rp_list_ss );
+                if( GetSucc(GetHead(rp_tunelist)) == NULL )
                 {
                   rp_clear_tune( ttab[i].tune );
                   gui_set_various_things( ttab[i].tune );
@@ -5769,13 +5844,13 @@ void gui_mouse_handler( int16 x, int16 y, uint32 code )
                   rp_free_tune( ttab[i].tune );
                   if( curtune == ttab[i].tune )
                   {
-                    curtune = (struct ahx_tune *)IExec->GetHead(rp_tunelist);
+                    curtune = (struct ahx_tune *)GetHead(rp_tunelist);
                     gui_set_various_things(curtune);
                   }
 
                   dorend = TRUE;
                 }
-                IExec->ReleaseSemaphore( rp_list_ss );
+                ReleaseSemaphore( rp_list_ss );
               } else {
                 if( ttab[i].tune != curtune )
                 {
@@ -5926,7 +6001,7 @@ void gui_mouse_handler( int16 x, int16 y, uint32 code )
             if( curtune->at_Instruments[i].ins_PList.pls_Length != 0 )
             {
               gui_render_inslistb( TRUE );
-              doit = gui_req( REQIMAGE_QUESTION, "Copy Instrument", "That instrument is not empty.\nDo you want to copy over it?", "_Yes yes!|Whoooooooops! _No!!!" );
+              doit = gui_req( REQIMAGE_QUESTION, "Copy Instrument", "That instrument is not empty.\nDo you want to copy over it?", "Yes yes!|Whoooooooops! No!!!" );
             }
           
             if( doit )
@@ -6034,7 +6109,7 @@ void gui_textbox_keypress( struct rawbm *bm, struct textbox **ttbx, struct Intui
       /* recover dead key codes & qualifiers */
       iev.ie_EventAddress = (APTR *) *((ULONG *)msg->IAddress);
       
-      actual = (IKeymap->MapRawKey( &iev, kbuf, 80, 0 ) == 1);
+      actual = (MapRawKey( &iev, kbuf, 80, 0 ) == 1);
 #else
       actual = (((event.key.keysym.unicode&0xff)!=0) && ((event.key.keysym.unicode&0xff00)==0));
       kbuf[0] = event.key.keysym.unicode;
@@ -6094,7 +6169,7 @@ BOOL gui_checkpop_up( int16 x, int16 y )
       {
         case PP_SONGDIR:
 #ifndef __SDL_WRAPPER__
-          ok = IAsl->AslRequestTags( dir_req,
+          ok = AslRequestTags( dir_req,
             ASLFR_Window,        mainwin,
             ASLFR_SleepWindow,   TRUE,
             ASLFR_InitialDrawer, songdir,
@@ -6112,7 +6187,7 @@ BOOL gui_checkpop_up( int16 x, int16 y )
 
         case PP_INSTDIR:
 #ifndef __SDL_WRAPPER__
-          ok = IAsl->AslRequestTags( dir_req,
+          ok = AslRequestTags( dir_req,
             ASLFR_Window,        mainwin,
             ASLFR_SleepWindow,   TRUE,
             ASLFR_InitialDrawer, instdir,
@@ -6130,7 +6205,7 @@ BOOL gui_checkpop_up( int16 x, int16 y )
 
         case PP_SKINDIR:
 #ifndef __SDL_WRAPPER__
-          ok = IAsl->AslRequestTags( dir_req,
+          ok = AslRequestTags( dir_req,
             ASLFR_Window,        mainwin,
             ASLFR_SleepWindow,   TRUE,
             ASLFR_InitialDrawer, skindir,
@@ -6207,6 +6282,11 @@ BOOL gui_checkpc_up( int16 x, int16 y )
       {
         case PC_WMODE:
           pref_fullscr = (pcyc[PC_WMODE].copt == 1);
+          if ( pref_fullscr)
+          {
+            if (!pref_scrmodeid || !pref_scrdepth) set_default_modeid_depth();
+            set_screen_mode();
+          }
           break;
 
         case PC_DEFSTEREO:
@@ -6220,6 +6300,14 @@ BOOL gui_checkpc_up( int16 x, int16 y )
         
         case PC_MAXUNDOBUF:
           pref_maxundobuf = pcyc[PC_MAXUNDOBUF].copt;
+          break;
+
+        case PC_WAVEMETER:
+          pref_wavemeter = (pcyc[PC_WAVEMETER].copt == 1);
+          break;
+
+        case PC_VUMETERS:
+          pref_vumeters = (pcyc[PC_VUMETERS].copt == 1);
           break;
       }
     }
@@ -6271,21 +6359,27 @@ BOOL gui_restart( void )
   // with new settings
   gui_close_prefs();
   about_close();
+  about_shutdown();
 
-  IIntuition->CloseWindow( mainwin );
+  CloseWindow( mainwin );
   mainwin = NULL;
   gui_sigs &= ~mainwin_sig;
   mainwin_sig = 0;
   
-  if( scr ) IIntuition->CloseScreen( scr );
+  if( scr ) CloseScreen( scr );
   scr = NULL;
 
-  for( i=0; i<BM_END; i++ ) { IGraphics->FreeBitMap( bitmaps[i].bm ); bitmaps[i].bm = NULL; }
-  for( i=0; i<TB_END; i++ ) { IGraphics->FreeBitMap( tbx[i].bm.bm ); tbx[i].bm.bm = NULL; }
+  for( i=0; i<BM_END; i++ ) { FreeBitMap( bitmaps[i].bm ); bitmaps[i].bm = NULL; }
+  for( i=0; i<TB_END; i++ ) { FreeBitMap( tbx[i].bm.bm ); tbx[i].bm.bm = NULL; }
 
-  IGraphics->CloseFont( prpfont ); prpfont = NULL;
-  IGraphics->CloseFont( fixfont ); fixfont = NULL;
-  IGraphics->CloseFont( sfxfont ); sfxfont = NULL;
+  if( drawhandle ) ReleaseDrawHandle( drawhandle );
+  drawhandle = NULL;
+  if( psm ) DeletePenShareMap(psm);  
+  psm = NULL;
+
+  CloseFont( prpfont ); prpfont = NULL;
+  CloseFont( fixfont ); fixfont = NULL;
+  CloseFont( sfxfont ); sfxfont = NULL;
 
   // Set some defaults
   strcpy( fixfontname, "Bitstream Vera Sans Mono.font" );
@@ -6313,13 +6407,13 @@ BOOL gui_restart( void )
 
     gui_req( REQIMAGE_ERROR, "Oh crap!", "There was an error re-opening the GUI,\nand Hively has to quit. All open songs\nwill be saved to 'Songs/Rescue'", "OK" );
 
-    lock = IDOS->Lock( "Songs/Rescue", ACCESS_READ );
+    lock = Lock( "Songs/Rescue", ACCESS_READ );
     if( !lock )
     {
-      lock = IDOS->CreateDirTree( "Songs/Rescue" );
+      lock = CreateDir( "Songs/Rescue" );
       if( !lock )
       {
-        lock = IDOS->Lock( "", ACCESS_READ );
+        lock = Lock( "", ACCESS_READ );
         if( !lock )
         {
           // Oh fuck.
@@ -6327,24 +6421,25 @@ BOOL gui_restart( void )
         }
       }
     }
-    cdir = IDOS->CurrentDir( lock );
+    cdir = CurrentDir( lock );
 
-    IExec->ObtainSemaphore( rp_list_ss );
+    ObtainSemaphore( rp_list_ss );
 
     i=1;
-    at = (struct ahx_tune *)IExec->GetHead(rp_tunelist);
+    at = (struct ahx_tune *)GetHead(rp_tunelist);
     while( at )
     {
       sprintf( rname, "HVL.rescuetab%ld", i++ );
       rp_save_hvl( rname, at );
-      at = (struct ahx_tune *)IExec->GetSucc(&at->at_ln);
+      at = (struct ahx_tune *)GetSucc(&at->at_ln);
     }
 
-    IDOS->CurrentDir( cdir );
-    IDOS->UnLock( lock );
-    IExec->ReleaseSemaphore( rp_list_ss );
+    CurrentDir( cdir );
+    UnLock( lock );
+    ReleaseSemaphore( rp_list_ss );
     return FALSE;
   }
+  if( !about_init() ) return FALSE;
 #else
   // Just reload the skin...
   SDL_FreeSurface(bitmaps[BM_LOGO].srf );       bitmaps[BM_LOGO].srf = NULL;
@@ -6521,9 +6616,9 @@ void gui_handler( uint32 gotsigs )
     if( curtune == rp_curtune )
     {
       gui_render_tunepanel( FALSE );
-      gui_render_vumeters();
+      if( pref_vumeters ) gui_render_vumeters();
     }
-    if( (wm_count++)&1 )
+    if( (wm_count++)&1 && pref_wavemeter)
       gui_render_wavemeter();
 
 #ifdef __SDL_WRAPPER__
@@ -6544,7 +6639,7 @@ void gui_handler( uint32 gotsigs )
 
     wantclose = FALSE;
 #ifndef __SDL_WRAPPER__
-    while( ( msg = (struct IntuiMessage *)IExec->GetMsg( prefwin->UserPort ) ) )
+    while( ( msg = (struct IntuiMessage *)GetMsg( prefwin->UserPort ) ) )
 #else
     msg = translate_sdl_event();
 #endif
@@ -6613,7 +6708,7 @@ void gui_handler( uint32 gotsigs )
           break;
       }
 #ifndef __SDL_WRAPPER__
-      IExec->ReplyMsg( (struct Message *)msg );
+      ReplyMsg( (struct Message *)msg );
 #endif
     }
     
@@ -6633,7 +6728,7 @@ void gui_handler( uint32 gotsigs )
     BOOL cutting;
     int16 next;
 #ifndef __SDL_WRAPPER__
-    while( ( msg = (struct IntuiMessage *)IExec->GetMsg( mainwin->UserPort ) ) )
+    while( ( msg = (struct IntuiMessage *)GetMsg( mainwin->UserPort ) ) )
 #else
     msg = translate_sdl_event();
 #endif
@@ -6645,15 +6740,6 @@ void gui_handler( uint32 gotsigs )
 
       switch( msg->Class )
       {
-        case IDCMP_EXTENDEDMOUSE:
-          switch( msg->Code )
-          {
-            case IMSGCODE_INTUIWHEELDATA:
-              iwd = (struct IntuiWheelData *)msg->IAddress;              
-              gui_wheelybin( msg->MouseX, msg->MouseY, iwd->WheelY );              
-              break;
-          }
-          break;
         case IDCMP_RAWKEY:
           qual   = msg->Qualifier;
           donkey = FALSE;
@@ -6672,6 +6758,17 @@ void gui_handler( uint32 gotsigs )
               // No qualifiers
               switch( msg->Code )
               {
+                case 26: // [
+                case NM_WHEEL_DOWN:
+                  donkey = TRUE;
+                  // switch to win instead of msg for test
+                  gui_wheelybin( mainwin->MouseX, mainwin->MouseY, 1 );
+                  break;
+                case 27: // ]
+                case NM_WHEEL_UP:
+                  donkey = TRUE;
+                  gui_wheelybin( mainwin->MouseX, mainwin->MouseY, -1 );
+                  break;
                 case 13: // \ = drum pad mode
                   if( curtune->at_drumpadmode )
                     curtune->at_drumpadmode = FALSE;
@@ -8644,7 +8741,7 @@ void gui_handler( uint32 gotsigs )
           break;
       }
 #ifndef __SDL_WRAPPER__
-      IExec->ReplyMsg( (struct Message *)msg );
+      ReplyMsg( (struct Message *)msg );
 #endif
     }
   }
@@ -8666,42 +8763,36 @@ void gui_shutdown( void )
   gui_close_prefs();
   if( gui_savethem ) gui_save_prefs();
 #ifndef __SDL_WRAPPER__
-  if( mainwin ) IIntuition->CloseWindow( mainwin );
-  if( scr )     IIntuition->CloseScreen( scr );
+  for( i=0; i<PAL_END; i++ ) ReleasePen(mainwin->WScreen->ViewPort.ColorMap, pal[i]);
+  if( mainwin ) CloseWindow( mainwin );
+  if( scr )     CloseScreen( scr );
 #endif
 
-  if( cbpbuf ) IExec->FreeVec( cbpbuf );
+  if( cbpbuf ) FreeVec( cbpbuf );
 
 #ifndef __SDL_WRAPPER__
-  if( ins_lreq ) IAsl->FreeAslRequest( ins_lreq );
-  if( ins_sreq ) IAsl->FreeAslRequest( ins_sreq );
-  if( sng_lreq ) IAsl->FreeAslRequest( sng_lreq );
-  if( sng_sreq ) IAsl->FreeAslRequest( sng_sreq );
-  if( dir_req )  IAsl->FreeAslRequest( dir_req );
+  if( ins_lreq ) FreeAslRequest( ins_lreq );
+  if( ins_sreq ) FreeAslRequest( ins_sreq );
+  if( sng_lreq ) FreeAslRequest( sng_lreq );
+  if( sng_sreq ) FreeAslRequest( sng_sreq );
+  if( dir_req )  FreeAslRequest( dir_req );
+  if( scr_req  ) FreeAslRequest( scr_req );
   
-  for( i=0; i<BM_END; i++ ) if( bitmaps[i].bm ) IGraphics->FreeBitMap( bitmaps[i].bm );
-  for( i=0; i<TB_END; i++ ) if( tbx[i].bm.bm )  IGraphics->FreeBitMap( tbx[i].bm.bm );
-  
-  if( prpfont ) IGraphics->CloseFont( prpfont );
-  if( fixfont ) IGraphics->CloseFont( fixfont );
-  if( sfxfont ) IGraphics->CloseFont( sfxfont );
- 
-  if( gui_tick_signum != -1 ) IExec->FreeSignal( gui_tick_signum );
+  for( i=0; i<BM_END; i++ ) if( bitmaps[i].bm ) FreeBitMap( bitmaps[i].bm );
+  for( i=0; i<TB_END; i++ ) if( tbx[i].bm.bm )  FreeBitMap( tbx[i].bm.bm );
 
-  if( IRequester )    IExec->DropInterface( (struct Interface *)IRequester );
-  if( RequesterBase ) IExec->CloseLibrary( RequesterBase );
-  if( IKeymap )       IExec->DropInterface( (struct Interface *)IKeymap );
-  if( KeymapBase )    IExec->CloseLibrary( KeymapBase );
-  if( IDiskfont )     IExec->DropInterface( (struct Interface *)IDiskfont );
-  if( DiskfontBase )  IExec->CloseLibrary( DiskfontBase );
-  if( IDataTypes )    IExec->DropInterface( (struct Interface *)IDataTypes );
-  if( DataTypesBase ) IExec->CloseLibrary( DataTypesBase );
-  if( IP96)           IExec->DropInterface( (struct Interface *)IP96 );
-  if( GfxBase )       IExec->CloseLibrary( P96Base );
-  if( IGraphics )     IExec->DropInterface( (struct Interface *)IGraphics );
-  if( GfxBase )       IExec->CloseLibrary( GfxBase );
-  if( IIntuition )    IExec->DropInterface( (struct Interface *)IIntuition );
-  if( IntuitionBase ) IExec->CloseLibrary( IntuitionBase );
+  if( drawhandle ) ReleaseDrawHandle( drawhandle );
+  if( psm ) DeletePenShareMap(psm);  
+
+  if( prpfont ) CloseFont( prpfont );
+  if( fixfont ) CloseFont( fixfont );
+  if( sfxfont ) CloseFont( sfxfont );
+ 
+  if( gui_tick_signum != -1 ) FreeSignal( gui_tick_signum );
+
+  if( GuiGFXBase ) CloseLibrary( GuiGFXBase );
+  if( CyberGfxBase ) CloseLibrary( CyberGfxBase );
+  if( KeymapBase ) CloseLibrary( KeymapBase );
 #else
   for( i=0; i<BM_END; i++ ) if( bitmaps[i].srf ) SDL_FreeSurface( bitmaps[i].srf );
   for( i=0; i<TB_END; i++ ) if( tbx[i].bm.srf )  SDL_FreeSurface( tbx[i].bm.srf );

@@ -31,21 +31,21 @@ void free_undolists( struct ahx_tune *at )
   struct undonode *tn, *nn;
 
   // Clear undo system lists  
-  tn = (struct undonode *)IExec->GetHead(at->at_undolist);
+  tn = (struct undonode *)GetHead(at->at_undolist);
   while( tn )
   {
-    nn = (struct undonode *)IExec->GetSucc(&tn->un_ln);
-    IExec->Remove( (struct Node *)tn );
-    IExec->FreeSysObject( ASOT_NODE, tn );
+    nn = (struct undonode *)GetSucc(&tn->un_ln);
+    Remove( (struct Node *)tn );
+    FreeVec( tn );
     tn = nn;
   }
 
-  tn = (struct undonode *)IExec->GetHead(at->at_redolist);
+  tn = (struct undonode *)GetHead(at->at_redolist);
   while( tn )
   {
-    nn = (struct undonode *)IExec->GetSucc(&tn->un_ln);
-    IExec->Remove( (struct Node *)tn );
-    IExec->FreeSysObject( ASOT_NODE, tn );
+    nn = (struct undonode *)GetSucc(&tn->un_ln);
+    Remove( (struct Node *)tn );
+    FreeVec( tn );
     tn = nn;
   }
 
@@ -56,13 +56,13 @@ void clear_redolist( struct ahx_tune *at )
 {
   struct undonode *tn, *nn;
   
-  tn = (struct undonode *)IExec->GetHead(at->at_redolist);
+  tn = (struct undonode *)GetHead(at->at_redolist);
   while( tn )
   {
-    nn = (struct undonode *)IExec->GetSucc(&tn->un_ln);
+    nn = (struct undonode *)GetSucc(&tn->un_ln);
     at->at_undomem -= tn->un_size;
-    IExec->Remove( (struct Node *)tn );
-    IExec->FreeSysObject( ASOT_NODE, tn );
+    Remove( (struct Node *)tn );
+    FreeVec( tn );
     tn = nn;
   }
 }
@@ -75,7 +75,7 @@ void trim_undolist( struct ahx_tune *at )
 
   while( at->at_undomem > mubsizes[pref_maxundobuf] )
   {
-    un = (struct undonode *)IExec->RemHead( at->at_undolist );
+    un = (struct undonode *)RemHead( at->at_undolist );
     if( !un )
     {
       // WTF?
@@ -85,7 +85,7 @@ void trim_undolist( struct ahx_tune *at )
     }
   
     at->at_undomem -= un->un_size;
-    IExec->FreeSysObject( ASOT_NODE, un );
+    FreeVec( un );
   }
 }
 
@@ -173,7 +173,7 @@ void setafter_posregion( struct ahx_tune *at, int32 left, int32 pos, int32 chans
     }
   }
 
-  IExec->AddTail( at->at_undolist, (struct Node *)un );
+  AddTail( at->at_undolist, (struct Node *)un );
   clear_redolist( at );  
 }
 
@@ -211,7 +211,7 @@ void setafter_track( struct ahx_tune *at, int32 trk )
     ud->after[i]  = at->at_Tracks[trk][i];
   }
 
-  IExec->AddTail( at->at_undolist, (struct Node *)un );
+  AddTail( at->at_undolist, (struct Node *)un );
   clear_redolist( at );
 }
 
@@ -251,7 +251,7 @@ void setafter_string( int32 which, struct ahx_tune *at, TEXT *ptr )
       break;
   }
 
-  IExec->AddTail( at->at_undolist, (struct Node *)un );
+  AddTail( at->at_undolist, (struct Node *)un );
   clear_redolist( at );
 }
 
@@ -286,7 +286,7 @@ void setafter_plist( struct ahx_tune *at, struct ahx_plsentry *ptr )
     ud->after[i]  = ptr[i];
   }
 
-  IExec->AddTail( at->at_undolist, (struct Node *)un );
+  AddTail( at->at_undolist, (struct Node *)un );
   clear_redolist( at );
 }
 
@@ -302,7 +302,7 @@ void modify_env_w( struct ahx_tune *at, struct ahx_envelope *ptr, uint32 field, 
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == field ) &&
       ( ((struct udat_env_w *)un->un_data)->ptr == ptr ) )
@@ -322,7 +322,7 @@ void modify_env_w( struct ahx_tune *at, struct ahx_envelope *ptr, uint32 field, 
       ud->insnum        = at->at_curins;
       ud->after         = new;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -376,7 +376,7 @@ void modify_ins_b( struct ahx_tune *at, struct ahx_instrument *ptr, uint32 field
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == field ) &&
       ( ((struct udat_ins_b *)un->un_data)->ptr == ptr ) )
@@ -396,7 +396,7 @@ void modify_ins_b( struct ahx_tune *at, struct ahx_instrument *ptr, uint32 field
       ud->insnum        = at->at_curins;
       ud->after         = new;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -480,7 +480,7 @@ void modify_ple_b( struct ahx_tune *at, struct ahx_instrument *ins, struct ahx_p
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == field ) &&
       ( ((struct udat_ple_b *)un->un_data)->ptr == ptr ) )
@@ -504,7 +504,7 @@ void modify_ple_b( struct ahx_tune *at, struct ahx_instrument *ins, struct ahx_p
       ud->pcurx         = ins->ins_pcurx;
       ud->pcury         = ins->ins_pcury;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -553,7 +553,7 @@ void modify_ple_w( struct ahx_tune *at, struct ahx_instrument *ins, struct ahx_p
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == field ) &&
       ( ((struct udat_ple_w *)un->un_data)->ptr == ptr ) )
@@ -577,7 +577,7 @@ void modify_ple_w( struct ahx_tune *at, struct ahx_instrument *ins, struct ahx_p
       ud->pcurx         = ins->ins_pcurx;
       ud->pcury         = ins->ins_pcury;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -601,7 +601,7 @@ void modify_pls_w( struct ahx_tune *at, struct ahx_plist *ptr, uint32 field, int
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   
   if( ( un != NULL ) &&
       ( un->un_type == field ) &&
@@ -622,7 +622,7 @@ void modify_pls_w( struct ahx_tune *at, struct ahx_plist *ptr, uint32 field, int
       ud->insnum        = at->at_curins;
       ud->after         = new;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -651,7 +651,7 @@ void modify_stp_b( struct ahx_tune *at, struct ahx_step *ptr, uint32 field, int8
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == field ) &&
       ( ((struct udat_stp_b *)un->un_data)->ptr == ptr ) )
@@ -674,7 +674,7 @@ void modify_stp_b( struct ahx_tune *at, struct ahx_step *ptr, uint32 field, int8
       ud->tracked_curs  = at->at_tracked_curs;
       ud->curlch        = at->at_curlch;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -723,7 +723,7 @@ void modify_stp_w( struct ahx_tune *at, struct ahx_step *ptr, uint32 field, int1
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == field ) &&
       ( ((struct udat_stp_w *)un->un_data)->ptr == ptr ) )
@@ -746,7 +746,7 @@ void modify_stp_w( struct ahx_tune *at, struct ahx_step *ptr, uint32 field, int1
       ud->tracked_curs  = at->at_tracked_curs;
       ud->curlch        = at->at_curlch;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -783,7 +783,7 @@ void modify_pos_b( struct ahx_tune *at, struct ahx_position *ptr, int32 chan, ui
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == field ) &&
       ( ((struct udat_pos_b *)un->un_data)->chan == chan ) &&
@@ -807,7 +807,7 @@ void modify_pos_b( struct ahx_tune *at, struct ahx_position *ptr, int32 chan, ui
       ud->posed_curs    = at->at_posed_curs;
       ud->curlch        = at->at_curlch;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -836,7 +836,7 @@ void modify_tune_b( struct ahx_tune *at, uint32 field, int8 new )
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == field ) )
   {
@@ -853,7 +853,7 @@ void modify_tune_b( struct ahx_tune *at, uint32 field, int8 new )
       un->un_data       = ud;
       ud->after         = new;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -892,7 +892,7 @@ void modify_tune_w( struct ahx_tune *at, uint32 field, int16 new )
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == field ) )
   {
@@ -909,7 +909,7 @@ void modify_tune_w( struct ahx_tune *at, uint32 field, int16 new )
       un->un_data       = ud;
       ud->after         = new;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -945,7 +945,7 @@ void modify_sspos( struct ahx_tune *at, int16 new )
   rembef = FALSE;
   
   // Check for strings of the same action
-  un = (struct undonode *)IExec->GetTail( at->at_undolist );
+  un = (struct undonode *)GetTail( at->at_undolist );
   if( ( un != NULL ) &&
       ( un->un_type == UNT_SSPOS ) &&
       ( ((struct udat_subsongpos *)un->un_data)->subsong == at->at_curss ) )
@@ -964,7 +964,7 @@ void modify_sspos( struct ahx_tune *at, int16 new )
       ud->after         = new;
       ud->subsong       = at->at_curss;
 
-      IExec->AddTail( at->at_undolist, (struct Node *)un );
+      AddTail( at->at_undolist, (struct Node *)un );
       clear_redolist( at );
       rembef = TRUE;
     }
@@ -1035,7 +1035,7 @@ void undo( struct ahx_tune *at )
   show_tbox = NULL;
 
   // Get last thing in the undo list
-  un = (struct undonode *)IExec->RemTail( at->at_undolist );
+  un = (struct undonode *)RemTail( at->at_undolist );
   if( !un ) return;
 
   // Undo it!
@@ -1507,7 +1507,7 @@ void undo( struct ahx_tune *at )
   at->at_modified = TRUE;
 
   // Place it into the redo list
-  IExec->AddTail( at->at_redolist, (struct Node *)un );
+  AddTail( at->at_redolist, (struct Node *)un );
 
   show_changed( at, wpanel, forceall );
 }
@@ -1534,7 +1534,7 @@ void redo( struct ahx_tune *at )
   show_tbox = NULL;
 
   // Get last thing in the redo list
-  un = (struct undonode *)IExec->RemTail( at->at_redolist );
+  un = (struct undonode *)RemTail( at->at_redolist );
   if( !un ) return;
 
   // Redo it!
@@ -2006,7 +2006,7 @@ void redo( struct ahx_tune *at )
   at->at_modified = TRUE;
 
   // Place it back into the undo list
-  IExec->AddTail( at->at_undolist, (struct Node *)un );
+  AddTail( at->at_undolist, (struct Node *)un );
 
   show_changed( at, wpanel, forceall );
 }

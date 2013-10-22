@@ -50,6 +50,10 @@ BOOL gui_restart( void );
 
 BOOL make_image( struct rawbm *bm, uint16 w, uint16 h );
 BOOL open_image( TEXT *name, struct rawbm *bm );
+APTR load_picture(TEXT *name);
+
+void set_default_modeid_depth(void);
+void set_screen_mode(void);
 
 void set_fcol(struct rawbm *bm, uint32 col);
 void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2);
@@ -83,6 +87,43 @@ enum
   TB_INSNAME,
   TB_INSNAME2,
   TB_END
+};
+
+enum
+{
+  BM_LOGO = 0,
+  BM_TAB_AREA,
+  BM_TAB_LEFT,
+  BM_TAB_MID,
+  BM_TAB_RIGHT,
+  BM_TAB_TEXT,
+  BM_ITAB_LEFT,
+  BM_ITAB_MID,
+  BM_ITAB_RIGHT,
+  BM_ITAB_TEXT,
+  BM_BUTBANKR,
+  BM_BUTBANKP,
+  BM_BG_TRACKER,
+  BM_BG_INSED,
+  BM_PLUSMINUS,
+  BM_POSED,
+  BM_TRACKED,
+  BM_TRACKBAR,
+  BM_PERF,
+  BM_VUMETER,
+  BM_WAVEMETERS,
+  BM_DEPTH,
+  BM_PRF_BG,
+  BM_PRF_CYCLE,
+  BM_INSLIST,
+  BM_INSLISTB,
+  BM_TRKBANKR,
+  BM_TRKBANKP,
+  BM_CHANMUTE,
+  BM_BLANK,
+  BM_DIRPOPUP,
+  BM_ABOUTFONT,
+  BM_END
 };
 
 #define FONT_FIX 0
