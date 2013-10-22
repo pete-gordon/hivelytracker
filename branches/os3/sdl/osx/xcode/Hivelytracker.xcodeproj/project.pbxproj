@@ -1,0 +1,433 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		002F3A2E09D0888800EBEB88 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = 002F3A2C09D0888800EBEB88 /* SDLMain.m */; };
+		830D2602163DCF880045F28B /* NSFileManager+DirectoryLocations.m in Sources */ = {isa = PBXBuildFile; fileRef = 830D2601163DCF880045F28B /* NSFileManager+DirectoryLocations.m */; };
+		830D277F163E13A70045F28B /* DejaVuSans.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 830D277D163E13A70045F28B /* DejaVuSans.ttf */; };
+		830D2780163E13A70045F28B /* DejaVuSansMono.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 830D277E163E13A70045F28B /* DejaVuSansMono.ttf */; };
+		830E7A9D162F353000AF00A8 /* SDL_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7A9C162F353000AF00A8 /* SDL_image.framework */; };
+		830E7A9F162F353000AF00A8 /* SDL_ttf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7A9E162F353000AF00A8 /* SDL_ttf.framework */; };
+		830E7AA1162F353000AF00A8 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7AA0162F353000AF00A8 /* SDL.framework */; };
+		830E7B1C162F354100AF00A8 /* SDL_image.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 830E7A9C162F353000AF00A8 /* SDL_image.framework */; };
+		830E7B1D162F354100AF00A8 /* SDL_ttf.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 830E7A9E162F353000AF00A8 /* SDL_ttf.framework */; };
+		830E7B1E162F354100AF00A8 /* SDL.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 830E7AA0162F353000AF00A8 /* SDL.framework */; };
+		8367E2D616342BEF00E0C1C1 /* about.c in Sources */ = {isa = PBXBuildFile; fileRef = 8367E2D516342BEF00E0C1C1 /* about.c */; };
+		8367E315163607FA00E0C1C1 /* hivelytracker.icns in Resources */ = {isa = PBXBuildFile; fileRef = 8367E314163607FA00E0C1C1 /* hivelytracker.icns */; };
+		83961D27162C9C7A00B4B9E0 /* gui.c in Sources */ = {isa = PBXBuildFile; fileRef = 83961D1C162C9C7A00B4B9E0 /* gui.c */; };
+		83961D29162C9C7A00B4B9E0 /* replay.c in Sources */ = {isa = PBXBuildFile; fileRef = 83961D1F162C9C7A00B4B9E0 /* replay.c */; };
+		83961D2A162C9C7A00B4B9E0 /* undo.c in Sources */ = {isa = PBXBuildFile; fileRef = 83961D22162C9C7A00B4B9E0 /* undo.c */; };
+		83961D2B162C9C7A00B4B9E0 /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 83961D24162C9C7A00B4B9E0 /* util.c */; };
+		83961D30162C9CBD00B4B9E0 /* ht.c in Sources */ = {isa = PBXBuildFile; fileRef = 83961D2D162C9CBD00B4B9E0 /* ht.c */; };
+		83961D31162C9CBD00B4B9E0 /* sdl_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 83961D2E162C9CBD00B4B9E0 /* sdl_wrapper.c */; };
+		83961E55162CCBE800B4B9E0 /* osx.m in Sources */ = {isa = PBXBuildFile; fileRef = 83961E54162CCBE800B4B9E0 /* osx.m */; };
+		839620BA162EC0D300B4B9E0 /* Skins in Resources */ = {isa = PBXBuildFile; fileRef = 8396202E162EC0D200B4B9E0 /* Skins */; };
+		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		002F39FD09D0883400EBEB88 /* Copy Frameworks into .app bundle */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				830E7B1C162F354100AF00A8 /* SDL_image.framework in Copy Frameworks into .app bundle */,
+				830E7B1D162F354100AF00A8 /* SDL_ttf.framework in Copy Frameworks into .app bundle */,
+				830E7B1E162F354100AF00A8 /* SDL.framework in Copy Frameworks into .app bundle */,
+			);
+			name = "Copy Frameworks into .app bundle";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		002F3A2B09D0888800EBEB88 /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
+		002F3A2C09D0888800EBEB88 /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = SDLMain.m; sourceTree = SOURCE_ROOT; };
+		089C165DFE840E0CC02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
+		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		830D2600163DCF880045F28B /* NSFileManager+DirectoryLocations.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSFileManager+DirectoryLocations.h"; sourceTree = "<group>"; };
+		830D2601163DCF880045F28B /* NSFileManager+DirectoryLocations.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSFileManager+DirectoryLocations.m"; sourceTree = "<group>"; };
+		830D277D163E13A70045F28B /* DejaVuSans.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = DejaVuSans.ttf; path = ../../../ttf/DejaVuSans.ttf; sourceTree = SOURCE_ROOT; };
+		830D277E163E13A70045F28B /* DejaVuSansMono.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = DejaVuSansMono.ttf; path = ../../../ttf/DejaVuSansMono.ttf; sourceTree = SOURCE_ROOT; };
+		830E7A9C162F353000AF00A8 /* SDL_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_image.framework; path = /Library/Frameworks/SDL_image.framework; sourceTree = "<absolute>"; };
+		830E7A9E162F353000AF00A8 /* SDL_ttf.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_ttf.framework; path = /Library/Frameworks/SDL_ttf.framework; sourceTree = "<absolute>"; };
+		830E7AA0162F353000AF00A8 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
+		8367E2D516342BEF00E0C1C1 /* about.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = about.c; path = ../../../about.c; sourceTree = SOURCE_ROOT; };
+		8367E2D716342BEF00E0C1C1 /* Hivelytracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Hivelytracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8367E2E416342CC500E0C1C1 /* about.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = about.h; path = ../../../about.h; sourceTree = SOURCE_ROOT; };
+		8367E2E516342CC500E0C1C1 /* replay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = replay.h; path = ../../../replay.h; sourceTree = SOURCE_ROOT; };
+		8367E314163607FA00E0C1C1 /* hivelytracker.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = hivelytracker.icns; sourceTree = "<group>"; };
+		83961D1C162C9C7A00B4B9E0 /* gui.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = gui.c; path = ../../../gui.c; sourceTree = SOURCE_ROOT; };
+		83961D1F162C9C7A00B4B9E0 /* replay.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = replay.c; path = ../../../replay.c; sourceTree = SOURCE_ROOT; };
+		83961D22162C9C7A00B4B9E0 /* undo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = undo.c; path = ../../../undo.c; sourceTree = SOURCE_ROOT; };
+		83961D24162C9C7A00B4B9E0 /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = util.c; path = ../../../util.c; sourceTree = SOURCE_ROOT; };
+		83961D2D162C9CBD00B4B9E0 /* ht.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ht.c; path = ../../ht.c; sourceTree = SOURCE_ROOT; };
+		83961D2E162C9CBD00B4B9E0 /* sdl_wrapper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sdl_wrapper.c; path = ../../sdl_wrapper.c; sourceTree = SOURCE_ROOT; };
+		83961D52162C9EDC00B4B9E0 /* sdl_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sdl_wrapper.h; path = ../../sdl_wrapper.h; sourceTree = SOURCE_ROOT; };
+		83961E54162CCBE800B4B9E0 /* osx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = osx.m; sourceTree = "<group>"; };
+		8396202E162EC0D200B4B9E0 /* Skins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Skins; path = ../../../Skins; sourceTree = SOURCE_ROOT; };
+		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D11072E0486CEB800E47090 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
+				830E7A9D162F353000AF00A8 /* SDL_image.framework in Frameworks */,
+				830E7A9F162F353000AF00A8 /* SDL_ttf.framework in Frameworks */,
+				830E7AA1162F353000AF00A8 /* SDL.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080E96DDFE201D6D7F000001 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				830D2600163DCF880045F28B /* NSFileManager+DirectoryLocations.h */,
+				830D2601163DCF880045F28B /* NSFileManager+DirectoryLocations.m */,
+				002F3A2B09D0888800EBEB88 /* SDLMain.h */,
+				002F3A2C09D0888800EBEB88 /* SDLMain.m */,
+				83961E54162CCBE800B4B9E0 /* osx.m */,
+			);
+			name = Classes;
+			sourceTree = "<group>";
+		};
+		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				830E7A9C162F353000AF00A8 /* SDL_image.framework */,
+				830E7A9E162F353000AF00A8 /* SDL_ttf.framework */,
+				830E7AA0162F353000AF00A8 /* SDL.framework */,
+				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+			);
+			name = "Linked Frameworks";
+			sourceTree = "<group>";
+		};
+		1058C7A2FEA54F0111CA2CBB /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
+				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8367E2D716342BEF00E0C1C1 /* Hivelytracker.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* Hivelytracker */ = {
+			isa = PBXGroup;
+			children = (
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+			);
+			name = Hivelytracker;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				83961D2C162C9CA200B4B9E0 /* SDL */,
+				8367E2E416342CC500E0C1C1 /* about.h */,
+				8367E2D516342BEF00E0C1C1 /* about.c */,
+				83961D1C162C9C7A00B4B9E0 /* gui.c */,
+				83961D1F162C9C7A00B4B9E0 /* replay.c */,
+				8367E2E516342CC500E0C1C1 /* replay.h */,
+				83961D22162C9C7A00B4B9E0 /* undo.c */,
+				83961D24162C9C7A00B4B9E0 /* util.c */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				8367E314163607FA00E0C1C1 /* hivelytracker.icns */,
+				8396202E162EC0D200B4B9E0 /* Skins */,
+				830D277C163E13920045F28B /* ttf */,
+				8D1107310486CEB800E47090 /* Info.plist */,
+				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
+				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		830D277C163E13920045F28B /* ttf */ = {
+			isa = PBXGroup;
+			children = (
+				830D277D163E13A70045F28B /* DejaVuSans.ttf */,
+				830D277E163E13A70045F28B /* DejaVuSansMono.ttf */,
+			);
+			name = ttf;
+			sourceTree = "<group>";
+		};
+		83961D2C162C9CA200B4B9E0 /* SDL */ = {
+			isa = PBXGroup;
+			children = (
+				83961D52162C9EDC00B4B9E0 /* sdl_wrapper.h */,
+				83961D2D162C9CBD00B4B9E0 /* ht.c */,
+				83961D2E162C9CBD00B4B9E0 /* sdl_wrapper.c */,
+			);
+			name = SDL;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8D1107260486CEB800E47090 /* Hivelytracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "Hivelytracker" */;
+			buildPhases = (
+				8D1107290486CEB800E47090 /* Resources */,
+				8D11072C0486CEB800E47090 /* Sources */,
+				8D11072E0486CEB800E47090 /* Frameworks */,
+				002F39FD09D0883400EBEB88 /* Copy Frameworks into .app bundle */,
+				83400D3B162FFD32008E4BC8 /* Fix framework paths */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Hivelytracker;
+			productInstallPath = "$(HOME)/Applications";
+			productName = Hivelytracker;
+			productReference = 8367E2D716342BEF00E0C1C1 /* Hivelytracker.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				ORGANIZATIONNAME = Hivelytracker;
+			};
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Hivelytracker" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 29B97314FDCFA39411CA2CEA /* Hivelytracker */;
+			projectDirPath = "";
+			projectRoot = "<Project File Directory>/../..";
+			targets = (
+				8D1107260486CEB800E47090 /* Hivelytracker */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8D1107290486CEB800E47090 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
+				839620BA162EC0D300B4B9E0 /* Skins in Resources */,
+				8367E315163607FA00E0C1C1 /* hivelytracker.icns in Resources */,
+				830D277F163E13A70045F28B /* DejaVuSans.ttf in Resources */,
+				830D2780163E13A70045F28B /* DejaVuSansMono.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		83400D3B162FFD32008E4BC8 /* Fix framework paths */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Fix framework paths";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "function relocateLibraryPath() {\n  install_name_tool -change @rpath/$2.framework/Versions/A/$2 @executable_path/../Frameworks/$2.framework/Versions/A/$2 $CONFIGURATION_BUILD_DIR/$1\n}\n\nfunction stripFramework() {\n  prefix=$CONFIGURATION_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/$1.framework\n  if [ -h $prefix/Headers ]\n  then\n    ditto --arch x86_64 $prefix/Versions/A/$1 $prefix/Versions/A/$1.64\n    mv $prefix/Versions/A/$1.64 $prefix/Versions/A/$1\n    rm -r $prefix/Versions/A/Headers\n    rm -r $prefix/Versions/A/Resources\n    rm $prefix/Headers $prefix/Resources\n  fi\n}\n\nrelocateLibraryPath $EXECUTABLE_PATH SDL_image\nrelocateLibraryPath $EXECUTABLE_PATH SDL_ttf\nrelocateLibraryPath $FRAMEWORKS_FOLDER_PATH/SDL_image.framework/SDL_image SDL\nrelocateLibraryPath $FRAMEWORKS_FOLDER_PATH/SDL_ttf.framework/SDL_ttf SDL\nstripFramework SDL\nstripFramework SDL_image\nstripFramework SDL_ttf";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D11072C0486CEB800E47090 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				002F3A2E09D0888800EBEB88 /* SDLMain.m in Sources */,
+				83961D27162C9C7A00B4B9E0 /* gui.c in Sources */,
+				83961D29162C9C7A00B4B9E0 /* replay.c in Sources */,
+				83961D2A162C9C7A00B4B9E0 /* undo.c in Sources */,
+				83961D2B162C9C7A00B4B9E0 /* util.c in Sources */,
+				83961D30162C9CBD00B4B9E0 /* ht.c in Sources */,
+				83961D31162C9CBD00B4B9E0 /* sdl_wrapper.c in Sources */,
+				83961E55162CCBE800B4B9E0 /* osx.m in Sources */,
+				8367E2D616342BEF00E0C1C1 /* about.c in Sources */,
+				830D2602163DCF880045F28B /* NSFileManager+DirectoryLocations.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		089C165CFE840E0CC02AAC07 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				089C165DFE840E0CC02AAC07 /* English */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		C01FCF4B08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = Hivelytracker_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = __SDL_WRAPPER__;
+				HEADER_SEARCH_PATHS = (
+					"$(HOME)/Library/Frameworks/SDL.framework/Headers",
+					/Library/Frameworks/SDL_ttf.framework/Headers,
+					/Library/Frameworks/SDL_image.framework/Headers,
+					/Library/Frameworks/SDL.framework/Headers,
+					"$(HEADER_SEARCH_PATHS)",
+				);
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = Hivelytracker;
+				SDKROOT = "";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		C01FCF4C08A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = Hivelytracker_Prefix.pch;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = Hivelytracker;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		C01FCF4F08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(HOME)/Library/Frameworks",
+					/Library/Frameworks,
+					"$(FRAMEWORK_SEARCH_PATHS)",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = __SDL_WRAPPER__;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(HOME)/Library/Frameworks/SDL.framework/Headers",
+					"$(HOME)/Library/Frameworks/SDL_ttf.framework/Headers",
+					"$(HOME)/Library/Frameworks/SDL_image.framework/Headers",
+					/Library/Frameworks/SDL.framework/Headers,
+					/Library/Frameworks/SDL_ttf.framework/Headers,
+					/Library/Frameworks/SDL_image.framework/Headers,
+					"$(HEADER_SEARCH_PATHS)",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PREBINDING = NO;
+			};
+			name = Debug;
+		};
+		C01FCF5008A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(HOME)/Library/Frameworks",
+					/Library/Frameworks,
+					"$(FRAMEWORK_SEARCH_PATHS)",
+				);
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = __SDL_WRAPPER__;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(HOME)/Library/Frameworks/SDL.framework/Headers",
+					"$(HOME)/Library/Frameworks/SDL_ttf.framework/Headers",
+					"$(HOME)/Library/Frameworks/SDL_image.framework/Headers",
+					/Library/Frameworks/SDL.framework/Headers,
+					/Library/Frameworks/SDL_ttf.framework/Headers,
+					/Library/Frameworks/SDL_image.framework/Headers,
+					"$(HEADER_SEARCH_PATHS)",
+				);
+				LD_GENERATE_MAP_FILE = YES;
+				PREBINDING = NO;
+				SDKROOT = macosx10.6;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "Hivelytracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4B08A954540054247B /* Debug */,
+				C01FCF4C08A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Hivelytracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4F08A954540054247B /* Debug */,
+				C01FCF5008A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}

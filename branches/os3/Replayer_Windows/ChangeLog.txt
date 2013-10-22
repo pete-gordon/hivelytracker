@@ -1,0 +1,47 @@
+Hively Tracker Windows Command Line Player Change Log
+
+1.8
+===
+
++ 1.8 replayer bug fixes
+
+
+1.6
+===
+
++ 1.6 replayer bug fixes
+
+
+1.5
+===
+
++ Plays files that require HT1.5 features
+
+
+1.4
+===
+
++ Added support for 9xx instrument playlist panning command
++ Fixed a really stupid bug
+
+
+1.3
+===
+
++ Should now play all AHX tunes properly
++ Shouldn't clip with loud tunes and stereo mixing levels below 100%
+  any more.
+
+
+1.1
+===
+
++ Added 4xx command that was missing from both HivelyTracker and WinAHX for
+  some unknown reason. The code was always there in WinAHX for all these
+  years, but the 4xx command wasn't implimented so it was never called.
+
+
+1.0
+===
+
++ Bodged together this crappy example
