@@ -185,7 +185,7 @@ void hvl_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
   float64 freq;
   uint32  temp;
   
-  for( temp=0, freq=8.f; temp<31; temp++, freq+=3.f )
+  for( temp=0, freq=8.3115f; temp<31; temp++, freq+=3.f )
   {
     uint32 wv;
     int8   *a0 = buf;
@@ -197,7 +197,7 @@ void hvl_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
       
       mid = 0.f;
       low = 0.f;
-      fre = freq * 1.25f / 100.0f;
+      fre = freq * 1.17250f / 100.0f;
       
       for( i=0; i<=lentab[wv]; i++ )
       {
