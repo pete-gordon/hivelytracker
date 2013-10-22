@@ -17,9 +17,9 @@ int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 {
 	int i;
 	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
-	[alert setMessageText:[NSString stringWithUTF8String:title]];
-	[alert setInformativeText:[NSString stringWithUTF8String:reqtxt]];
-	NSMutableString *btnStr = [NSMutableString stringWithUTF8String:buttons];
+	[alert setMessageText:[NSString stringWithCString:title encoding:NSASCIIStringEncoding]];
+	[alert setInformativeText:[NSString stringWithCString:reqtxt encoding:NSASCIIStringEncoding]];
+	NSMutableString *btnStr = [NSMutableString stringWithCString:buttons encoding:NSASCIIStringEncoding];
 	[btnStr replaceOccurrencesOfString:@"_" withString:@"" options:0
 								 range:NSMakeRange(0, [btnStr length])];
 	NSArray *btnArr = [btnStr componentsSeparatedByString:@"|"];
@@ -72,9 +72,9 @@ char *filerequester( char *title, char *path, char *fname, int type )
 
 	[panel setAllowedFileTypes:fileTypes];
 	[panel setAllowsOtherFileTypes:YES];
-	[panel setTitle:[NSString stringWithUTF8String:title]];
-	[panel setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path] isDirectory:YES]];
-	[panel setNameFieldStringValue:[NSString stringWithUTF8String:fname]];
+	[panel setTitle:[NSString stringWithCString:title encoding:NSASCIIStringEncoding]];
+	[panel setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithCString:path encoding:NSASCIIStringEncoding] isDirectory:YES]];
+	[panel setNameFieldStringValue:[NSString stringWithCString:fname encoding:NSASCIIStringEncoding]];
 	
 	enableKeys = TRUE;
 	int i = [panel runModal];
@@ -94,8 +94,8 @@ BOOL directoryrequester( char *title, char *path )
 	NSOpenPanel* panel = [NSOpenPanel openPanel];
 	[panel setCanChooseFiles:NO];
 	[panel setCanChooseDirectories:YES];
-	[panel setTitle: [NSString stringWithUTF8String:title]];
-	[panel setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path] isDirectory:YES]];
+	[panel setTitle: [NSString stringWithCString:title encoding:NSASCIIStringEncoding]];
+	[panel setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithCString:path encoding:NSASCIIStringEncoding] isDirectory:YES]];
 	enableKeys = FALSE;
 	int i = [panel runModal];
 	enableKeys = FALSE;
