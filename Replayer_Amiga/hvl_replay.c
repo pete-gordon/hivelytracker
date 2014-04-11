@@ -153,18 +153,18 @@ void hvl_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
       uint32  j;
 
       mid  = *mid_table++ << 8;
-      high = *low_table++ << 8;
+      low = *low_table++ << 8;
 
       for( j=0; j<=lentab[wv]; j++ )
       {
         in   = a0[j] << 16;
-        low  = clipshifted8( in - mid - high );
-        fre  = (low >> 8) * freq;
+        high = clipshifted8( in - mid - low );
+        fre  = (high >> 8) * freq;
         mid  = clipshifted8(mid + fre);
-        fre  = (mid >> 8) * freq;
-        high = clipshifted8(high + fre);
-        *highbuf++ = low >> 16;
-        *lowbuf++  = high >> 16;
+        fre  = (mid  >> 8) * freq;
+        low  = clipshifted8(low + fre);
+        *highbuf++ = high >> 16;
+        *lowbuf++  = low  >> 16;
       }
       a0 += lentab[wv]+1;
     }
