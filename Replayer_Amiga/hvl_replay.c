@@ -25,9 +25,11 @@
 #include "hvl_replay.h"
 #include "hvl_tables.h"
 
+
 /*
 ** Waves
 */
+
 
 int8 waves[WAVES_SIZE];
 
@@ -365,6 +367,7 @@ struct hvl_tune *hvl_load_ahx( uint8 *buf, uint32 buflen, uint32 defstereo, uint
   ht->ht_Subsongs    = (uint16 *)(&ht->ht_Instruments[(insn+1)]);
   ple                = (struct hvl_plsentry *)(&ht->ht_Subsongs[ssn]);
 
+
   ht->ht_WaveformTab[0]  = &waves[WO_TRIANGLE_04];
   ht->ht_WaveformTab[1]  = &waves[WO_SAWTOOTH_04];
   ht->ht_WaveformTab[3]  = &waves[WO_WHITENOISE];
@@ -697,6 +700,7 @@ struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo )
 
   strncpy( ht->ht_Name, (TEXT *)&buf[(buf[4]<<8)|buf[5]], 128 );
   nptr = (TEXT *)&buf[((buf[4]<<8)|buf[5])+strlen( ht->ht_Name )+1];
+
 
   bptr = &buf[16];
   
@@ -1098,12 +1102,12 @@ void hvl_process_step( struct hvl_tune *ht, struct hvl_voice *voice )
     voice->vc_SamplePos        = 0;
     
     voice->vc_ADSR.aFrames     = Ins->ins_Envelope.aFrames;
-    voice->vc_ADSR.aVolume     = Ins->ins_Envelope.aVolume*256/voice->vc_ADSR.aFrames;
+	voice->vc_ADSR.aVolume     = voice->vc_ADSR.aFrames ? Ins->ins_Envelope.aVolume*256/voice->vc_ADSR.aFrames : Ins->ins_Envelope.aVolume * 256; // XXX
     voice->vc_ADSR.dFrames     = Ins->ins_Envelope.dFrames;
-    voice->vc_ADSR.dVolume     = (Ins->ins_Envelope.dVolume-Ins->ins_Envelope.aVolume)*256/voice->vc_ADSR.dFrames;
+	voice->vc_ADSR.dVolume     = voice->vc_ADSR.dFrames ? (Ins->ins_Envelope.dVolume-Ins->ins_Envelope.aVolume)*256/voice->vc_ADSR.dFrames : Ins->ins_Envelope.dVolume * 256; // XXX
     voice->vc_ADSR.sFrames     = Ins->ins_Envelope.sFrames;
     voice->vc_ADSR.rFrames     = Ins->ins_Envelope.rFrames;
-    voice->vc_ADSR.rVolume     = (Ins->ins_Envelope.rVolume-Ins->ins_Envelope.dVolume)*256/voice->vc_ADSR.rFrames;
+	voice->vc_ADSR.rVolume     = voice->vc_ADSR.rFrames ? (Ins->ins_Envelope.rVolume-Ins->ins_Envelope.dVolume)*256/voice->vc_ADSR.rFrames : Ins->ins_Envelope.rVolume * 256; // XXX
     
     voice->vc_WaveLength       = Ins->ins_WaveLength;
     voice->vc_NoteMaxVolume    = Ins->ins_Volume;
