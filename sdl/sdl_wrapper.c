@@ -195,7 +195,7 @@ uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym)
     case SDLK_ESCAPE:    return 69;
     case SDLK_MENU:      return 103;
     case SDLK_RSUPER:    return 103;
-	case SDLK_RMETA:     return 103;
+    case SDLK_RMETA:     return 103;
     case SDLK_RALT:      return 101;
     case SDLK_KP_PLUS:   return 94;
     case SDLK_KP_MINUS:  return 74;
