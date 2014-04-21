@@ -24,7 +24,9 @@ OBJECTS = sdl_wrapper.o \
 	  ../undo.o \
 	  ../about.o
 
+all: $(TARGET)
 
+-include $(OBJECTS:.o=.d)
 
 $(TARGET): $(OBJECTS) winicon.o
 	$(CC) -o $(TARGET) $(OBJECTS) winicon.o $(LFLAGS)
@@ -35,3 +37,6 @@ winicon.o: winicon.ico hivelytracker.rc
 $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 	@$(CC) -MM $(CFLAGS) $< > $*.d
+
+clean:
+	rm $(OBJECTS) $(OBJECTS:.o=.d) $(TARGET) winicon.o

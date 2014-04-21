@@ -39,6 +39,7 @@ BOOL init( void )
     srfdepth = info->vfmt->BitsPerPixel;
 
   SDL_WM_SetIcon( SDL_LoadBMP( "winicon.bmp" ), NULL );
+  SDL_EnableUNICODE(SDL_FALSE);
 
   // Try to setup the video display
 #if defined(WIN32) || defined(__APPLE__)

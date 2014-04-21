@@ -6466,6 +6466,13 @@ struct IntuiMessage *translate_sdl_event(void)
         case SDLK_RCTRL:  mkqual |= IEQUALIFIER_CONTROL; break;
         case SDLK_LALT:   mkqual |= IEQUALIFIER_LALT; break;
         case SDLK_LSUPER: mkqual |= IEQUALIFIER_LCOMMAND; break;
+#ifdef __WIN32__
+        /* Workaround: On Windows, SDLK_RALT is always prefixed by SDLK_RCTRL */
+        /* but we want RALT to be treated separately, and since RCTRL+RALT    */
+        /* isn't a key combo we care about, we make pressing RALT cancel out  */
+        /* the dummy RCTRL press. */
+        case SDLK_RALT:   mkqual &= ~IEQUALIFIER_CONTROL; break;
+#endif
       }
 
       fakemsg.Class     = IDCMP_RAWKEY;
