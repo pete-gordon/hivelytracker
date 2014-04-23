@@ -7,7 +7,7 @@
 - White noise is now much more accurate to the real AHX sound <passing_by>
 - Example replayers come with accurate Amiga PAL/NTSC frequencies <passing_by>
 - Filters now sound exactly like the real AHX ones <kode54 and passing_by>
-- Fixed potential divide by zero <passing_by>
+- Fixed potential divide by zero <kode54>
 - Added workaround for Alt Gr handling on Windows. The windows SDL library
   sends dummy RCTRL key presses when you hit Alt Gr, so now right alt works
   as it should (thanks to AceMan)
