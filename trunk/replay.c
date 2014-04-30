@@ -71,7 +71,11 @@ struct AHIRequest *ahi_io[2] = { NULL, NULL };
 int32              ahi_dev = -1;
 #else
 #define FREQ 48000
-#define OUTPUT_LEN FREQ/50
+#ifdef __linux__
+#define OUTPUT_LEN ((FREQ/50)*2) /* Linux can't cope with buffer being too small, so we sacrifice GUI responsiveness... */
+#else
+#define OUTPUT_LEN (FREQ/50)
+#endif
 static struct ahx_tune *rp_playtune = NULL;
 int16 rp_audiobuffer[OUTPUT_LEN*2];
 uint32 rp_audiobuflen = OUTPUT_LEN*2;
@@ -3900,7 +3904,10 @@ void do_the_music( void *dummy, int8 *stream, int length )
 {
   if((rp_state != STS_IDLE) && (rp_playtune))
   {
-    rp_decode_frame( rp_playtune, (int8*)&rp_audiobuffer[0], (int8*)&rp_audiobuffer[1], 4 );
+    int i;
+
+    for (i=0; i<(length/2); i+=((FREQ/50)*2))
+      rp_decode_frame( rp_playtune, (int8*)&rp_audiobuffer[i], (int8*)&rp_audiobuffer[i+1], 4 );
     memcpy(stream, rp_audiobuffer, length);
   }
   else
