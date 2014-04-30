@@ -10,6 +10,10 @@
 #include <gui.h>
 #include <about.h>
 
+#ifdef __linux__
+#include <gtk/gtk.h>
+#endif
+
 BOOL quitting = FALSE;
 extern BOOL pref_dorestart;
 extern BOOL needaflip;
@@ -20,7 +24,7 @@ extern BOOL aboutwin_open;
 
 SDL_Event event;
 
-BOOL init( void )
+BOOL hively_init( void )
 {
   const SDL_VideoInfo *info = NULL;
 
@@ -42,7 +46,7 @@ BOOL init( void )
   SDL_EnableUNICODE(SDL_FALSE);
 
   // Try to setup the video display
-#if defined(WIN32) || defined(__APPLE__)
+#if defined(WIN32) || defined(__APPLE__) || defined(__linux__)
   // requesters cause all kinds of problems for fullscreen on windows and OSX, so ignore it
   ssrf = SDL_SetVideoMode( 800, 600, srfdepth, SRFTYPE );
 #else
@@ -73,7 +77,7 @@ BOOL init( void )
   return TRUE;
 }
 
-void shutdown( void )
+static void hively_shutdown( void )
 {
   about_shutdown();
   gui_shutdown();
@@ -82,12 +86,20 @@ void shutdown( void )
 
 int main( int argc, char *argv[] )
 {
+#ifdef __linux__
+  if (!gtk_init_check(&argc, &argv))
+  {
+    printf("GTK is sad :-(\n");
+    return 0;
+  }
+#endif  
+
   #ifdef __HAIKU__
     // Fix for haiku not starting apps in their home directory
 	find_home();
   #endif
 
-  if( init() )
+  if( hively_init() )
   {
     SDL_Flip(ssrf);
     quitting = FALSE;
@@ -129,6 +141,7 @@ int main( int argc, char *argv[] )
     
     rp_stop();
   }
-  shutdown();
+
+  hively_shutdown();
   return 0;
 }

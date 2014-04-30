@@ -4684,11 +4684,11 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
     
         sprintf( wtxt, "'%s' uses the following HivelyTracker specific features:\n\n", curtune->at_Name );
     
-        if( i & SWF_MANYCHANS ) strcat( wtxt, "· More than 4 channels\n" );
-        if( i & SWF_DOUBLECMD ) strcat( wtxt, "· Notes with 2 commands\n" );
-        if( i & SWF_NEWINSCMD ) strcat( wtxt, "· Instruments with commands other than 1,2,3,4,5,C & F\n" );
-        if( i & SWF_PANCMD )    strcat( wtxt, "· 7xx panning command\n" );
-        if( i & SWF_EFXCMD )    strcat( wtxt, "· EFx command\n" );
+        if( i & SWF_MANYCHANS ) strcat( wtxt, "* More than 4 channels\n" );
+        if( i & SWF_DOUBLECMD ) strcat( wtxt, "* Notes with 2 commands\n" );
+        if( i & SWF_NEWINSCMD ) strcat( wtxt, "* Instruments with commands other than 1,2,3,4,5,C & F\n" );
+        if( i & SWF_PANCMD )    strcat( wtxt, "* 7xx panning command\n" );
+        if( i & SWF_EFXCMD )    strcat( wtxt, "* EFx command\n" );
     
         strcat( wtxt, "\nSaving as AHX would strip these out. Are you sure?" );
 
