@@ -173,6 +173,8 @@ struct ExecIFace *IExec = &_exec;
 
 
 
+extern BOOL pref_rctrlplaypos;
+
 uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym)
 {
   /* Convert SDL key symbols to Amiga raw keys */
@@ -197,6 +199,10 @@ uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym)
     case SDLK_RSUPER:    return 103;
     case SDLK_RMETA:     return 103;
     case SDLK_RALT:      return 101;
+#ifdef __linux__
+    /* On ubuntu, Alt Gr seems to return this (313) instead of SDLK_RALT (307) */
+    case 313:            return 101;
+#endif
     case SDLK_KP_PLUS:   return 94;
     case SDLK_KP_MINUS:  return 74;
     case SDLK_LEFT:      return 79;
@@ -263,7 +269,13 @@ uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym)
     case SDLK_SPACE:     return 64;
     case SDLK_TAB:       return 0x42;
     case SDLK_DELETE:    return 0x46;
+
+    case SDLK_RCTRL:
+      if (pref_rctrlplaypos)
+        return 103; /* My linux laptop has no RSUPER or MENU, so use RCTRL */
+      break;
   }
   
   return 0;
 }
+
