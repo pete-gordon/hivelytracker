@@ -151,6 +151,9 @@ BOOL  pref_blankzeros = FALSE;
 BOOL  pref_dorestart = FALSE;
 BOOL  pref_oldfullscr;
 TEXT  pref_oldskindir[512];
+#ifdef __SDL_WRAPPER__
+BOOL  pref_rctrlplaypos = FALSE;
+#endif
 
 BOOL fullscr = FALSE;
 
@@ -3409,6 +3412,18 @@ void gui_load_prefs( void )
   
   while( fgets(tmp, 256, f) )
   {
+#ifdef __SDL_WRAPPER__
+    if( gui_decode_num( "rctrlplaypos", tmp, &i ) )
+    {
+#ifdef __WIN32__ /* On Win32 RALT generates phantom RCTRL presses that stop this being workable */
+      pref_rctrlplaypos = FALSE;
+#else
+      pref_rctrlplaypos = (i!=0);
+#endif
+      continue;
+    }
+#endif
+
     if( gui_decode_num( "display", tmp, &i ) )
     {
       pref_fullscr = (i!=0);
@@ -3537,6 +3552,9 @@ void gui_save_prefs( void )
   fprintf( f, "posedadvance = %d\n", (int)posedadvance );
   fprintf( f, "notejump = %d\n",  (int)defnotejump );
   fprintf( f, "inotejump = %d\n",  (int)definotejump );
+#ifdef __SDL_WRAPPER__
+  fprintf( f, "rctrlplaypos = %d\n", (int)pref_rctrlplaypos);
+#endif
   fclose( f );
 }
 
@@ -6463,7 +6481,7 @@ struct IntuiMessage *translate_sdl_event(void)
         case SDLK_LSHIFT: mkqual |= IEQUALIFIER_LSHIFT; break;
         case SDLK_RSHIFT: mkqual |= IEQUALIFIER_RSHIFT; break;
         case SDLK_LCTRL:  mkqual |= IEQUALIFIER_CONTROL; break;
-        case SDLK_RCTRL:  mkqual |= IEQUALIFIER_CONTROL; break;
+        case SDLK_RCTRL:  if (!pref_rctrlplaypos) { mkqual |= IEQUALIFIER_CONTROL; } break;
         case SDLK_LALT:   mkqual |= IEQUALIFIER_LALT; break;
         case SDLK_LSUPER: mkqual |= IEQUALIFIER_LCOMMAND; break;
 #ifdef __WIN32__
@@ -6486,7 +6504,7 @@ struct IntuiMessage *translate_sdl_event(void)
         case SDLK_LSHIFT: mkqual &= ~IEQUALIFIER_LSHIFT; break;
         case SDLK_RSHIFT: mkqual &= ~IEQUALIFIER_RSHIFT; break;
         case SDLK_LCTRL:  mkqual &= ~IEQUALIFIER_CONTROL; break;
-        case SDLK_RCTRL:  mkqual &= ~IEQUALIFIER_CONTROL; break;
+        case SDLK_RCTRL:  if (!pref_rctrlplaypos) { mkqual &= ~IEQUALIFIER_CONTROL; } break;
         case SDLK_LALT:   mkqual &= ~IEQUALIFIER_LALT; break;
         case SDLK_LSUPER: mkqual &= ~IEQUALIFIER_LCOMMAND; break;
       }

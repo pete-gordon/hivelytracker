@@ -24,6 +24,7 @@ int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
   gint res;
 
   dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, mtyp, btns, "%s", reqtxt);
+  gtk_window_set_title(GTK_WINDOW (dialog), title);
   res = gtk_dialog_run(GTK_DIALOG (dialog));
   if ((res == GTK_RESPONSE_OK) || (res == GTK_RESPONSE_YES) || (res == GTK_RESPONSE_ACCEPT))
     result = SDL_TRUE;
@@ -80,6 +81,7 @@ char *filerequester( char *title, char *path, char *fname, int type )
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   GtkFileFilter *filter = NULL, *allfilter = gtk_file_filter_new();
   char *result = NULL;
+  char *accept_str = GTK_STOCK_OPEN;
 
   gtk_file_filter_set_name(allfilter, "All files");
   gtk_file_filter_add_pattern(allfilter, "*");
@@ -88,6 +90,7 @@ char *filerequester( char *title, char *path, char *fname, int type )
   {
     case FR_HVLSAVE:
       action = GTK_FILE_CHOOSER_ACTION_SAVE;
+      accept_str = GTK_STOCK_SAVE;
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, "HVL module (*.hvl)");
       gtk_file_filter_add_pattern(filter, "*.hvl");
@@ -95,6 +98,7 @@ char *filerequester( char *title, char *path, char *fname, int type )
     
     case FR_AHXSAVE:
       action = GTK_FILE_CHOOSER_ACTION_SAVE;
+      accept_str = GTK_STOCK_SAVE;
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, "AHX module (*.ahx)");
       gtk_file_filter_add_pattern(filter, "*.ahx");
@@ -102,6 +106,7 @@ char *filerequester( char *title, char *path, char *fname, int type )
 
     case FR_INSSAVE:
       action = GTK_FILE_CHOOSER_ACTION_SAVE;
+      accept_str = GTK_STOCK_SAVE;
     case FR_INSLOAD:
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, "Instrument (*.ins)");
@@ -124,7 +129,7 @@ char *filerequester( char *title, char *path, char *fname, int type )
 				       NULL,
 				       action,
 				       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-				       GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+				       accept_str, GTK_RESPONSE_ACCEPT,
 				       NULL);
 
   gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), path);
