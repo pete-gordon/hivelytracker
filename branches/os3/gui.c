@@ -141,6 +141,9 @@ BOOL  pref_blankzeros = FALSE;
 BOOL  pref_dorestart = FALSE;
 BOOL  pref_oldfullscr;
 TEXT  pref_oldskindir[512];
+#ifdef __SDL_WRAPPER__
+BOOL  pref_rctrlplaypos = FALSE;
+#endif
 
 BOOL  pref_wavemeter  = FALSE;
 BOOL  pref_vumeters   = FALSE;
@@ -3345,6 +3348,18 @@ void gui_load_prefs( void )
   
   while( fgets(tmp, 256, f) )
   {
+#ifdef __SDL_WRAPPER__
+    if( gui_decode_num( "rctrlplaypos", tmp, &i ) )
+    {
+#ifdef __WIN32__ /* On Win32 RALT generates phantom RCTRL presses that stop this being workable */
+      pref_rctrlplaypos = FALSE;
+#else
+      pref_rctrlplaypos = (i!=0);
+#endif
+      continue;
+    }
+#endif
+
     if( gui_decode_num( "display", tmp, &i ) )
     {
       pref_fullscr = (i!=0);
@@ -3511,6 +3526,9 @@ void gui_save_prefs( void )
   fprintf( f, "posedadvance = %ld\n", posedadvance );
   fprintf( f, "notejump = %ld\n",  defnotejump );
   fprintf( f, "inotejump = %ld\n",  definotejump );
+#ifdef __SDL_WRAPPER__
+  fprintf( f, "rctrlplaypos = %d\n", (int)pref_rctrlplaypos);
+#endif
   fclose( f );
 }
 
@@ -4759,11 +4777,11 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
     
         sprintf( wtxt, "'%s' uses the following HivelyTracker specific features:\n\n", curtune->at_Name );
     
-        if( i & SWF_MANYCHANS ) strcat( wtxt, "· More than 4 channels\n" );
-        if( i & SWF_DOUBLECMD ) strcat( wtxt, "· Notes with 2 commands\n" );
-        if( i & SWF_NEWINSCMD ) strcat( wtxt, "· Instruments with commands other than 1,2,3,4,5,C & F\n" );
-        if( i & SWF_PANCMD )    strcat( wtxt, "· 7xx panning command\n" );
-        if( i & SWF_EFXCMD )    strcat( wtxt, "· EFx command\n" );
+        if( i & SWF_MANYCHANS ) strcat( wtxt, "* More than 4 channels\n" );
+        if( i & SWF_DOUBLECMD ) strcat( wtxt, "* Notes with 2 commands\n" );
+        if( i & SWF_NEWINSCMD ) strcat( wtxt, "* Instruments with commands other than 1,2,3,4,5,C & F\n" );
+        if( i & SWF_PANCMD )    strcat( wtxt, "* 7xx panning command\n" );
+        if( i & SWF_EFXCMD )    strcat( wtxt, "* EFx command\n" );
     
         strcat( wtxt, "\nSaving as AHX would strip these out. Are you sure?" );
 
@@ -6558,9 +6576,16 @@ struct IntuiMessage *translate_sdl_event(void)
         case SDLK_LSHIFT: mkqual |= IEQUALIFIER_LSHIFT; break;
         case SDLK_RSHIFT: mkqual |= IEQUALIFIER_RSHIFT; break;
         case SDLK_LCTRL:  mkqual |= IEQUALIFIER_CONTROL; break;
-        case SDLK_RCTRL:  mkqual |= IEQUALIFIER_CONTROL; break;
+        case SDLK_RCTRL:  if (!pref_rctrlplaypos) { mkqual |= IEQUALIFIER_CONTROL; } break;
         case SDLK_LALT:   mkqual |= IEQUALIFIER_LALT; break;
         case SDLK_LSUPER: mkqual |= IEQUALIFIER_LCOMMAND; break;
+#ifdef __WIN32__
+        /* Workaround: On Windows, SDLK_RALT is always prefixed by SDLK_RCTRL */
+        /* but we want RALT to be treated separately, and since RCTRL+RALT    */
+        /* isn't a key combo we care about, we make pressing RALT cancel out  */
+        /* the dummy RCTRL press. */
+        case SDLK_RALT:   mkqual &= ~IEQUALIFIER_CONTROL; break;
+#endif
       }
 
       fakemsg.Class     = IDCMP_RAWKEY;
@@ -6574,7 +6599,7 @@ struct IntuiMessage *translate_sdl_event(void)
         case SDLK_LSHIFT: mkqual &= ~IEQUALIFIER_LSHIFT; break;
         case SDLK_RSHIFT: mkqual &= ~IEQUALIFIER_RSHIFT; break;
         case SDLK_LCTRL:  mkqual &= ~IEQUALIFIER_CONTROL; break;
-        case SDLK_RCTRL:  mkqual &= ~IEQUALIFIER_CONTROL; break;
+        case SDLK_RCTRL:  if (!pref_rctrlplaypos) { mkqual &= ~IEQUALIFIER_CONTROL; } break;
         case SDLK_LALT:   mkqual &= ~IEQUALIFIER_LALT; break;
         case SDLK_LSUPER: mkqual &= ~IEQUALIFIER_LCOMMAND; break;
       }

@@ -1,3 +1,18 @@
+1.9 xx-xxx-xxxx
+===============
+
+- Added clamping to mixchunk() in the example replayer code (but not in the
+  tracker proper as clipping noise is a good indicator to the composer to
+  sort out the gain setting ;-)
+- White noise is now much more accurate to the real AHX sound <passing_by>
+- Example replayers come with accurate Amiga PAL/NTSC frequencies <passing_by>
+- Filters now sound exactly like the real AHX ones <kode54 and passing_by>
+- Fixed potential divide by zero <kode54>
+- Added workaround for Alt Gr handling on Windows. The windows SDL library
+  sends dummy RCTRL key presses when you hit Alt Gr, so now right alt works
+  as it should (thanks to AceMan)
+
+
 1.8 07-May-2013
 ===============
 

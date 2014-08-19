@@ -23,55 +23,15 @@
 #include <proto/dos.h>
 
 #include "hvl_replay.h"
+#include "hvl_tables.h"
 
-int32 stereopan_left[]  = { 128,  96,  64,  32,   0 };
-int32 stereopan_right[] = { 128, 160, 193, 225, 255 };
 
 /*
 ** Waves
 */
-#define WHITENOISELEN (0x280*3)
 
-#define WO_LOWPASSES   0
-#define WO_TRIANGLE_04 (WO_LOWPASSES+((0xfc+0xfc+0x80*0x1f+0x80+3*0x280)*31))
-#define WO_TRIANGLE_08 (WO_TRIANGLE_04+0x04)
-#define WO_TRIANGLE_10 (WO_TRIANGLE_08+0x08)
-#define WO_TRIANGLE_20 (WO_TRIANGLE_10+0x10)
-#define WO_TRIANGLE_40 (WO_TRIANGLE_20+0x20)
-#define WO_TRIANGLE_80 (WO_TRIANGLE_40+0x40)
-#define WO_SAWTOOTH_04 (WO_TRIANGLE_80+0x80)
-#define WO_SAWTOOTH_08 (WO_SAWTOOTH_04+0x04)
-#define WO_SAWTOOTH_10 (WO_SAWTOOTH_08+0x08)
-#define WO_SAWTOOTH_20 (WO_SAWTOOTH_10+0x10)
-#define WO_SAWTOOTH_40 (WO_SAWTOOTH_20+0x20)
-#define WO_SAWTOOTH_80 (WO_SAWTOOTH_40+0x40)
-#define WO_SQUARES     (WO_SAWTOOTH_80+0x80)
-#define WO_WHITENOISE  (WO_SQUARES+(0x80*0x20))
-#define WO_HIGHPASSES  (WO_WHITENOISE+WHITENOISELEN)
-#define WAVES_SIZE     (WO_HIGHPASSES+((0xfc+0xfc+0x80*0x1f+0x80+3*0x280)*31))
 
 int8 waves[WAVES_SIZE];
-int16 waves2[WAVES_SIZE];
-
-CONST int16 vib_tab[] =
-{ 
-  0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
-  253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
-  0,-24,-49,-74,-97,-120,-141,-161,-180,-197,-212,-224,-235,-244,-250,-253,-255,
-  -253,-250,-244,-235,-224,-212,-197,-180,-161,-141,-120,-97,-74,-49,-24
-};
-
-CONST uint16 period_tab[] =
-{
-  0x0000, 0x0D60, 0x0CA0, 0x0BE8, 0x0B40, 0x0A98, 0x0A00, 0x0970,
-  0x08E8, 0x0868, 0x07F0, 0x0780, 0x0714, 0x06B0, 0x0650, 0x05F4,
-  0x05A0, 0x054C, 0x0500, 0x04B8, 0x0474, 0x0434, 0x03F8, 0x03C0,
-  0x038A, 0x0358, 0x0328, 0x02FA, 0x02D0, 0x02A6, 0x0280, 0x025C,
-  0x023A, 0x021A, 0x01FC, 0x01E0, 0x01C5, 0x01AC, 0x0194, 0x017D,
-  0x0168, 0x0153, 0x0140, 0x012E, 0x011D, 0x010D, 0x00FE, 0x00F0,
-  0x00E2, 0x00D6, 0x00CA, 0x00BE, 0x00B4, 0x00AA, 0x00A0, 0x0097,
-  0x008F, 0x0087, 0x007F, 0x0078, 0x0071
-};
 
 uint32 panning_left[256], panning_right[256];
 
@@ -166,61 +126,48 @@ void hvl_GenSquare( int8 *buf )
   }
 }
 
-static inline float64 clip( float64 x )
+static inline int32 clipshifted8(int32 in)
 {
-  if( x > 127.f )
-    x = 127.f;
-  else if( x < -128.f )
-    x = -128.f;
-  return x;
+  int16 top = (int16)(in >> 16);
+  if (top > 127) in = 127 << 16;
+  else if (top < -128) in = -(128 << 16);
+  return in;
 }
 
 void hvl_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
 {
-  static const uint16 lentab[45] = { 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 3, 7, 0xf, 0x1f, 0x3f, 0x7f,
-    0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,
-    0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,
-    (0x280*3)-1 };
 
-  float64 freq;
-  uint32  temp;
-  
-  for( temp=0, freq=8.3115f; temp<31; temp++, freq+=3.f )
+
+  const int16 * mid_table = &filter_thing[0];
+  const int16 * low_table = &filter_thing[1395];
+
+  int32 freq;
+  int32 i;
+
+  for( i=0, freq = 25; i<31; i++, freq += 9 )
   {
     uint32 wv;
-    int8   *a0 = buf;
-    
+    int8  *a0 = buf;
+
     for( wv=0; wv<6+6+0x20+1; wv++ )
     {
-      float64 fre, high, mid, low;
-      uint32  i;
-      
-      mid = 0.f;
-      low = 0.f;
-      fre = freq * 1.17250f / 100.0f;
-      
-      for( i=0; i<=lentab[wv]; i++ )
+      int32 in, fre, high, mid, low;
+      uint32  j;
+
+      mid  = *mid_table++ << 8;
+      low = *low_table++ << 8;
+
+      for( j=0; j<=lentab[wv]; j++ )
       {
-        high  = a0[i] - mid - low;
-        high  = clip( high );
-        mid  += high * fre;
-        mid   = clip( mid );
-        low  += mid * fre;
-        low   = clip( low );
+        in   = a0[j] << 16;
+        high = clipshifted8( in - mid - low );
+        fre  = (high >> 8) * freq;
+        mid  = clipshifted8(mid + fre);
+        fre  = (mid  >> 8) * freq;
+        low  = clipshifted8(low + fre);
+        *highbuf++ = high >> 16;
+        *lowbuf++  = low  >> 16;
       }
-      
-      for( i=0; i<=lentab[wv]; i++ )
-      {
-        high  = a0[i] - mid - low;
-        high  = clip( high );
-        mid  += high * fre;
-        mid   = clip( mid );
-        low  += mid * fre;
-        low   = clip( low );
-        *lowbuf++  = (int8)low;
-        *highbuf++ = (int8)high;
-      }
-      
       a0 += lentab[wv]+1;
     }
   }
@@ -419,6 +366,7 @@ struct hvl_tune *hvl_load_ahx( uint8 *buf, uint32 buflen, uint32 defstereo, uint
   ht->ht_Instruments = (struct hvl_instrument *)(&ht->ht_Positions[posn]);
   ht->ht_Subsongs    = (uint16 *)(&ht->ht_Instruments[(insn+1)]);
   ple                = (struct hvl_plsentry *)(&ht->ht_Subsongs[ssn]);
+
 
   ht->ht_WaveformTab[0]  = &waves[WO_TRIANGLE_04];
   ht->ht_WaveformTab[1]  = &waves[WO_SAWTOOTH_04];
@@ -752,6 +700,7 @@ struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo )
 
   strncpy( ht->ht_Name, (TEXT *)&buf[(buf[4]<<8)|buf[5]], 128 );
   nptr = (TEXT *)&buf[((buf[4]<<8)|buf[5])+strlen( ht->ht_Name )+1];
+
 
   bptr = &buf[16];
   
@@ -1153,12 +1102,12 @@ void hvl_process_step( struct hvl_tune *ht, struct hvl_voice *voice )
     voice->vc_SamplePos        = 0;
     
     voice->vc_ADSR.aFrames     = Ins->ins_Envelope.aFrames;
-    voice->vc_ADSR.aVolume     = Ins->ins_Envelope.aVolume*256/voice->vc_ADSR.aFrames;
+	voice->vc_ADSR.aVolume     = voice->vc_ADSR.aFrames ? Ins->ins_Envelope.aVolume*256/voice->vc_ADSR.aFrames : Ins->ins_Envelope.aVolume * 256; // XXX
     voice->vc_ADSR.dFrames     = Ins->ins_Envelope.dFrames;
-    voice->vc_ADSR.dVolume     = (Ins->ins_Envelope.dVolume-Ins->ins_Envelope.aVolume)*256/voice->vc_ADSR.dFrames;
+	voice->vc_ADSR.dVolume     = voice->vc_ADSR.dFrames ? (Ins->ins_Envelope.dVolume-Ins->ins_Envelope.aVolume)*256/voice->vc_ADSR.dFrames : Ins->ins_Envelope.dVolume * 256; // XXX
     voice->vc_ADSR.sFrames     = Ins->ins_Envelope.sFrames;
     voice->vc_ADSR.rFrames     = Ins->ins_Envelope.rFrames;
-    voice->vc_ADSR.rVolume     = (Ins->ins_Envelope.rVolume-Ins->ins_Envelope.dVolume)*256/voice->vc_ADSR.rFrames;
+	voice->vc_ADSR.rVolume     = voice->vc_ADSR.rFrames ? (Ins->ins_Envelope.rVolume-Ins->ins_Envelope.dVolume)*256/voice->vc_ADSR.rFrames : Ins->ins_Envelope.rVolume * 256; // XXX
     
     voice->vc_WaveLength       = Ins->ins_WaveLength;
     voice->vc_NoteMaxVolume    = Ins->ins_Volume;
