@@ -5,10 +5,11 @@
 //  Created by Christopher O'Neill on 15/10/2012.
 //
 
+#import <Cocoa/Cocoa.h>
 #import "NSFileManager+DirectoryLocations.h"
 
-typedef Uint32   uint32;
-typedef Sint32   int32;
+typedef uint32_t   uint32;
+typedef int32_t   int32;
 typedef char     TEXT;
 
 extern BOOL enableKeys;
