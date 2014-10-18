@@ -14,9 +14,9 @@
 		830E7A9D162F353000AF00A8 /* SDL_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7A9C162F353000AF00A8 /* SDL_image.framework */; };
 		830E7A9F162F353000AF00A8 /* SDL_ttf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7A9E162F353000AF00A8 /* SDL_ttf.framework */; };
 		830E7AA1162F353000AF00A8 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830E7AA0162F353000AF00A8 /* SDL.framework */; };
-		830E7B1C162F354100AF00A8 /* SDL_image.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 830E7A9C162F353000AF00A8 /* SDL_image.framework */; };
-		830E7B1D162F354100AF00A8 /* SDL_ttf.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 830E7A9E162F353000AF00A8 /* SDL_ttf.framework */; };
-		830E7B1E162F354100AF00A8 /* SDL.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 830E7AA0162F353000AF00A8 /* SDL.framework */; };
+		830E7B1C162F354100AF00A8 /* SDL_image.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 830E7A9C162F353000AF00A8 /* SDL_image.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		830E7B1D162F354100AF00A8 /* SDL_ttf.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 830E7A9E162F353000AF00A8 /* SDL_ttf.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		830E7B1E162F354100AF00A8 /* SDL.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 830E7AA0162F353000AF00A8 /* SDL.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		8367E2D616342BEF00E0C1C1 /* about.c in Sources */ = {isa = PBXBuildFile; fileRef = 8367E2D516342BEF00E0C1C1 /* about.c */; };
 		8367E315163607FA00E0C1C1 /* hivelytracker.icns in Resources */ = {isa = PBXBuildFile; fileRef = 8367E314163607FA00E0C1C1 /* hivelytracker.icns */; };
 		83961D27162C9C7A00B4B9E0 /* gui.c in Sources */ = {isa = PBXBuildFile; fileRef = 83961D1C162C9C7A00B4B9E0 /* gui.c */; };
@@ -229,6 +229,7 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastUpgradeCheck = 0600;
 				ORGANIZATIONNAME = Hivelytracker;
 			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Hivelytracker" */;
@@ -317,6 +318,7 @@
 		C01FCF4B08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -342,6 +344,7 @@
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -375,13 +378,13 @@
 				);
 				ONLY_ACTIVE_ARCH = YES;
 				PREBINDING = NO;
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
 		C01FCF5008A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(HOME)/Library/Frameworks",
 					/Library/Frameworks,
@@ -402,7 +405,7 @@
 				);
 				LD_GENERATE_MAP_FILE = YES;
 				PREBINDING = NO;
-				SDKROOT = macosx10.6;
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
