@@ -154,7 +154,7 @@ struct hvl_voice
   int16                  vc_PerfWait;
   struct hvl_plist      *vc_PerfList;
   int8                  *vc_AudioPointer;
-  int8                  *vc_AudioSource;
+  const int8            *vc_AudioSource;
   uint8                  vc_NoteDelayOn;
   uint8                  vc_NoteCutOn;
   int16                  vc_NoteDelayWait;
@@ -180,7 +180,7 @@ struct hvl_voice
   int16                  vc_RingInstrPeriod;
   int16                  vc_RingBasePeriod;
   int16                  vc_RingAudioPeriod;
-  int8                  *vc_RingAudioSource;
+  const int8            *vc_RingAudioSource;
   uint8                  vc_RingNewWaveform;
   uint8                  vc_RingWaveform;
   uint8                  vc_RingFixedPeriod;
@@ -193,7 +193,7 @@ struct hvl_tune
   uint16                 ht_SongNum;
   uint32                 ht_Frequency;
   float64                ht_FreqF;
-  int8                  *ht_WaveformTab[MAX_CHANNELS];
+  const int8            *ht_WaveformTab[MAX_CHANNELS];
   uint16                 ht_Restart;
   uint16                 ht_PositionNr;
   uint8                  ht_SpeedMultiplier;
