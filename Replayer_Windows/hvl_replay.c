@@ -1618,7 +1618,7 @@ void hvl_process_frame( struct hvl_tune *ht, struct hvl_voice *voice )
   
   if( voice->vc_RingNewWaveform )
   {
-    int8 *rasrc;
+    const int8 *rasrc;
     
     if( voice->vc_RingWaveform > 1 ) voice->vc_RingWaveform = 1;
     
@@ -1631,7 +1631,7 @@ void hvl_process_frame( struct hvl_tune *ht, struct hvl_voice *voice )
   
   if( voice->vc_NewWaveform )
   {
-    int8 *AudioSource;
+    const int8 *AudioSource;
 
     AudioSource = ht->ht_WaveformTab[voice->vc_Waveform];
 
@@ -1750,8 +1750,8 @@ void hvl_set_audio( struct hvl_voice *voice, float64 freqf )
   
   if( voice->vc_NewWaveform )
   {
-    int8 *src;
-    
+    const int8 *src;
+	  
     src = voice->vc_AudioSource;
     
     if( voice->vc_Waveform == 4-1 )
@@ -1787,7 +1787,7 @@ void hvl_set_audio( struct hvl_voice *voice, float64 freqf )
   
   if( voice->vc_RingNewWaveform )
   {
-    int8 *src;
+    const int8 *src;
     uint32 i, WaveLoops;
     
     src = voice->vc_RingAudioSource;
