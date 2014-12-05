@@ -126,7 +126,7 @@ static inline int32 clipshifted8(int32 in)
   return in;
 }
 
-void hvl_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
+void hvl_GenFilterWaves( const int8 *buf, int8 *lowbuf, int8 *highbuf )
 {
 
 
@@ -139,7 +139,7 @@ void hvl_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
   for( i=0, freq = 25; i<31; i++, freq += 9 )
   {
     uint32 wv;
-    int8  *a0 = buf;
+    const int8  *a0 = buf;
 
     for( wv=0; wv<6+6+0x20+1; wv++ )
     {
@@ -309,14 +309,14 @@ void hvl_InitReplayer( void )
   hvl_GenFilterWaves( &waves[WO_TRIANGLE_04], &waves[WO_LOWPASSES], &waves[WO_HIGHPASSES] );
 }
 
-struct hvl_tune *hvl_load_ahx( uint8 *buf, uint32 buflen, uint32 defstereo, uint32 freq )
+struct hvl_tune *hvl_load_ahx( const uint8 *buf, uint32 buflen, uint32 defstereo, uint32 freq )
 {
-  uint8  *bptr;
-  TEXT   *nptr;
+  const uint8  *bptr;
+  const TEXT   *nptr;
   uint32  i, j, k, l, posn, insn, ssn, hs, trkn, trkl;
   struct hvl_tune *ht;
   struct  hvl_plsentry *ple;
-  int32 defgain[] = { 71, 72, 76, 85, 100 };
+  const int32 defgain[] = { 71, 72, 76, 85, 100 };
   
   posn = ((buf[6]&0x0f)<<8)|buf[7];
   insn = buf[12];
@@ -346,7 +346,6 @@ struct hvl_tune *hvl_load_ahx( uint8 *buf, uint32 buflen, uint32 defstereo, uint
   ht = malloc( hs );
   if( !ht )
   {
-    free( buf );
     printf( "Out of memory!\n" );
     return NULL;
   }
@@ -389,7 +388,6 @@ struct hvl_tune *hvl_load_ahx( uint8 *buf, uint32 buflen, uint32 defstereo, uint
                           ht->ht_TrackLength,
                           ht->ht_InstrumentNr );
     free( ht );
-    free( buf );
     printf( "Invalid file.\n" );
     return NULL;
   }
@@ -516,15 +514,15 @@ struct hvl_tune *hvl_load_ahx( uint8 *buf, uint32 buflen, uint32 defstereo, uint
   }
   
   hvl_InitSubsong( ht, 0 );
-  free( buf );
   return ht;
 }
 
-struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo )
+struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo )
 {
   struct hvl_tune *ht;
-  uint8  *buf, *bptr;
-  TEXT   *nptr;
+  uint8  *buf;
+  const uint8  *bptr;
+  const TEXT   *nptr;
   uint32  buflen, i, j, posn, insn, ssn, chnn, hs, trkl, trkn;
   FILE *fh;
   struct  hvl_plsentry *ple;
@@ -561,7 +559,11 @@ struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo )
       ( buf[1] == 'H' ) &&
       ( buf[2] == 'X' ) &&
       ( buf[3] < 3 ) )
-    return hvl_load_ahx( buf, buflen, defstereo, freq );
+  {
+    ht = hvl_load_ahx( buf, buflen, defstereo, freq );
+    free( buf );
+    return ht;
+  }
 
   if( ( buf[0] != 'H' ) ||
       ( buf[1] != 'V' ) ||
@@ -859,7 +861,7 @@ void hvl_process_stepfx_1( struct hvl_tune *ht, struct hvl_voice *voice, int32 F
   }  
 }
 
-void hvl_process_stepfx_2( struct hvl_tune *ht, struct hvl_voice *voice, int32 FX, int32 FXParam, int32 *Note )
+void hvl_process_stepfx_2( const struct hvl_tune *ht, struct hvl_voice *voice, int32 FX, int32 FXParam, int32 *Note )
 {
   switch( FX )
   {
@@ -989,7 +991,7 @@ void hvl_process_stepfx_3( struct hvl_tune *ht, struct hvl_voice *voice, int32 F
 void hvl_process_step( struct hvl_tune *ht, struct hvl_voice *voice )
 {
   int32  Note, Instr, donenotedel;
-  struct hvl_step *Step;
+  const struct hvl_step *Step;
   
   if( voice->vc_TrackOn == 0 )
     return;
@@ -1583,7 +1585,7 @@ void hvl_process_frame( struct hvl_tune *ht, struct hvl_voice *voice )
     // CalcSquare
     uint32  i;
     int32   Delta;
-    int8   *SquarePtr;
+    const int8   *SquarePtr;
     int32  X;
     
     SquarePtr = &waves[WO_SQUARES+(voice->vc_FilterPos-0x20)*(0xfc+0xfc+0x80*0x1f+0x80+0x280*3)];
@@ -1868,8 +1870,8 @@ void hvl_play_irq( struct hvl_tune *ht )
 
 void hvl_mixchunk( struct hvl_tune *ht, uint32 samples, int8 *buf1, int8 *buf2, int32 bufmod )
 {
-  int8   *src[MAX_CHANNELS];
-  int8   *rsrc[MAX_CHANNELS];
+  const int8   *src[MAX_CHANNELS];
+  const int8   *rsrc[MAX_CHANNELS];
   uint32  delta[MAX_CHANNELS];
   uint32  rdelta[MAX_CHANNELS];
   int32   vol[MAX_CHANNELS];

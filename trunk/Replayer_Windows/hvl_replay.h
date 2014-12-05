@@ -153,7 +153,7 @@ struct hvl_voice
   int16                  vc_PerfSpeed;
   int16                  vc_PerfWait;
   struct hvl_plist      *vc_PerfList;
-  int8                  *vc_AudioPointer;
+  const int8            *vc_AudioPointer;
   const int8            *vc_AudioSource;
   uint8                  vc_NoteDelayOn;
   uint8                  vc_NoteCutOn;
@@ -162,7 +162,7 @@ struct hvl_voice
   int16                  vc_AudioPeriod;
   int16                  vc_AudioVolume;
   int32                  vc_WNRandom;
-  int8                  *vc_MixSource;
+  const int8            *vc_MixSource;
   int8                   vc_SquareTempBuffer[0x80];
   int8                   vc_VoiceBuffer[0x282*4];
   uint8                  vc_VoiceNum;
@@ -175,7 +175,7 @@ struct hvl_voice
   uint32                 vc_PanMultRight;
   uint32                 vc_RingSamplePos;
   uint32                 vc_RingDelta;
-  int8                  *vc_RingMixSource;
+  const int8            *vc_RingMixSource;
   uint8                  vc_RingPlantPeriod;
   int16                  vc_RingInstrPeriod;
   int16                  vc_RingBasePeriod;
@@ -228,6 +228,6 @@ struct hvl_tune
 void hvl_DecodeFrame( struct hvl_tune *ht, int8 *buf1, int8 *buf2, int32 bufmod );
 void hvl_InitReplayer( void );
 BOOL hvl_InitSubsong( struct hvl_tune *ht, uint32 nr );
-struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo );
+struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo );
 void hvl_FreeTune( struct hvl_tune *ht );
 
