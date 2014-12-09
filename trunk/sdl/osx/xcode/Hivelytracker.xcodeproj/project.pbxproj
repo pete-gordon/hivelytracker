@@ -54,6 +54,9 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		35DEA5081A36F3FD0085CFB3 /* gui.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gui.h; path = ../../../gui.h; sourceTree = "<group>"; };
+		35DEA5091A3701030085CFB3 /* undo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = undo.h; path = ../../../undo.h; sourceTree = "<group>"; };
+		35DEA50A1A3701030085CFB3 /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = util.h; path = ../../../util.h; sourceTree = "<group>"; };
 		830D2600163DCF880045F28B /* NSFileManager+DirectoryLocations.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSFileManager+DirectoryLocations.h"; sourceTree = "<group>"; };
 		830D2601163DCF880045F28B /* NSFileManager+DirectoryLocations.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSFileManager+DirectoryLocations.m"; sourceTree = "<group>"; };
 		830D277D163E13A70045F28B /* DejaVuSans.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = DejaVuSans.ttf; path = ../../../ttf/DejaVuSans.ttf; sourceTree = SOURCE_ROOT; };
@@ -151,10 +154,13 @@
 				83961D2C162C9CA200B4B9E0 /* SDL */,
 				8367E2E416342CC500E0C1C1 /* about.h */,
 				8367E2D516342BEF00E0C1C1 /* about.c */,
+				35DEA5081A36F3FD0085CFB3 /* gui.h */,
 				83961D1C162C9C7A00B4B9E0 /* gui.c */,
 				83961D1F162C9C7A00B4B9E0 /* replay.c */,
 				8367E2E516342CC500E0C1C1 /* replay.h */,
+				35DEA5091A3701030085CFB3 /* undo.h */,
 				83961D22162C9C7A00B4B9E0 /* undo.c */,
+				35DEA50A1A3701030085CFB3 /* util.h */,
 				83961D24162C9C7A00B4B9E0 /* util.c */,
 			);
 			name = "Other Sources";

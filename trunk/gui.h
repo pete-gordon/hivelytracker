@@ -34,6 +34,7 @@ struct textbox
 
 void gui_pre_init( void );
 BOOL gui_init( void );
+BOOL gui_maybe_quit( void );
 void gui_shutdown( void );
 void gui_handler( uint32 gotsigs );
 int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons );
@@ -45,6 +46,8 @@ void gui_render_inslistb( BOOL force );
 void gui_render_inslist( BOOL force );
 void gui_render_tbox( struct rawbm *bm, struct textbox *tb );
 void gui_render_tabs( void );
+void gui_render_vumeters( void );
+void gui_render_wavemeter( void );
 void gui_render_everything( void );
 BOOL gui_restart( void );
 
