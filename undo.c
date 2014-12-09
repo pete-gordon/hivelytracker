@@ -1029,7 +1029,7 @@ void undo( struct ahx_tune *at )
   struct udat_pos_b       *pos_b;
   struct udat_pos_region  *pos_r;
   int32 i, wpanel, x, y;
-  BOOL forceall;
+  BOOL forceall = FALSE;
 
   wpanel = -1;
   show_tbox = NULL;
@@ -1528,7 +1528,7 @@ void redo( struct ahx_tune *at )
   struct udat_pos_b       *pos_b;
   struct udat_pos_region  *pos_r;
   int32 i, wpanel, x, y;
-  BOOL forceall;
+  BOOL forceall = FALSE;
 
   wpanel = -1;
   show_tbox = NULL;

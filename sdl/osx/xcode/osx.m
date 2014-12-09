@@ -14,7 +14,7 @@ typedef char     TEXT;
 
 extern BOOL enableKeys;
 
-int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
+int32 gui_req( uint32 img, const TEXT *title, const TEXT *reqtxt, const TEXT *buttons )
 {
 	int i;
 	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
@@ -41,11 +41,11 @@ int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 #define FR_MODLOAD 3
 #define FR_INSLOAD 4
 
-char *filerequester( char *title, char *path, char *fname, int type )
+char *filerequester( const char *title, const char *path, const char *fname, int type )
 {
-	NSArray* fileTypes;
-	NSSavePanel* savePanel;
-	NSOpenPanel* panel;
+	NSArray *fileTypes;
+	NSSavePanel *savePanel;
+	NSOpenPanel *panel;
 	switch (type) {
 		case FR_HVLSAVE:
 			fileTypes = [NSArray arrayWithObjects:@"hvl", @"HVL", nil];
@@ -68,7 +68,7 @@ char *filerequester( char *title, char *path, char *fname, int type )
 		panel = [NSOpenPanel openPanel];
 	} else {
 		savePanel = [NSSavePanel savePanel];
-		panel = (NSOpenPanel*) savePanel;
+		panel = (NSOpenPanel *)savePanel;
 	}
 
 	[panel setAllowedFileTypes:fileTypes];
@@ -82,7 +82,7 @@ char *filerequester( char *title, char *path, char *fname, int type )
 	enableKeys = FALSE;
 	if (i == 1) {
 		const char *cstr = [[[panel URL] path] UTF8String];
-		char *rval = (char *) malloc(strlen(cstr) + 1);
+		char *rval = (char *)malloc(strlen(cstr) + 1);
 		strcpy(rval, cstr);
 		return rval;
 	};
@@ -90,9 +90,9 @@ char *filerequester( char *title, char *path, char *fname, int type )
 	return NULL;
 }
 
-BOOL directoryrequester( char *title, char *path )
+BOOL directoryrequester( const char *title, char *path )
 {
-	NSOpenPanel* panel = [NSOpenPanel openPanel];
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseFiles:NO];
 	[panel setCanChooseDirectories:YES];
 	[panel setTitle: [NSString stringWithCString:title encoding:NSASCIIStringEncoding]];
@@ -109,7 +109,7 @@ BOOL directoryrequester( char *title, char *path )
 	return FALSE;
 }
 
-char* osxGetPrefsPath()
+char *osxGetPrefsPath()
 {
 	static char *path;
 
@@ -124,7 +124,7 @@ char* osxGetPrefsPath()
 
 char *osxGetResourcesPath(char *path, const char *pathAppend)
 {
-	NSBundle* bundle = [NSBundle mainBundle];
+	NSBundle *bundle = [NSBundle mainBundle];
 	NSString *strPath = [bundle resourcePath];
 	strPath = [strPath stringByAppendingPathComponent:[NSString stringWithUTF8String:pathAppend]];
 	if(!path)
