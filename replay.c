@@ -156,7 +156,7 @@ void rp_GenTriangle( int8 *buf, uint32 len )
   uint32 i;
   int32  d2, d5, d1, d4;
   int32  val;
-  int8   *buf2;
+  const int8   *buf2;
   
   d2  = len;
   d5  = len >> 2;
@@ -217,7 +217,7 @@ static inline int32 clipshifted8(int32 in)
   return in;
 }
 
-void rp_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
+void rp_GenFilterWaves( const int8 *buf, int8 *lowbuf, int8 *highbuf )
 {
 
 
@@ -230,7 +230,7 @@ void rp_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
   for( i=0, freq = 25; i<31; i++, freq += 9 )
   {
     uint32 wv;
-    int8  *a0 = buf;
+    const int8  *a0 = buf;
 
     for( wv=0; wv<6+6+0x20+1; wv++ )
     {
@@ -840,7 +840,8 @@ void rp_save_ins( const TEXT *name, struct ahx_tune *at, int32 in )
 void rp_load_ins( const TEXT *name, struct ahx_tune *at, int32 in )
 {
   FILE *fh;
-  uint8  *buf, *bptr;
+  uint8  *buf;
+  const uint8 *bptr;
   uint32  buflen, i, k, l;
   struct ahx_instrument *ni;
   BOOL ahxi;
@@ -977,12 +978,12 @@ void rp_load_ins( const TEXT *name, struct ahx_tune *at, int32 in )
 //  printf( "Loaded '%s'!\n", ni->ins_Name );
 }
 
-uint32 rp_ahx_test( struct ahx_tune *at )
+uint32 rp_ahx_test( const struct ahx_tune *at )
 {
   int32 i, j;
   int32 hvlfeats;
-  struct ahx_instrument *in;
-  struct ahx_step       *sp;
+  const struct ahx_instrument *in;
+  const struct ahx_step       *sp;
 
   // First, check if the tune adheres to AHX limitations
   hvlfeats = 0;
@@ -1061,7 +1062,7 @@ void rp_save_hvl( const TEXT *name, struct ahx_tune *at )
   int32 minver;
   uint8 emptytrk;
   uint8 *tbf;
-  struct ahx_instrument *in;
+  const struct ahx_instrument *in;
 #ifdef __SDL_WRAPPER__
   char mkname[4096];
 #endif
@@ -1294,7 +1295,7 @@ void rp_save_ahx( const TEXT *name, struct ahx_tune *at )
   int32 i, j, k, l, m, tbl;
   uint8 emptytrk;
   uint8 *tbf;
-  struct ahx_instrument *in;
+  const struct ahx_instrument *in;
 #ifdef __SDL_WRAPPER__
   char mkname[4096];
 #endif
@@ -1498,8 +1499,8 @@ void rp_save_ahx( const TEXT *name, struct ahx_tune *at )
 
 struct ahx_tune *rp_load_ahx( struct ahx_tune *at, uint8 *buf, uint32 buflen, BOOL passed )
 {
-  uint8  *bptr;
-  TEXT   *nptr;
+  const uint8  *bptr;
+  const TEXT   *nptr;
   uint32  i, j, k, l;
 
   at->at_PositionNr      = ((buf[6]&0x0f)<<8)|buf[7];
@@ -1814,8 +1815,9 @@ struct ahx_tune *rp_mod_import( struct ahx_tune *at, uint8 *buf, uint32 buflen, 
 
 struct ahx_tune *rp_load_tune( const TEXT *name, struct ahx_tune *at )
 {
-  uint8  *buf, *bptr;
-  TEXT   *nptr;
+  uint8  *buf;
+  const uint8  *bptr;
+  const TEXT   *nptr;
   uint32  buflen, i, j;
   FILE   *fh;
   BOOL    passed;
@@ -3285,8 +3287,8 @@ void rp_play_irq( struct ahx_tune *at )
 
 int32 rp_mix_findloudest( struct ahx_tune *at, uint32 samples )
 {
-  int8   *src[MAX_CHANNELS];
-  int8   *rsrc[MAX_CHANNELS];
+  const int8   *src[MAX_CHANNELS];
+  const int8   *rsrc[MAX_CHANNELS];
   uint32  delta[MAX_CHANNELS];
   uint32  rdelta[MAX_CHANNELS];
   int32   vol[MAX_CHANNELS];
@@ -3378,8 +3380,8 @@ int32 rp_mix_findloudest( struct ahx_tune *at, uint32 samples )
 
 void rp_mixchunk( struct ahx_tune *at, uint32 samples, int8 *buf1, int8 *buf2, int32 bufmod )
 {
-  int8   *src[MAX_CHANNELS];
-  int8   *rsrc[MAX_CHANNELS];
+  const int8   *src[MAX_CHANNELS];
+  const int8   *rsrc[MAX_CHANNELS];
   uint32  delta[MAX_CHANNELS];
   uint32  rdelta[MAX_CHANNELS];
   int32   vol[MAX_CHANNELS];

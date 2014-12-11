@@ -328,7 +328,7 @@ void rp_save_ins( const TEXT *name, struct ahx_tune *at, int32 in );
 BOOL rp_play_song( struct ahx_tune *at, uint32 subsong, BOOL cont );
 BOOL rp_play_pos( struct ahx_tune *at, BOOL cont );
 BOOL rp_init_subsong( struct ahx_tune *at, uint32 nr );
-uint32 rp_ahx_test( struct ahx_tune *at );
+uint32 rp_ahx_test( const struct ahx_tune *at );
 void rp_save_ahx( const TEXT *name, struct ahx_tune *at );
 void rp_save_hvl( const TEXT *name, struct ahx_tune *at );
 int32 rp_find_loudest( struct ahx_tune *at );
