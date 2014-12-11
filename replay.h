@@ -314,7 +314,7 @@ struct rp_command
   struct ahx_tune *rpc_Tune;
 };
 
-struct ahx_tune *rp_load_tune( TEXT *name, struct ahx_tune *at );
+struct ahx_tune *rp_load_tune( const TEXT *name, struct ahx_tune *at );
 BOOL rp_init( void );
 void rp_shutdown( void );
 void rp_handler( uint32 gotsigs );
@@ -323,14 +323,14 @@ struct ahx_tune *rp_new_tune( BOOL addtolist );
 void rp_free_tune( struct ahx_tune *at );
 void rp_clear_tune( struct ahx_tune *at );
 BOOL rp_play_note( struct ahx_tune *at, int32 inst, int32 note, int32 channel );
-void rp_load_ins( TEXT *name, struct ahx_tune *at, int32 in );
-void rp_save_ins( TEXT *name, struct ahx_tune *at, int32 in );
+void rp_load_ins( const TEXT *name, struct ahx_tune *at, int32 in );
+void rp_save_ins( const TEXT *name, struct ahx_tune *at, int32 in );
 BOOL rp_play_song( struct ahx_tune *at, uint32 subsong, BOOL cont );
 BOOL rp_play_pos( struct ahx_tune *at, BOOL cont );
 BOOL rp_init_subsong( struct ahx_tune *at, uint32 nr );
 uint32 rp_ahx_test( struct ahx_tune *at );
-void rp_save_ahx( TEXT *name, struct ahx_tune *at );
-void rp_save_hvl( TEXT *name, struct ahx_tune *at );
+void rp_save_ahx( const TEXT *name, struct ahx_tune *at );
+void rp_save_hvl( const TEXT *name, struct ahx_tune *at );
 int32 rp_find_loudest( struct ahx_tune *at );
 void rp_clear_instrument( struct ahx_instrument *ins );
 void rp_zap_tracks( struct ahx_tune * at );

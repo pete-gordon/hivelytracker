@@ -637,7 +637,7 @@ void rp_free_all_tunes( void )
   IExec->ReleaseSemaphore( rp_list_ss );
 }
 
-void rp_save_hvl_ins( TEXT *name, struct ahx_instrument *ins )
+void rp_save_hvl_ins( const TEXT *name, struct ahx_instrument *ins )
 {
   FILE *fh;
   int8 *buf, *bptr;
@@ -709,7 +709,7 @@ void rp_save_hvl_ins( TEXT *name, struct ahx_instrument *ins )
   IExec->FreePooled( rp_mempool, buf, buflen );
 }
 
-void rp_save_ins( TEXT *name, struct ahx_tune *at, int32 in )
+void rp_save_ins( const TEXT *name, struct ahx_tune *at, int32 in )
 {
   FILE *fh;
   int8 *buf, *bptr;
@@ -837,7 +837,7 @@ void rp_save_ins( TEXT *name, struct ahx_tune *at, int32 in )
   IExec->FreePooled( rp_mempool, buf, buflen );
 }
 
-void rp_load_ins( TEXT *name, struct ahx_tune *at, int32 in )
+void rp_load_ins( const TEXT *name, struct ahx_tune *at, int32 in )
 {
   FILE *fh;
   uint8  *buf, *bptr;
@@ -1054,7 +1054,7 @@ uint32 rp_ahx_test( struct ahx_tune *at )
   return hvlfeats;
 }
 
-void rp_save_hvl( TEXT *name, struct ahx_tune *at )
+void rp_save_hvl( const TEXT *name, struct ahx_tune *at )
 {
   FILE *fh;
   int32 i, j, k, tbl;
@@ -1288,7 +1288,7 @@ void rp_save_hvl( TEXT *name, struct ahx_tune *at )
   IExec->FreePooled( rp_mempool, tbf, tbl );
 }
 
-void rp_save_ahx( TEXT *name, struct ahx_tune *at )
+void rp_save_ahx( const TEXT *name, struct ahx_tune *at )
 {
   FILE *fh;
   int32 i, j, k, l, m, tbl;
@@ -1812,7 +1812,7 @@ struct ahx_tune *rp_mod_import( struct ahx_tune *at, uint8 *buf, uint32 buflen, 
   return at;
 }
 
-struct ahx_tune *rp_load_tune( TEXT *name, struct ahx_tune *at )
+struct ahx_tune *rp_load_tune( const TEXT *name, struct ahx_tune *at )
 {
   uint8  *buf, *bptr;
   TEXT   *nptr;

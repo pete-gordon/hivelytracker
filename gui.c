@@ -184,14 +184,14 @@ uint32 pal[] = { 0x000000, 0x500000, 0x780000, 0xff5555, 0xffffff, 0x808080, 0xf
 uint32 mappal[sizeof(pal)/sizeof(uint32)];
 #endif
 
-TEXT *notenames[] = { "---",
+const TEXT *notenames[] = { "---",
   "C-1", "C#1", "D-1", "D#1", "E-1", "F-1", "F#1", "G-1", "G#1", "A-1", "A#1", "B-1",
   "C-2", "C#2", "D-2", "D#2", "E-2", "F-2", "F#2", "G-2", "G#2", "A-2", "A#2", "B-2",
   "C-3", "C#3", "D-3", "D#3", "E-3", "F-3", "F#3", "G-3", "G#3", "A-3", "A#3", "B-3",
   "C-4", "C#4", "D-4", "D#4", "E-4", "F-4", "F#4", "G-4", "G#4", "A-4", "A#4", "B-4",
   "C-5", "C#5", "D-5", "D#5", "E-5", "F-5", "F#5", "G-5", "G#5", "A-5", "A#5", "B-5" };
 
-int32 posed_xoff[] = {  4*7,  5*7,  6*7,   8*7,  9*7,
+const int32 posed_xoff[] = {  4*7,  5*7,  6*7,   8*7,  9*7,
                        11*7, 12*7, 13*7,  15*7, 16*7,
                        18*7, 19*7, 20*7,  22*7, 23*7,
 
@@ -199,7 +199,7 @@ int32 posed_xoff[] = {  4*7,  5*7,  6*7,   8*7,  9*7,
                        32*7, 33*7, 34*7,  36*7, 37*7,
                        39*7, 40*7, 41*7,  43*7, 44*7 };
 
-int32 tracked_xoff[] = {  3*8,   7*8,  8*8,  10*8, 11*8, 12*8,  14*8, 15*8, 16*8,
+const int32 tracked_xoff[] = {  3*8,   7*8,  8*8,  10*8, 11*8, 12*8,  14*8, 15*8, 16*8,
                          18*8,  22*8, 23*8,  25*8, 26*8, 27*8,  29*8, 30*8, 31*8,
                          33*8,  37*8, 38*8,  40*8, 41*8, 42*8,  44*8, 45*8, 46*8,
 
@@ -207,7 +207,7 @@ int32 tracked_xoff[] = {  3*8,   7*8,  8*8,  10*8, 11*8, 12*8,  14*8, 15*8, 16*8
                          63*8,  67*8, 68*8,  70*8, 71*8, 72*8,  74*8, 75*8, 76*8,
                          78*8,  82*8, 83*8,  85*8, 86*8, 87*8,  89*8, 90*8, 91*8 };
 
-int32 perf_xoff[] = { 4*8, 9*8, 11*8, 12*8, 13*8, 15*8, 16*8, 17*8 };
+const int32 perf_xoff[] = { 4*8, 9*8, 11*8, 12*8, 13*8, 15*8, 16*8, 17*8 };
 
 struct czone
 {
@@ -539,7 +539,7 @@ TEXT reminstdir[512];
 #define PATHSEP '/'
 #endif
 
-void setpathpart(char *path, char *file)
+void setpathpart(char *path, const char *file)
 {
   int i;
 
@@ -578,7 +578,7 @@ BOOL ishex( TEXT c )
 }
 
 #ifndef __SDL_WRAPPER__
-int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
+int32 gui_req( uint32 img, const TEXT *title, const TEXT *reqtxt, const TEXT *buttons )
 {
   Object *req_obj;
   int32 n;
@@ -673,7 +673,7 @@ void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2)
 #endif
 }
 
-void bm_to_bm(struct rawbm *src, int sx, int sy, struct rawbm *dest, int dx, int dy, int w, int h)
+void bm_to_bm(const struct rawbm *src, int sx, int sy, struct rawbm *dest, int dx, int dy, int w, int h)
 {
 #ifndef __SDL_WRAPPER__
   IGraphics->BltBitMapRastPort(src->bm, sx, sy, &dest->rp, dx, dy, w, h, 0x0C0);
@@ -715,7 +715,7 @@ void set_font(struct rawbm *bm, int findex, BOOL jam2)
   bm->fontset = TRUE;
 }
 
-void printstr(struct rawbm *bm, char *str, int x, int y)
+void printstr(struct rawbm *bm, const char *str, int x, int y)
 {
 #ifndef __SDL_WRAPPER__
   IGraphics->Move(&bm->rp, x, y+bm->baseline);
@@ -737,7 +737,7 @@ void printstr(struct rawbm *bm, char *str, int x, int y)
 #endif
 }
 
-void printstrlen(struct rawbm *bm, char *str, int len, int x, int y)
+void printstrlen(struct rawbm *bm, const char *str, int len, int x, int y)
 {
 #ifndef __SDL_WRAPPER__
   IGraphics->Move(&bm->rp, x, y+bm->baseline);
@@ -762,7 +762,7 @@ void printstrlen(struct rawbm *bm, char *str, int len, int x, int y)
 #endif
 }
 
-int textfit( struct rawbm *bm, char *str, int w )
+int textfit( struct rawbm *bm, const char *str, int w )
 {
 #ifndef __SDL_WRAPPER__
   struct TextExtent te;
@@ -808,7 +808,7 @@ int32 gui_add_zone( struct czone *zn, int32 *numzn, int32 maxz, int16 x, int16 y
   return fz;
 }
 
-void gui_set_nbox( struct numberbox *nb, int16 x, int16 y, int16 w, int16 h, int32 min, int32 max, int32 cnum, TEXT *fmt, uint16 flags )
+void gui_set_nbox( struct numberbox *nb, int16 x, int16 y, int16 w, int16 h, int32 min, int32 max, int32 cnum, const TEXT *fmt, uint16 flags )
 {
   nb->x = x;
   nb->y = y;
@@ -895,7 +895,7 @@ BOOL make_image( struct rawbm *bm, uint16 w, uint16 h )
   return TRUE;
 }
 
-BOOL open_image( TEXT *name, struct rawbm *bm )
+BOOL open_image( const TEXT *name, struct rawbm *bm )
 {
 #ifndef __SDL_WRAPPER__
   uint8 *data;
@@ -1738,7 +1738,7 @@ void gui_render_tabs( void )
 {
   int32 ntabs, rtabs, tabw, tabsw, i, j, k, l, m, n, o, tabh;
   struct ahx_tune *at;
-  TEXT *tname;
+  const TEXT *tname;
 
   put_bitmap( BM_TAB_AREA, 0, 96, 800, 24 );
   
@@ -3029,7 +3029,7 @@ void gui_set_pcycle( int32 cn, int16 x, int16 y, int32 cur, TEXT **opts )
 void gui_render_pcycle( int32 cn, BOOL pressed )
 {
   int w, tx;
-  TEXT *ctxt;
+  const TEXT *ctxt;
 
   if( pressed )
     put_ppartbitmap( BM_PRF_CYCLE, 0, 24, pcyc[cn].x, pcyc[cn].y, 158, 24 );
@@ -3204,7 +3204,7 @@ void gui_close_prefs( void )
     pref_dorestart = TRUE;
 }
 
-TEXT *gui_encode_pstr( TEXT *out, TEXT *in )
+TEXT *gui_encode_pstr( TEXT *out, const TEXT *in )
 {
   int32 ic, oc;
   
@@ -3219,7 +3219,7 @@ TEXT *gui_encode_pstr( TEXT *out, TEXT *in )
   return out;
 }
 
-BOOL gui_decode_pstr( TEXT *tag, TEXT *buf )
+BOOL gui_decode_pstr( const TEXT *tag, TEXT *buf )
 {
   int32 ic, oc;
 
@@ -3269,7 +3269,7 @@ BOOL gui_decode_pstr( TEXT *tag, TEXT *buf )
   return FALSE;
 }
 
-BOOL gui_decode_num( TEXT *tag, TEXT *buf, int32 *val )
+BOOL gui_decode_num( const TEXT *tag, const TEXT *buf, int32 *val )
 {
   uint32 ic;
 
@@ -6523,15 +6523,15 @@ void gui_handler( uint32 gotsigs )
 {
   struct IntuiMessage *msg;
   
-  int8 hexkeys[] = { 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 32, 53, 51, 34, 18, 35 };
+  const int8 hexkeys[] = { 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 32, 53, 51, 34, 18, 35 };
   
-  int8 inskeys[] = { 15, 29, 30, 31, 45, 46, 47, 61, 62, 63 };
+  const int8 inskeys[] = { 15, 29, 30, 31, 45, 46, 47, 61, 62, 63 };
   
-  int8 pianokeys[] = { 49, 33, 50, 34, 51, 52, 36, 53, 37, 54, 38, 55,
+  const int8 pianokeys[] = { 49, 33, 50, 34, 51, 52, 36, 53, 37, 54, 38, 55,
                        16,  2, 17,  3, 18, 19,  5, 20,  6, 21,  7, 22,
                        23,  9, 24, 10, 25 };
 
-  int8 extrakeys[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+  const int8 extrakeys[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                        56, 40, 57, 41, 58, -1, -1, -1, -1, -1, -1, -1,
                        -1, -1, -1, -1, -1 };
 
