@@ -37,7 +37,7 @@ BOOL gui_init( void );
 BOOL gui_maybe_quit( void );
 void gui_shutdown( void );
 void gui_handler( uint32 gotsigs );
-int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons );
+int32 gui_req( uint32 img, const TEXT *title, const TEXT *reqtxt, const TEXT *buttons );
 void gui_render_tunepanel( BOOL force );
 void gui_render_tracker( BOOL force );
 void gui_render_perf( struct ahx_tune *at, struct ahx_instrument *ins, BOOL force );
@@ -52,11 +52,11 @@ void gui_render_everything( void );
 BOOL gui_restart( void );
 
 BOOL make_image( struct rawbm *bm, uint16 w, uint16 h );
-BOOL open_image( TEXT *name, struct rawbm *bm );
+BOOL open_image( const TEXT *name, struct rawbm *bm );
 
 void set_fcol(struct rawbm *bm, uint32 col);
 void fillrect_xy(struct rawbm *bm, int x, int y, int x2, int y2);
-void bm_to_bm(struct rawbm *src, int sx, int sy, struct rawbm *dest, int dx, int dy, int w, int h);
+void bm_to_bm(const struct rawbm *src, int sx, int sy, struct rawbm *dest, int dx, int dy, int w, int h);
 
 
 enum

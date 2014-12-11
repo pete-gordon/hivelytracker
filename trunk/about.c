@@ -55,33 +55,33 @@ struct rawbm stuff_bm;
 int16 slice[320/2];
 float64 sinpos = 0, cospos = 0;
 
-TEXT *scrtxt = " hivelytracker version 1.8  ::  code by xeron of iris  "
-               "::  gui design and skins created by spot of up rough  "
-               "::  example tunes by xeron of iris, varthall of up rough, oxide of sonik and syphus  "
-               "::  hivelytracker is based on ahx by dexter and pink of abyss  "
-               "::  many thanks to pieknyman for helping me find and fix bugs in the replayer. you rule!  "
-               "::  large parts of ahxplay.library by ilkka lehtoranta and per johansson were referenced for the replayer  "
-               "::  thanks to passing by and kode54 for replayer improvements  "
-               "::  thanks to spot, varthall and the rest of up rough for their ideas, tunes and betatesting  "
-               "::  thanks to buzz for the aros and morphos ports, deltafire for the os x port, and pulkomandy for the haiku port  "
-               "::  thanks to the betatesters of the sdl port as well!  "
-               "::  greets... rno, tbl, tulou, scarab, nature, triad, dcs, fairlight, and yes, even loonies.  "
-               "::  remember kids, say no to blancmange!           "
-               "::  extra thanks to spot for his nagging and complaining, without "
-               " whom hively would not be as cool as it now is! "
-               ":: so... why did i write an ahx based tracker for os4? for one simple "
-               "reason: i wanted to create ahx tunes on my amigaone without having to "
-               "resort to uae. unfortunately ahx used the cia timers and paula directly "
-               "and so it didnt work properly at all under os4. so, i sat down and made "
-               "my own os4 ahx tracker, and i started adding new features as i did so. "
-               "i hope you enjoy it and the tunes made in it!          "
-               "messages from buzz: i would like to thank xeron for this great tracker, and being patient with me "
-               "while i port it. also thanks to all the betatesters on irc ... hi syphus. "
-               "i would also like to thank stingray for his useless tips and code advice. just kidding! "
-               "he is right about one thing though, my code does suck! finally hi to yaz: "
-               "thanks for sending me that new tune !         ";
+const TEXT *scrtxt = " hivelytracker version 1.8  ::  code by xeron of iris  "
+                     "::  gui design and skins created by spot of up rough  "
+                     "::  example tunes by xeron of iris, varthall of up rough, oxide of sonik and syphus  "
+                     "::  hivelytracker is based on ahx by dexter and pink of abyss  "
+                     "::  many thanks to pieknyman for helping me find and fix bugs in the replayer. you rule!  "
+                     "::  large parts of ahxplay.library by ilkka lehtoranta and per johansson were referenced for the replayer  "
+                     "::  thanks to passing by and kode54 for replayer improvements  "
+                     "::  thanks to spot, varthall and the rest of up rough for their ideas, tunes and betatesting  "
+                     "::  thanks to buzz for the aros and morphos ports, deltafire for the os x port, and pulkomandy for the haiku port  "
+                     "::  thanks to the betatesters of the sdl port as well!  "
+                     "::  greets... rno, tbl, tulou, scarab, nature, triad, dcs, fairlight, and yes, even loonies.  "
+                     "::  remember kids, say no to blancmange!           "
+                     "::  extra thanks to spot for his nagging and complaining, without "
+                     " whom hively would not be as cool as it now is! "
+                     ":: so... why did i write an ahx based tracker for os4? for one simple "
+                     "reason: i wanted to create ahx tunes on my amigaone without having to "
+                     "resort to uae. unfortunately ahx used the cia timers and paula directly "
+                     "and so it didnt work properly at all under os4. so, i sat down and made "
+                     "my own os4 ahx tracker, and i started adding new features as i did so. "
+                     "i hope you enjoy it and the tunes made in it!          "
+                     "messages from buzz: i would like to thank xeron for this great tracker, and being patient with me "
+                     "while i port it. also thanks to all the betatesters on irc ... hi syphus. "
+                     "i would also like to thank stingray for his useless tips and code advice. just kidding! "
+                     "he is right about one thing though, my code does suck! finally hi to yaz: "
+                     "thanks for sending me that new tune !         ";
 
-TEXT *scrtab = "abcdefghijklmnopqrstuvwxyz!,.:?1234567890";
+const TEXT *scrtab = "abcdefghijklmnopqrstuvwxyz!,.:?1234567890";
 
 int32 scro=0, scrs=30, scrc=0;
 int32 bx1=0, bx2=320;
