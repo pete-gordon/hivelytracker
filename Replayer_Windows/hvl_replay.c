@@ -124,7 +124,7 @@ struct hvl_tune *hvl_load_ahx( const uint8 *buf, uint32 buflen, uint32 defstereo
   const TEXT   *nptr;
   uint32  i, j, k, l, posn, insn, ssn, hs, trkn, trkl;
   struct hvl_tune *ht;
-  struct  hvl_plsentry *ple;
+  struct hvl_plsentry *ple;
   const int32 defgain[] = { 71, 72, 76, 85, 100 };
   
   posn = ((buf[6]&0x0f)<<8)|buf[7];
@@ -326,64 +326,14 @@ struct hvl_tune *hvl_load_ahx( const uint8 *buf, uint32 buflen, uint32 defstereo
   return ht;
 }
 
-struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo )
+struct hvl_tune *hvl_load_hvl( const uint8 *buf, uint32 buflen, uint32 defstereo, uint32 freq )
 {
-  struct hvl_tune *ht;
-  uint8  *buf;
   const uint8  *bptr;
   const TEXT   *nptr;
-  uint32  buflen, i, j, posn, insn, ssn, chnn, hs, trkl, trkn;
-  FILE *fh;
-  struct  hvl_plsentry *ple;
+  uint32  i, j, posn, insn, ssn, chnn, hs, trkl, trkn;
+  struct hvl_tune *ht;
+  struct hvl_plsentry *ple;
 
-  fh = fopen( name, "rb" );
-  if( !fh )
-  {
-    printf( "Can't open file\n" );
-    return NULL;
-  }
-
-  fseek( fh, 0, SEEK_END );
-  buflen = ftell( fh );
-  fseek( fh, 0, SEEK_SET );
-
-  buf = malloc( buflen );
-  if( !buf )
-  {
-    fclose( fh );
-    printf( "Out of memory!\n" );
-    return NULL;
-  }
-  
-  if( fread( buf, 1, buflen, fh ) != buflen )
-  {
-    fclose( fh );
-    free( buf );
-    printf( "Unable to read from file!\n" );
-    return NULL;
-  }
-  fclose( fh );
-  
-  if( ( buf[0] == 'T' ) &&
-      ( buf[1] == 'H' ) &&
-      ( buf[2] == 'X' ) &&
-      ( buf[3] < 3 ) )
-  {
-    ht = hvl_load_ahx( buf, buflen, defstereo, freq );
-    free( buf );
-    return ht;
-  }
-
-  if( ( buf[0] != 'H' ) ||
-      ( buf[1] != 'V' ) ||
-      ( buf[2] != 'L' ) ||
-      ( buf[3] > 1 ) )
-  {
-    free( buf );
-    printf( "Invalid file.\n" );
-    return NULL;
-  }
-  
   posn = ((buf[6]&0x0f)<<8)|buf[7];
   insn = buf[12];
   ssn  = buf[13];
@@ -426,7 +376,6 @@ struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo )
   ht = malloc( hs );    
   if( !ht )
   {
-    free( buf );
     printf( "Out of memory!\n" );
     return NULL;
   }
@@ -470,7 +419,6 @@ struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo )
                           ht->ht_TrackLength,
                           ht->ht_InstrumentNr );
     free( ht );
-    free( buf );
     printf( "Invalid file.\n" );
     return NULL;
   }
@@ -594,6 +542,62 @@ struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo )
   }
   
   hvl_InitSubsong( ht, 0 );
+  return ht;
+}
+
+struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo )
+{
+  struct hvl_tune *ht = NULL;
+  uint8  *buf;
+  uint32  buflen;
+  FILE *fh;
+
+  fh = fopen( name, "rb" );
+  if( !fh )
+  {
+    printf( "Can't open file\n" );
+    return NULL;
+  }
+
+  fseek( fh, 0, SEEK_END );
+  buflen = ftell( fh );
+  fseek( fh, 0, SEEK_SET );
+
+  buf = malloc( buflen );
+  if( !buf )
+  {
+    fclose( fh );
+    printf( "Out of memory!\n" );
+    return NULL;
+  }
+
+  if( fread( buf, 1, buflen, fh ) != buflen )
+  {
+    fclose( fh );
+    free( buf );
+    printf( "Unable to read from file!\n" );
+    return NULL;
+  }
+  fclose( fh );
+
+  if( ( buf[0] == 'T' ) &&
+      ( buf[1] == 'H' ) &&
+      ( buf[2] == 'X' ) &&
+      ( buf[3] < 3 ) )
+  {
+    ht = hvl_load_ahx( buf, buflen, defstereo, freq );
+  }
+
+  else if( ( buf[0] == 'H' ) &&
+           ( buf[1] == 'V' ) &&
+           ( buf[2] == 'L' ) &&
+           ( buf[3] < 2 ) )
+  {
+    ht = hvl_load_hvl( buf, buflen, defstereo, freq );
+  }
+  else {
+    printf( "Invalid file.\n" );
+  }
   free( buf );
   return ht;
 }
@@ -964,7 +968,7 @@ void hvl_process_step( struct hvl_tune *ht, struct hvl_voice *voice )
   hvl_process_stepfx_3( ht, voice, Step->stp_FXb&0xf, Step->stp_FXbParam );  
 }
 
-void hvl_plist_command_parse( struct hvl_tune *ht, struct hvl_voice *voice, int32 FX, int32 FXParam )
+void hvl_plist_command_parse( const struct hvl_tune *ht, struct hvl_voice *voice, int32 FX, int32 FXParam )
 {
   switch( FX )
   {
@@ -1110,7 +1114,7 @@ void hvl_plist_command_parse( struct hvl_tune *ht, struct hvl_voice *voice, int3
 
 void hvl_process_frame( struct hvl_tune *ht, struct hvl_voice *voice )
 {
-  static uint8 Offsets[] = {0x00,0x04,0x04+0x08,0x04+0x08+0x10,0x04+0x08+0x10+0x20,0x04+0x08+0x10+0x20+0x40};
+  static const uint8 Offsets[] = {0x00,0x04,0x04+0x08,0x04+0x08+0x10,0x04+0x08+0x10+0x20,0x04+0x08+0x10+0x20+0x40};
 
   if( voice->vc_TrackOn == 0 )
     return;
