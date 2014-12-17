@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include "hvl_replay.h"
 #include "hvl_tables.h"
@@ -545,6 +544,30 @@ struct hvl_tune *hvl_load_hvl( const uint8 *buf, uint32 buflen, uint32 defstereo
   return ht;
 }
 
+struct hvl_tune *hvl_ParseTune( const uint8 *buf, uint32 buflen, uint32 freq, uint32 defstereo )
+{
+	struct hvl_tune *ht = NULL;
+	if( ( buf[0] == 'T' ) &&
+	   ( buf[1] == 'H' ) &&
+	   ( buf[2] == 'X' ) &&
+	   ( buf[3] < 3 ) )
+	{
+		ht = hvl_load_ahx( buf, buflen, defstereo, freq );
+	}
+	
+	else if( ( buf[0] == 'H' ) &&
+			( buf[1] == 'V' ) &&
+			( buf[2] == 'L' ) &&
+			( buf[3] < 2 ) )
+	{
+		ht = hvl_load_hvl( buf, buflen, defstereo, freq );
+	}
+	else {
+		printf( "Invalid file.\n" );
+	}
+	return ht;
+}
+
 struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo )
 {
   struct hvl_tune *ht = NULL;
@@ -580,24 +603,7 @@ struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo )
   }
   fclose( fh );
 
-  if( ( buf[0] == 'T' ) &&
-      ( buf[1] == 'H' ) &&
-      ( buf[2] == 'X' ) &&
-      ( buf[3] < 3 ) )
-  {
-    ht = hvl_load_ahx( buf, buflen, defstereo, freq );
-  }
-
-  else if( ( buf[0] == 'H' ) &&
-           ( buf[1] == 'V' ) &&
-           ( buf[2] == 'L' ) &&
-           ( buf[3] < 2 ) )
-  {
-    ht = hvl_load_hvl( buf, buflen, defstereo, freq );
-  }
-  else {
-    printf( "Invalid file.\n" );
-  }
+  ht = hvl_ParseTune( buf, buflen, freq, defstereo );
   free( buf );
   return ht;
 }
