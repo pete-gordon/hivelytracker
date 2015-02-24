@@ -2137,9 +2137,9 @@ void rp_process_stepfx_2( struct ahx_tune *at, struct ahx_voice *voice, int32 FX
       voice->vc_IgnoreSquare = 1;
       break;
     
-    case 0x5: // Tone portamento + volume slide
     case 0x3: // Tone portamento
       if( FXParam != 0 ) voice->vc_PeriodSlideSpeed = FXParam;
+    case 0x5: // Tone portamento + volume slide
       
       if( *Note )
       {
