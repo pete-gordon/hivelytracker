@@ -18,7 +18,7 @@ typedef char     TEXT;
 int32 gui_req( uint32 img, TEXT *title, TEXT *reqtxt, TEXT *buttons )
 {
   GtkWidget *dialog = NULL;
-  GtkButtonsType btns = strcmp((char*)btns, "OK") ? GTK_BUTTONS_OK_CANCEL : GTK_BUTTONS_OK;
+  GtkButtonsType btns = g_strcmp0((char*)btns, "OK") ? GTK_BUTTONS_OK_CANCEL : GTK_BUTTONS_OK;
   GtkMessageType mtyp = GTK_MESSAGE_INFO;
   SDL_bool result = SDL_FALSE;
   gint res;
