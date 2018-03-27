@@ -6,6 +6,7 @@ AR = ar
 RANLIB = ranlib
 DEBUGLIB =
 LFLAGS = -use-dynld -lm -gstabs
+PREFIX = /usr
 
 all: ht
 
@@ -29,3 +30,13 @@ about.o: about.c about.h gui.h
 
 undo.o: undo.c undo.h replay.h
 	$(CC) -c undo.c -o undo.o $(CFLAGS)
+
+install:
+	mkdir -p $(PREFIX)/share/man/man1/
+	docs/hivelytracker.1 $(PREFIX)/share/man/man1/
+	gzip -9 $(PREFIX)/share/man/man1/hivelytracker.1
+	install -o root -g root -m 755 sdl/hivelytracker $(PREFIX)/bin
+	install -o root -g root -m 644 sdl/winicon.png $(PREFIX)/share/icons/hivelytracker.png
+	install -o root -g root -m 644 sdl/hivelytracker.desktop $(PREFIX)/share/applications
+	install -o root -g root -m 644 Instruments $(PREFIX)share/hivelytracker                                                                            
+	install -o root -g root -m 644 Skins $(PREFIX)/share/hivelytracker
