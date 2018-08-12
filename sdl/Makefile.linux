@@ -8,12 +8,8 @@ CFLAGS = -g -D__SDL_WRAPPER__
 
 ifeq (x86_64,$(shell uname -m))
 BASELIBDIR := lib64
-CFLAGS += -m64
-LFLAGS += -m64
 else
 BASELIBDIR := lib
-CFLAGS += -m32
-LFLAGS += -m32
 endif
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-2.0 --cflags)
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-2.0 --libs) -lSDL_image -lSDL_ttf -lfreetype -lz -lX11
