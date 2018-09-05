@@ -1,0 +1,33 @@
+.TH HVL2WAV "1" "September 2018" "HVL2WAV" "User Commands"
+.SH NAME
+HVL2WAV \- manual page for HVL2WAV
+.SH SYNOPSIS
+.B hvl2wav
+[\fI\,options\/\fR] \fI\,<filename>\/\fR
+.SH DESCRIPTION
+HVL2WAV 1.2, replayer v1.8. Render a WAV audio file from HVL or AHX songs.
+.SH OPTIONS
+.HP
+\fB\-ofile\fR Output to 'file'
+.HP
+\fB\-tm\fR:ss Timeout after m minutes and ss seconds
+.IP
+(overrides songend detection, defaults to 10:00
+.TP
+\fB\-fn\fR
+Set frequency, where n is 8000 to 48000
+.TP
+\fB\-sn\fR
+Use subsong n
+.TP
+\fB\-a\fR
+Calculate optimal gain before converting
+.TP
+\fB\-xn\fR
+Set stereo seperation (ahx only, no effect on HVL files)
+.IP
+0 = 0% (Mono)
+1 = 25%
+2 = 50%
+3 = 75%
+4 = 100% (Paula)
