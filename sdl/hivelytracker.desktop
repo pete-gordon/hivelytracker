@@ -1,7 +1,8 @@
 [Desktop Entry]                                                                                                
 Name=Hively Tracker                                                                                            
 Exec=hivelytracker %f                                                                                            
-Comment=Tracker program for AHX/HVL/MOD                                                                        
+Comment=Tracker program for AHX/HVL/MOD
+Comment[fr]=Programme de type tracker pour les AHX/HVL/MOD
 Icon=hivelytracker                                                                                             
 Type=Application                                                                                               
 Terminal=false                                                                                                 
