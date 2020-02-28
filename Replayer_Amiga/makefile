@@ -18,5 +18,5 @@ play_hvl.o: play_hvl.c hvl_replay.h
 hvl_replay.o: hvl_replay.c hvl_replay.h ../hvl_replay.h hvl_tables.h ../hvl_tables.h
 	$(CC) -c hvl_replay.c -o hvl_replay.o $(CFLAGS)
 
-hvl_tables.o: hvl_tables.c hvl_replay.h ../hvl_replay.h hvl_tables.h ../hvl_tables.h
+hvl_tables.o: hvl_tables.c ../hvl_tables.c hvl_replay.h ../hvl_replay.h hvl_tables.h ../hvl_tables.h
 	$(CC) -c hvl_tables.c -o hvl_tables.o $(CFLAGS)
