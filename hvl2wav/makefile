@@ -32,14 +32,17 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): hvl2wav.o hvl_replay.o
-	$(CC) -o $(TARGET) hvl2wav.o hvl_replay.o $(LFLAGS)
+$(TARGET): hvl2wav.o hvl_replay.o hvl_tables.o
+	$(CC) -o $(TARGET) $^ $(LFLAGS)
 
 hvl2wav.o: hvl2wav.c hvl_replay.h ../hvl_replay.h types.h
 	$(CC) -c hvl2wav.c -o hvl2wav.o $(CFLAGS)
 
-hvl_replay.o: hvl_replay.c hvl_replay.h ../hvl_replay.h types.h
+hvl_replay.o: hvl_replay.c hvl_replay.h ../hvl_replay.h hvl_tables.h types.h
 	$(CC) -c hvl_replay.c -o hvl_replay.o $(CFLAGS)
 
+hvl_tables.o: hvl_tables.c hvl_tables.h types.h
+	$(CC) -c hvl_tables.c -o hvl_tables.o $(CFLAGS)
+
 clean:
-	rm *.o $(TARGET)
+	rm -f *.o $(TARGET)

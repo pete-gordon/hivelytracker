@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "hvl_replay.h"
@@ -483,7 +486,7 @@ static inline int32 clipshifted8(int32 in)
   return in;
 }
 
-static void hvl_GenFilterWaves( const int8 *buf, int8 *lowbuf, int8 *highbuf )
+static void hvl_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
 {
   const int16 * mid_table = &filter_thing[0];
   const int16 * low_table = &filter_thing[1395];
@@ -494,7 +497,7 @@ static void hvl_GenFilterWaves( const int8 *buf, int8 *lowbuf, int8 *highbuf )
   for( i=0, freq = 25; i<31; i++, freq += 9 )
   {
     uint32 wv;
-    const int8  *a0 = buf;
+    int8  *a0 = buf;
 
     for( wv=0; wv<6+6+0x20+1; wv++ )
     {
