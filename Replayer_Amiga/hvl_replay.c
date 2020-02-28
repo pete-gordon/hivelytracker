@@ -527,7 +527,7 @@ struct hvl_tune *hvl_load_ahx( uint8 *buf, uint32 buflen, uint32 defstereo, uint
   return ht;
 }
 
-struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo )
+struct hvl_tune *hvl_LoadTune( const TEXT *name, uint32 freq, uint32 defstereo )
 {
   struct hvl_tune *ht;
   uint8  *buf, *bptr;
@@ -1652,7 +1652,7 @@ void hvl_process_frame( struct hvl_tune *ht, struct hvl_voice *voice )
   
   if( voice->vc_RingNewWaveform )
   {
-    int8 *rasrc;
+    const int8 *rasrc;
     
     if( voice->vc_RingWaveform > 1 ) voice->vc_RingWaveform = 1;
     
@@ -1665,7 +1665,7 @@ void hvl_process_frame( struct hvl_tune *ht, struct hvl_voice *voice )
   
   if( voice->vc_NewWaveform )
   {
-    int8 *AudioSource;
+    const int8 *AudioSource;
 
     AudioSource = ht->ht_WaveformTab[voice->vc_Waveform];
 
@@ -1784,7 +1784,7 @@ void hvl_set_audio( struct hvl_voice *voice, float64 freqf )
   
   if( voice->vc_NewWaveform )
   {
-    int8 *src;
+    const int8 *src;
     
     src = voice->vc_AudioSource;
     
@@ -1821,7 +1821,7 @@ void hvl_set_audio( struct hvl_voice *voice, float64 freqf )
   
   if( voice->vc_RingNewWaveform )
   {
-    int8 *src;
+    const int8 *src;
     uint32 i, WaveLoops;
     
     src = voice->vc_RingAudioSource;
@@ -1902,19 +1902,19 @@ void hvl_play_irq( struct hvl_tune *ht )
 
 void hvl_mixchunk( struct hvl_tune *ht, uint32 samples, int8 *buf1, int8 *buf2, int32 bufmod )
 {
-  int8   *src[MAX_CHANNELS];
-  int8   *rsrc[MAX_CHANNELS];
-  uint32  delta[MAX_CHANNELS];
-  uint32  rdelta[MAX_CHANNELS];
-  int32   vol[MAX_CHANNELS];
-  uint32  pos[MAX_CHANNELS];
-  uint32  rpos[MAX_CHANNELS];
-  uint32  cnt;
-  int32   panl[MAX_CHANNELS];
-  int32   panr[MAX_CHANNELS];
-//  uint32  vu[MAX_CHANNELS];
-  int32   a=0, b=0, j;
-  uint32  i, chans, loops;
+  const int8   *src[MAX_CHANNELS];
+  const int8   *rsrc[MAX_CHANNELS];
+        uint32  delta[MAX_CHANNELS];
+        uint32  rdelta[MAX_CHANNELS];
+        int32   vol[MAX_CHANNELS];
+        uint32  pos[MAX_CHANNELS];
+        uint32  rpos[MAX_CHANNELS];
+        uint32  cnt;
+        int32   panl[MAX_CHANNELS];
+        int32   panr[MAX_CHANNELS];
+//      uint32  vu[MAX_CHANNELS];
+        int32   a=0, b=0, j;
+        uint32  i, chans, loops;
   
   chans = ht->ht_Channels;
   for( i=0; i<chans; i++ )
