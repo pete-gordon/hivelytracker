@@ -4,4 +4,4 @@
 #include "hvl_tables.h"
 
 #define HVL_TABLES_FLOAT /* Windows replayer used to be FIXEDPOINT */
-#include "../hvl_tables.c"
+#include "../common/hvl_tables.c"

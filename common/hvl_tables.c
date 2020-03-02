@@ -12,12 +12,12 @@
 
 
 
-static const uint16 lentab[45] = { 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 3, 7, 0xf, 0x1f, 0x3f, 0x7f,
+static CONST uint16 lentab[45] = { 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 3, 7, 0xf, 0x1f, 0x3f, 0x7f,
     0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,
     0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,
     (0x280*3)-1 };
 
-const int16 vib_tab[64] =
+CONST int16 vib_tab[64] =
 {
   0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
   253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
@@ -25,7 +25,7 @@ const int16 vib_tab[64] =
   -253,-250,-244,-235,-224,-212,-197,-180,-161,-141,-120,-97,-74,-49,-24
 };
 
-const uint16 period_tab[61] =
+CONST uint16 period_tab[61] =
 {
   0x0000, 0x0D60, 0x0CA0, 0x0BE8, 0x0B40, 0x0A98, 0x0A00, 0x0970,
   0x08E8, 0x0868, 0x07F0, 0x0780, 0x0714, 0x06B0, 0x0650, 0x05F4,
@@ -37,11 +37,11 @@ const uint16 period_tab[61] =
   0x008F, 0x0087, 0x007F, 0x0078, 0x0071
 };
 
-const int32 stereopan_left[5]  = { 128,  96,  64,  32,   0 };
-const int32 stereopan_right[5] = { 128, 160, 193, 225, 255 };
+CONST int32 stereopan_left[5]  = { 128,  96,  64,  32,   0 };
+CONST int32 stereopan_right[5] = { 128, 160, 193, 225, 255 };
 
 #ifdef HVL_TABLES_FIXEDPOINT
-static const int16 filter_thing[2790] =
+static CONST int16 filter_thing[2790] =
 {
 -1161, -4413, -7161, -13094, 635, 13255, 2189, 6401,
 9041, 16130, 13460, 5360, 6349, 12699, 19049, 25398,
@@ -544,8 +544,8 @@ static inline int32 clipshifted8(int32 in)
 
 static void hvl_GenFilterWaves( int8 *buf, int8 *lowbuf, int8 *highbuf )
 {
-  const int16 * mid_table = &filter_thing[0];
-  const int16 * low_table = &filter_thing[1395];
+  CONST int16 * mid_table = &filter_thing[0];
+  CONST int16 * low_table = &filter_thing[1395];
 
   int32 freq;
   int32 i;

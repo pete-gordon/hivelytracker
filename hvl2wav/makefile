@@ -35,13 +35,28 @@ all: $(TARGET)
 $(TARGET): hvl2wav.o hvl_replay.o hvl_tables.o
 	$(CC) -o $(TARGET) $^ $(LFLAGS)
 
-hvl2wav.o: hvl2wav.c hvl_replay.h ../hvl_replay.h types.h
+hvl2wav.o: \
+	hvl2wav.c    \
+	hvl_replay.h \
+	types.h \
+	../common/hvl_replay.h
 	$(CC) -c hvl2wav.c -o hvl2wav.o $(CFLAGS)
 
-hvl_replay.o: hvl_replay.c hvl_replay.h ../hvl_replay.h hvl_tables.h ../hvl_tables.h types.h
+hvl_replay.o: \
+	hvl_replay.c \
+	hvl_replay.h \
+	hvl_tables.h \
+	types.h \
+	../common/hvl_replay.h \
+	../common/hvl_tables.h
 	$(CC) -c hvl_replay.c -o hvl_replay.o $(CFLAGS)
 
-hvl_tables.o: hvl_tables.c ../hvl_tables.c hvl_tables.h ../hvl_tables.h types.h
+hvl_tables.o: \
+	hvl_tables.c \
+	hvl_tables.h \
+	types.h \
+	../common/hvl_tables.c \
+	../common/hvl_tables.h
 	$(CC) -c hvl_tables.c -o hvl_tables.o $(CFLAGS)
 
 clean:

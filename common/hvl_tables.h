@@ -21,12 +21,12 @@
 #define WO_HIGHPASSES  (WO_WHITENOISE+WHITENOISELEN)
 #define WAVES_SIZE     (WO_HIGHPASSES+((0xfc+0xfc+0x80*0x1f+0x80+3*0x280)*31))
 
-extern const int16 vib_tab[64];
+extern CONST int16 vib_tab[64];
 
-extern const uint16 period_tab[61];
+extern CONST uint16 period_tab[61];
 
-extern const int32 stereopan_left[5];
-extern const int32 stereopan_right[5];
+extern CONST int32 stereopan_left[5];
+extern CONST int32 stereopan_right[5];
 
 extern int8 waves[WAVES_SIZE];
 extern uint32 panning_left[256], panning_right[256];

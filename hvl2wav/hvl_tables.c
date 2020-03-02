@@ -6,4 +6,4 @@
 #include "hvl_tables.h"
 
 #define HVL_TABLES_FLOAT
-#include "../hvl_tables.c"
+#include "../common/hvl_tables.c"
