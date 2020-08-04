@@ -3326,19 +3326,31 @@ void gui_loadskinsettings( void )
 
     if( gui_decode_pstr( "font1", tmp ) )
     {
-//      strcpy( prpfontname, tmp );
+      #ifdef __SDL_WRAPPER__
+        strcpy( prpfontname, skindir ); // // // Set path to skin directory
+        strcat( prpfontname, "/" );     // // //
+        strcat( prpfontname, tmp );     // // // Append font filename
+      #endif
       continue;
     }
     
     if( gui_decode_pstr( "font2", tmp ) )
     {
-//      strcpy( fixfontname, tmp );
+      #ifdef __SDL_WRAPPER__
+        strcpy( fixfontname, skindir ); // // //
+        strcat( fixfontname, "/" );     // // //
+        strcat( fixfontname, tmp );     // // //
+      #endif
       continue;
     }
 
     if( gui_decode_pstr( "font3", tmp ) )
     {
-//      strcpy( sfxfontname, tmp );
+      #ifdef __SDL_WRAPPER__
+        strcpy( sfxfontname, skindir ); // // //
+        strcat( sfxfontname, "/" );     // // //
+        strcat( sfxfontname, tmp );     // // //
+      #endif
       continue;
     }
 
