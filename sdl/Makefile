@@ -4,14 +4,15 @@ BASEDIR = $(CURDIR)/..
 
 CC = gcc
 
-CFLAGS = -g -Dmain=SDL_main -D__SDL_WRAPPER__
+CFLAGS = -Dmain=SDL_main -D__SDL_WRAPPER__
 
 
 CFLAGS += -I$(BASEDIR) \
           -I$(WRAPPERDIR) \
-          -Ic:/mingw/include/SDL
+          -Ic:/mingw/include/SDL \
+          `sdl-config --cflags --libs`
 
-LFLAGS += -g -lm -mwindows -lmingw32 -lSDL_ttf -lSDLmain -lSDL -lSDL_image -lfreetype -lz -lole32 -loleaut32
+LFLAGS += -lm -mwindows -lmingw32 -lSDL_ttf -lSDLmain -lSDL -lSDL_image -lfreetype -lz -lole32 -loleaut32
 
 TARGET = hivelytracker.exe
 
@@ -24,7 +25,16 @@ OBJECTS = sdl_wrapper.o \
 	  ../undo.o \
 	  ../about.o
 
-all: $(TARGET)
+all: release hively_tracker
+
+release: CFLAGS += -O3
+release: LFLAGS += -s
+release: hively_tracker
+
+debug: CFLAGS += -g
+debug: hively_tracker
+
+hively_tracker: $(TARGET)
 
 -include $(OBJECTS:.o=.d)
 
