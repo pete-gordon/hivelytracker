@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+#ifdef __SDL_WRAPPER__
+    #include <unistd.h>
+#endif
+
 #include <system_includes.h>
 
 #include "replay.h"
@@ -3330,6 +3334,12 @@ void gui_loadskinsettings( void )
         strcpy( prpfontname, skindir ); // // // Set path to skin directory
         strcat( prpfontname, "/" );     // // //
         strcat( prpfontname, tmp );     // // // Append font filename
+        
+        // If font cannot be opened/found, load default
+        if ( access(prpfontname, F_OK ) == -1 )
+        {
+            strcpy( prpfontname, "ttf/DejaVuSans.ttf" );
+        }
       #endif
       continue;
     }
@@ -3340,6 +3350,11 @@ void gui_loadskinsettings( void )
         strcpy( fixfontname, skindir ); // // //
         strcat( fixfontname, "/" );     // // //
         strcat( fixfontname, tmp );     // // //
+        
+        if ( access(fixfontname, F_OK ) == -1 )
+        {
+            strcpy( fixfontname, "ttf/DejaVuSansMono.ttf" );
+        }
       #endif
       continue;
     }
@@ -3350,6 +3365,11 @@ void gui_loadskinsettings( void )
         strcpy( sfxfontname, skindir ); // // //
         strcat( sfxfontname, "/" );     // // //
         strcat( sfxfontname, tmp );     // // //
+        
+        if ( access(sfxfontname, F_OK ) == -1 )
+        {
+            strcpy( sfxfontname, "ttf/DejaVuSansMono.ttf" );
+        }
       #endif
       continue;
     }
