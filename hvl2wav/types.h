@@ -6,16 +6,19 @@
 #ifndef EXEC_TYPES_H
 #define EXEC_TYPES_H
 
-typedef unsigned short		uint16;
-typedef unsigned char		uint8;
-typedef signed short		int16;
-typedef signed char		int8;
-typedef unsigned long		uint32;
-typedef signed long		int32;
+#include <stdint.h>
 
+#ifndef uint8
+# define uint8  uint8_t
+# define uint16 uint16_t
+# define uint32 uint32_t
+# define int8   uint8_t
+# define int16  uint16_t
+# define int32  uint32_t
+#endif
 typedef double			float64;
 typedef char			TEXT;
-typedef short			BOOL;
+typedef int			BOOL;
 typedef long			LONG;
 typedef unsigned long		ULONG;
 #define FALSE 0

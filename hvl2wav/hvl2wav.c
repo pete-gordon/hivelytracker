@@ -4,12 +4,13 @@
 */
 
 #include <stdio.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "types.h"
-#include "replay.h"
+#include "hvl_replay.h"
 
 uint32 max_frames = 10 * 60 * 50;
 uint32 framelen;
@@ -157,7 +158,7 @@ int main( int argc, char *argv[] )
   {
     hvl_FreeTune( ht );
     free( mixbuf );
-    printf( "Unable to initialise subsong %ld\n", subsong );
+    printf( "Unable to initialise subsong %" PRId32 "\n", subsong );
     return 0;
   }
 
