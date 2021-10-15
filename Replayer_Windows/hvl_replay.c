@@ -1266,7 +1266,10 @@ void hvl_process_frame( struct hvl_tune *ht, struct hvl_voice *voice )
   {
     if( voice->vc_Instrument && voice->vc_PerfCurrent < voice->vc_Instrument->ins_PList.pls_Length )
     {
-      if( --voice->vc_PerfWait <= 0 )
+      int signedOverflow = (voice->vc_PerfWait == 128);
+      
+      voice->vc_PerfWait--;
+      if( signedOverflow || (int8)voice->vc_PerfWait <= 0 )
       {
         uint32 i;
         int32 cur;
