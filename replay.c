@@ -3205,7 +3205,7 @@ void rp_play_irq( struct ahx_tune *at )
   if( ( rp_state != STS_PLAYNOTE ) &&
       ( rp_state != STS_PLAYROW ) )
   {
-    if( at->at_StepWaitFrames <= 0 )
+    if( at->at_StepWaitFrames == 0 )
     {
       if( at->at_GetNewPosition )
       {
@@ -3235,7 +3235,7 @@ void rp_play_irq( struct ahx_tune *at )
       ( rp_state != STS_PLAYROW ) )
   {
     at->at_PlayingTime++;
-    if( at->at_Tempo > 0 && --at->at_StepWaitFrames <= 0 )
+    if( --at->at_StepWaitFrames == 0 )
     {
       if( !at->at_PatternBreak )
       {

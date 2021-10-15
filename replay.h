@@ -217,7 +217,7 @@ struct ahx_tune
   int16                  at_Tempo;
   int16                  at_PosNr;
   int16                  at_NextPosNr;
-  int16                  at_StepWaitFrames;
+  uint16                 at_StepWaitFrames;
   int16                  at_NoteNr;
   uint16                 at_PosJumpNote;
   uint8                  at_GetNewPosition;

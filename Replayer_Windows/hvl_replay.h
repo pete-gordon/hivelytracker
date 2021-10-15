@@ -205,7 +205,7 @@ struct hvl_tune
   uint32                 ht_PlayingTime;
   int16                  ht_Tempo;
   int16                  ht_PosNr;
-  int16                  ht_StepWaitFrames;
+  uint16                 ht_StepWaitFrames;
   int16                  ht_NoteNr;
   uint16                 ht_PosJumpNote;
   uint8                  ht_GetNewPosition;

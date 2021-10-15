@@ -1627,7 +1627,7 @@ void hvl_play_irq( struct hvl_tune *ht )
 {
   uint32 i;
 
-  if( ht->ht_StepWaitFrames <= 0 )
+  if( ht->ht_StepWaitFrames == 0 )
   {
     if( ht->ht_GetNewPosition )
     {
@@ -1653,7 +1653,7 @@ void hvl_play_irq( struct hvl_tune *ht )
     hvl_process_frame( ht, &ht->ht_Voices[i] );
 
   ht->ht_PlayingTime++;
-  if( ht->ht_Tempo > 0 && --ht->ht_StepWaitFrames <= 0 )
+  if( --ht->ht_StepWaitFrames == 0 )
   {
     if( !ht->ht_PatternBreak )
     {
