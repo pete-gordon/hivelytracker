@@ -2938,7 +2938,7 @@ void rp_process_frame( struct ahx_tune *at, struct ahx_voice *voice )
     }
     
     // NoFilterInit
-    FMax = (voice->vc_FilterSpeed < 3) ? (5-voice->vc_FilterSpeed) : 1;
+    FMax = (voice->vc_FilterSpeed < 4) ? (5-voice->vc_FilterSpeed) : 1;
 
     for( i=0; i<FMax; i++ )
     {
