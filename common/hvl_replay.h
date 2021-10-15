@@ -1,8 +1,24 @@
+#ifndef _HVL_REPLAY_H
+#define _HVL_REPLAY_H
+
+/* const is used in general places
+ * CONST is used in places that AMIGA replayer had it
+ */
 
 // Woohoo!
 #define MAX_CHANNELS 16
 
-#define Period2Freq(period) ((3546897.f * 65536.f) / (period)) 
+// Some handy constants. Thanks eightbitbubsy.
+#define AMIGA_PAL_XTAL            28375160
+#define AMIGA_NTSC_XTAL           28636360
+#define AMIGA_CPU_PAL_CLK         ((AMIGA_PAL_XTAL / 4))
+#define AMIGA_CPU_NTSC_CLK        ((AMIGA_NTSC_XTAL / 4))
+#define AMIGA_CIA_PAL_CLK         ((AMIGA_CPU_PAL_CLK / 10))
+#define AMIGA_CIA_NTSC_CLK        ((AMIGA_CPU_NTSC_CLK / 10))
+#define AMIGA_PAULA_PAL_CLK       ((AMIGA_CPU_PAL_CLK / 2))
+#define AMIGA_PAULA_NTSC_CLK      ((AMIGA_CPU_NTSC_CLK / 2))
+
+#define Period2Freq(period) ((AMIGA_PAULA_PAL_CLK * 65536.f) / (period))
 
 struct hvl_envelope
 {
@@ -130,8 +146,8 @@ struct hvl_voice
   int16                  vc_PerfSpeed;
   int16                  vc_PerfWait;
   struct hvl_plist      *vc_PerfList;
-  int8                  *vc_AudioPointer;
-  int8                  *vc_AudioSource;
+  const int8            *vc_AudioPointer;
+  const int8            *vc_AudioSource;
   uint8                  vc_NoteDelayOn;
   uint8                  vc_NoteCutOn;
   int16                  vc_NoteDelayWait;
@@ -139,7 +155,7 @@ struct hvl_voice
   int16                  vc_AudioPeriod;
   int16                  vc_AudioVolume;
   int32                  vc_WNRandom;
-  int8                  *vc_MixSource;
+  const int8            *vc_MixSource;
   int8                   vc_SquareTempBuffer[0x80];
   int8                   vc_VoiceBuffer[0x282*4];
   uint8                  vc_VoiceNum;
@@ -152,12 +168,12 @@ struct hvl_voice
   uint32                 vc_PanMultRight;
   uint32                 vc_RingSamplePos;
   uint32                 vc_RingDelta;
-  int8                  *vc_RingMixSource;
+  const int8            *vc_RingMixSource;
   uint8                  vc_RingPlantPeriod;
   int16                  vc_RingInstrPeriod;
   int16                  vc_RingBasePeriod;
   int16                  vc_RingAudioPeriod;
-  int8                  *vc_RingAudioSource;
+  const int8            *vc_RingAudioSource;
   uint8                  vc_RingNewWaveform;
   uint8                  vc_RingWaveform;
   uint8                  vc_RingFixedPeriod;
@@ -170,7 +186,7 @@ struct hvl_tune
   uint16                 ht_SongNum;
   uint32                 ht_Frequency;
   float64                ht_FreqF;
-  int8                  *ht_WaveformTab[MAX_CHANNELS];
+  const int8            *ht_WaveformTab[MAX_CHANNELS];
   uint16                 ht_Restart;
   uint16                 ht_PositionNr;
   uint8                  ht_SpeedMultiplier;
@@ -205,9 +221,8 @@ struct hvl_tune
 void hvl_DecodeFrame( struct hvl_tune *ht, int8 *buf1, int8 *buf2, int32 bufmod );
 void hvl_InitReplayer( void );
 BOOL hvl_InitSubsong( struct hvl_tune *ht, uint32 nr );
-struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo );
+struct hvl_tune *hvl_LoadTune( CONST TEXT *name, uint32 freq, uint32 defstereo );
+struct hvl_tune *hvl_ParseTune(const uint8 *buf, uint32 buflen, uint32 freq, uint32 defstereo ); /* not all hvl_replay.c implementations provide this yet */
 void hvl_FreeTune( struct hvl_tune *ht );
-struct hvl_tune *hvl_reset( uint8 *buf, uint32 buflen, uint32 defstereo, uint32 freq, BOOL freeit );
-int32 hvl_FindLoudest( struct hvl_tune *ht, int32 maxframes, BOOL usesongend );
 
-
+#endif
