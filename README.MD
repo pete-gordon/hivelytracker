@@ -15,3 +15,36 @@ HivelyTracker offers the following features over AHX:
 
 HivelyTracker was coded by Xeron/IRIS
 GUI design and skins by Spot/Up Rough
+
+Compiling
+=========
+
+The makefile at the root of the repository is for Amiga OS only and will not work for other platforms.
+
+Building for Amiga OS
+---------------------
+
+    make
+
+Building for Linux
+------------------
+
+    cd sdl
+    make -f Makefile.linux
+    
+Building for Haiku
+------------------
+
+    cd sdl
+    make -f Makefile.haiku
+    
+Building for Windows
+--------------------
+
+    cd sdl
+    make -f Makefile
+    
+Building for MacOS
+------------------
+
+An XCode project is provided in the SDL directory.
