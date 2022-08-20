@@ -974,6 +974,7 @@ BOOL open_image( const TEXT *name, struct rawbm *bm )
   if (strncmp(skindir, "Skins/", 6) == 0)
     osxGetResourcesPath(tmp, skindir);
 #else
+
   strncpy( tmp, skindir, 1024 );
 #endif
   strncat( tmp, "/", 1024 );
@@ -3331,14 +3332,22 @@ void gui_loadskinsettings( void )
     if( gui_decode_pstr( "font1", tmp ) )
     {
       #ifdef __SDL_WRAPPER__
+#ifdef PREFIX
+	strcpy( prpfontname, PREFIX "/share/hivelytracker/ttf/");
+#else
         strcpy( prpfontname, skindir ); // // // Set path to skin directory
         strcat( prpfontname, "/" );     // // //
+#endif
         strcat( prpfontname, tmp );     // // // Append font filename
         
         // If font cannot be opened/found, load default
         if ( access(prpfontname, F_OK ) == -1 )
         {
-            strcpy( prpfontname, "ttf/DejaVuSans.ttf" );
+            strcpy( prpfontname,
+#ifdef PREFIX
+	                         PREFIX "/share/hivelytracker/"
+#endif
+                                 "ttf/DejaVuSans.ttf" );
         }
       #endif
       continue;
@@ -3347,13 +3356,21 @@ void gui_loadskinsettings( void )
     if( gui_decode_pstr( "font2", tmp ) )
     {
       #ifdef __SDL_WRAPPER__
+#ifdef PREFIX
+	strcpy( fixfontname, PREFIX "/share/hivelytracker/ttf/");
+#else
         strcpy( fixfontname, skindir ); // // //
         strcat( fixfontname, "/" );     // // //
+#endif
         strcat( fixfontname, tmp );     // // //
         
         if ( access(fixfontname, F_OK ) == -1 )
         {
-            strcpy( fixfontname, "ttf/DejaVuSansMono.ttf" );
+            strcpy( fixfontname,
+#ifdef PREFIX
+	                         PREFIX "/share/hivelytracker/"
+#endif
+                                 "ttf/DejaVuSansMono.ttf" );
         }
       #endif
       continue;
@@ -3362,13 +3379,21 @@ void gui_loadskinsettings( void )
     if( gui_decode_pstr( "font3", tmp ) )
     {
       #ifdef __SDL_WRAPPER__
+#ifdef PREFIX
+	strcpy( sfxfontname, PREFIX "/share/hivelytracker/ttf/");
+#else
         strcpy( sfxfontname, skindir ); // // //
         strcat( sfxfontname, "/" );     // // //
+#endif
         strcat( sfxfontname, tmp );     // // //
         
         if ( access(sfxfontname, F_OK ) == -1 )
         {
-            strcpy( sfxfontname, "ttf/DejaVuSansMono.ttf" );
+            strcpy( sfxfontname,
+#ifdef PREFIX
+	                         PREFIX "/share/hivelytracker/"
+#endif
+                                 "ttf/DejaVuSansMono.ttf" );
         }
       #endif
       continue;
@@ -3546,7 +3571,12 @@ void gui_pre_init( void )
 
   strcpy( songdir, "Songs" );
   strcpy( instdir, "Instruments" );
-  strcpy( skindir, "Skins/SIDMonster-Light" );
+  strcpy( skindir,
+#ifdef PREFIX
+                   PREFIX
+                   "/share/hivelytracker/"
+#endif
+                   "Skins/SIDMonster-Light" );
 
   gui_load_prefs();
 
@@ -3947,9 +3977,24 @@ BOOL gui_init( void )
   strcpy( sfxfontname, "/boot/system/data/fonts/ttfonts/DejaVuSansMono.ttf" );
   strcpy( prpfontname, "/boot/system/data/fonts/ttfonts/DejaVuSans.ttf" );
 #else
-  strcpy( fixfontname, "ttf/DejaVuSansMono.ttf" );
-  strcpy( sfxfontname, "ttf/DejaVuSansMono.ttf" );
-  strcpy( prpfontname, "ttf/DejaVuSans.ttf" );
+  strcpy( fixfontname,
+#ifdef PREFIX
+                       PREFIX
+                       "/share/hivelytracker/"
+#endif
+                       "ttf/DejaVuSansMono.ttf" );
+  strcpy( sfxfontname,
+#ifdef PREFIX
+                       PREFIX
+                       "/share/hivelytracker/"
+#endif
+                       "ttf/DejaVuSansMono.ttf" );
+  strcpy( prpfontname,
+#ifdef PREFIX
+                       PREFIX
+                       "/share/hivelytracker/"
+#endif
+                       "ttf/DejaVuSans.ttf" );
 #endif  
 #endif  
 
