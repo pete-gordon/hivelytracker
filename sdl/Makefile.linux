@@ -11,7 +11,7 @@ BASELIBDIR := lib64
 else
 BASELIBDIR := lib
 endif
-CFLAGS += -g $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-2.0 --cflags)
+CFLAGS += -g $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-2.0 --cflags) -DPREFIX=\"$(PREFIX)\"
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-2.0 --libs) -lSDL_image -lSDL_ttf -lfreetype -lz -lX11
 PREFIX = /usr
 
@@ -46,11 +46,11 @@ clean:
 
 install:
 	install -Dm644 ../Docs/hivelytracker.1 $(PREFIX)/share/man/man1/hivelytracker.1
-	gzip -9 $(PREFIX)/share/man/man1/hivelytracker.1
+	gzip -f -9 $(PREFIX)/share/man/man1/hivelytracker.1
 	install -Dm 755 ../sdl/hivelytracker $(PREFIX)/bin/hivelytracker
 	install -Dm 644 ../sdl/winicon.png $(PREFIX)/share/icons/hivelytracker.png
 	install -Dm 644 ../sdl/hivelytracker.desktop $(PREFIX)/share/applications/hivelytracker.desktop
-	mkdir $(PREFIX)/share/hivelytracker
+	mkdir -p $(PREFIX)/share/hivelytracker
 	cp -r ../Instruments $(PREFIX)/share/hivelytracker/Instruments
 	cp -r ../Skins $(PREFIX)/share/hivelytracker/Skins
 	cp -r ../ttf $(PREFIX)/share/hivelytracker/ttf
