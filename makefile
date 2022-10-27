@@ -1,11 +1,11 @@
 
-CFLAGS = -Wall -O3 -gstabs -I.
+CFLAGS = -Wall -O3 -I.
 
 CC = gcc
 AR = ar
 RANLIB = ranlib
 DEBUGLIB =
-LFLAGS = -use-dynld -lm -gstabs
+LFLAGS = -lm
 
 all: ht
 

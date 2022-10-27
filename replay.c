@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <math.h>
 
+#define __USE_BASETYPE__ 1
 #include <system_includes.h>
 
 #include "util.h"

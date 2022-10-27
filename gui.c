@@ -4741,11 +4741,11 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       if( !ok ) break;
       
       lock = IDOS->Lock( ins_lreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      olddir = IDOS->SetCurrentDir( lock );
       
       rp_load_ins( ins_lreq->fr_File, curtune, curtune->at_curins );
     
-      IDOS->CurrentDir( olddir );
+      IDOS->SetCurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
       if (!(gfname = filerequester("Load instrument", reminstdir, "", FR_INSLOAD))) break;
@@ -4803,14 +4803,14 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       if( !ok ) break;
       
       lock = IDOS->Lock( sng_sreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      olddir = IDOS->SetCurrentDir( lock );
       
       rp_save_ahx( sng_sreq->fr_File, curtune );
       
       if( i == 0 )
         curtune->at_modified = FALSE;
       
-      IDOS->CurrentDir( olddir );
+      IDOS->SetCurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
       if (!(gfname = filerequester("Save AHX module", remsongdir, "", FR_AHXSAVE))) break;
@@ -4842,13 +4842,13 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       if( !ok ) break;
       
       lock = IDOS->Lock( sng_sreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      olddir = IDOS->SetCurrentDir( lock );
       
       rp_save_hvl( sng_sreq->fr_File, curtune );
       
       curtune->at_modified = FALSE;
       
-      IDOS->CurrentDir( olddir );
+      IDOS->SetCurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
       if (!(gfname = filerequester("Save HVL module", remsongdir, "", FR_HVLSAVE))) break;
@@ -4879,12 +4879,12 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
       if( !ok ) break;
       
       lock = IDOS->Lock( ins_sreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      olddir = IDOS->SetCurrentDir( lock );
       
       rp_save_ins( ins_sreq->fr_File, curtune, curtune->at_curins );
       gui_set_various_things( curtune );
       
-      IDOS->CurrentDir( olddir );
+      IDOS->SetCurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
       if (!(gfname = filerequester("Save instrument", reminstdir, "", FR_INSSAVE))) break;
@@ -4917,12 +4917,12 @@ BOOL gui_check_bbank( struct buttonbank *bbnk, int32 nb, int32 z, int32 button )
 
 #ifndef __SDL_WRAPPER__
       lock = IDOS->Lock( sng_lreq->fr_Drawer, ACCESS_READ );
-      olddir = IDOS->CurrentDir( lock );
+      olddir = IDOS->SetCurrentDir( lock );
 
       at = rp_load_tune( sng_lreq->fr_File, curtune );
       if( at ) curtune = at;
       
-      IDOS->CurrentDir( olddir );
+      IDOS->SetCurrentDir( olddir );
       IDOS->UnLock( lock );
 #else
       at = rp_load_tune( gfname, curtune );
@@ -6422,7 +6422,7 @@ BOOL gui_restart( void )
         }
       }
     }
-    cdir = IDOS->CurrentDir( lock );
+    cdir = IDOS->SetCurrentDir( lock );
 
     IExec->ObtainSemaphore( rp_list_ss );
 
@@ -6435,7 +6435,7 @@ BOOL gui_restart( void )
       at = (struct ahx_tune *)IExec->GetSucc(&at->at_ln);
     }
 
-    IDOS->CurrentDir( cdir );
+    IDOS->SetCurrentDir( cdir );
     IDOS->UnLock( lock );
     IExec->ReleaseSemaphore( rp_list_ss );
     return FALSE;
