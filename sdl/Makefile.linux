@@ -11,8 +11,8 @@ BASELIBDIR := lib64
 else
 BASELIBDIR := lib
 endif
-CFLAGS += -g $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-2.0 --cflags) -DPREFIX=\"$(PREFIX)\"
-LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-2.0 --libs) -lSDL_image -lSDL_ttf -lfreetype -lz -lX11
+CFLAGS += -g $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -DPREFIX=\"$(PREFIX)\"
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lSDL_image -lSDL_ttf -lfreetype -lz -lX11
 PREFIX = /usr
 
 CFLAGS += -I$(BASEDIR) \
