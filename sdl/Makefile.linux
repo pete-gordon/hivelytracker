@@ -6,18 +6,13 @@ CC = gcc
 
 CFLAGS = -g -D__SDL_WRAPPER__
 
-ifeq (x86_64,$(shell uname -m))
-BASELIBDIR := lib64
-else
-BASELIBDIR := lib
-endif
-CFLAGS += -g $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -DPREFIX=\"$(PREFIX)\"
-LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lSDL_image -lSDL_ttf -lfreetype -lz -lX11
+LIBS = sdl SDL_image SDL_ttf gtk+-3.0
+CFLAGS += -g $(shell pkg-config $(LIBS) --cflags) -DPREFIX=\"$(PREFIX)\"
+LFLAGS += -lm $(shell pkg-config $(LIBS) --libs)
 PREFIX = /usr
 
 CFLAGS += -I$(BASEDIR) \
-          -I$(WRAPPERDIR) \
-          -Ic:/mingw/include/SDL
+          -I$(WRAPPERDIR)
 
 TARGET = hivelytracker
 
