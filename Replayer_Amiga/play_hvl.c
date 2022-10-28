@@ -10,6 +10,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#define __USE_BASETYPE__ 1
+
 #include <proto/ahi.h>
 
 #include "hvl_replay.h"

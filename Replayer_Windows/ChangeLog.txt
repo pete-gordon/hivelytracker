@@ -3,7 +3,7 @@ Hively Tracker Windows Command Line Player Change Log
 1.9
 ===
 
-+ 1.8 replayer bug fixes
++ 1.9 replayer bug fixes
 
 
 1.8

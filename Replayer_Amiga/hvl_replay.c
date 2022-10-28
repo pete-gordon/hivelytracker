@@ -351,7 +351,7 @@ struct hvl_tune *hvl_load_ahx( uint8 *buf, uint32 buflen, uint32 defstereo, uint
     bptr += 22 + bptr[21]*4;
   }
 
-  ht = IExec->AllocVec( hs, MEMF_ANY );
+  ht = IExec->AllocVecTags( hs, TAG_END );
   if( !ht )
   {
     IExec->FreeVec( buf );
@@ -534,39 +534,39 @@ struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo )
   TEXT   *nptr;
   uint32  buflen, i, j, posn, insn, ssn, chnn, hs, trkl, trkn;
   BPTR    lock, fh;
-  struct  FileInfoBlock *fib;
+  struct  ExamineData *exd;
   struct  hvl_plsentry *ple;
 
-  fib = IDOS->AllocDosObjectTags( DOS_FIB, TAG_DONE );
-  if( !fib )
-  {
-    printf( "Out of memory\n" );
-    return NULL;
-  }
   
   lock = IDOS->Lock( name, ACCESS_READ );
   if( !lock )
   {
-    IDOS->FreeDosObject( DOS_FIB, fib );
     printf( "Unable to find '%s'\n", name );
     return NULL;
   }
   
-  IDOS->Examine( lock, fib );
-  if( !FIB_IS_FILE( fib ) )
+  exd = IDOS->ExamineObjectTags( EX_LockInput, lock, TAG_END );
+  if( NULL == exd )
   {
     IDOS->UnLock( lock );
-    IDOS->FreeDosObject( DOS_FIB, fib );
     printf( "Bad file!\n" );
     return NULL;
   }
   
-  buflen = fib->fib_Size;
-  buf = IExec->AllocVec( buflen, MEMF_ANY );
+  if( !EXD_IS_FILE( exd ) )
+  {
+    IDOS->UnLock( lock );
+    IDOS->FreeDosObject( DOS_EXAMINEDATA, exd );
+    printf( "Bad file!\n" );
+    return NULL;
+  }
+  
+  buflen = exd->FileSize;
+  buf = IExec->AllocVecTags( buflen, TAG_END );
   if( !buf )
   {
     IDOS->UnLock( lock );
-    IDOS->FreeDosObject( DOS_FIB, fib );
+    IDOS->FreeDosObject( DOS_EXAMINEDATA, exd );
     printf( "Out of memory!\n" );
     return NULL;
   }
@@ -576,7 +576,7 @@ struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo )
   {
     IExec->FreeVec( buf );
     IDOS->UnLock( lock );
-    IDOS->FreeDosObject( DOS_FIB, fib );
+    IDOS->FreeDosObject( DOS_EXAMINEDATA, exd );
     printf( "Can't open file\n" );
     return NULL;
   }
@@ -585,12 +585,12 @@ struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo )
   {
     IExec->FreeVec( buf );
     IDOS->Close( fh );
-    IDOS->FreeDosObject( DOS_FIB, fib );
+    IDOS->FreeDosObject( DOS_EXAMINEDATA, exd );
     printf( "Unable to read from file!\n" );
     return NULL;
   }
   IDOS->Close( fh );
-  IDOS->FreeDosObject( DOS_FIB, fib );
+  IDOS->FreeDosObject( DOS_EXAMINEDATA, exd );
   
   if( ( buf[0] == 'T' ) &&
       ( buf[1] == 'H' ) &&
@@ -647,7 +647,7 @@ struct hvl_tune *hvl_LoadTune( TEXT *name, uint32 freq, uint32 defstereo )
     bptr += 22 + bptr[21]*5;
   }
   
-  ht = IExec->AllocVec( hs, MEMF_ANY );    
+  ht = IExec->AllocVecTags( hs, TAG_END );    
   if( !ht )
   {
     IExec->FreeVec( buf );

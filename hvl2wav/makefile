@@ -1,4 +1,4 @@
-PLATFORM = $(shell uname)
+PLATFORM ?= $(shell uname)
 
 ####### DEFAULT SETTINGS HERE #######
 
