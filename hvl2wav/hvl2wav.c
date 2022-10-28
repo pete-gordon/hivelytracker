@@ -114,8 +114,8 @@ int main( int argc, char *argv[] )
 
   if( !filename )
   {
-    printf( "HVL2WAV 1.2, replayer v1.8\n" );
-    printf( "By Xeron/IRIS (pete@petergordon.org.uk)\n" );
+    printf( "HVL2WAV 1.3, replayer v1.9\n" );
+    printf( "By Xeron/IRIS (pete@gordon.plus)\n" );
     printf( "\n" );
     printf( "Usage: hvl2wav [options] <filename>\n" );
     printf( "\n" );

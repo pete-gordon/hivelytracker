@@ -75,7 +75,7 @@
       int nextbuf = 0;
       //sigset_t base_mask, waiting_mask;
 
-      printf( "Hively Tracker command line player 1.8\n" );
+      printf( "Hively Tracker command line player 1.9\n" );
 
       if( argc < 2 )
       {

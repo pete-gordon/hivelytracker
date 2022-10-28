@@ -58,7 +58,7 @@ BOOL hively_init( void )
     return FALSE;
   }
 
-  SDL_WM_SetCaption( "HivelyTracker 1.8", "HivelyTracker 1.8" );
+  SDL_WM_SetCaption( "HivelyTracker 1.9", "HivelyTracker 1.9" );
 
   SDL_EnableKeyRepeat(500, 30);
 

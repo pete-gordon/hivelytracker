@@ -55,7 +55,7 @@ struct rawbm stuff_bm;
 int16 slice[320/2];
 float64 sinpos = 0, cospos = 0;
 
-const TEXT *scrtxt = " hivelytracker version 1.8  ::  code by xeron of iris  "
+const TEXT *scrtxt = " hivelytracker version 1.9  ::  code by xeron of iris  "
                      "::  gui design and skins created by spot of up rough  "
                      "::  example tunes by xeron of iris, varthall of up rough, oxide of sonik and syphus  "
                      "::  hivelytracker is based on ahx by dexter and pink of abyss  "
@@ -323,8 +323,8 @@ void about_open( void )
     WA_Top,         ab_y,
     WA_InnerWidth,  320,
     WA_InnerHeight, 240,
-    WA_Title,       "HivelyTracker v1.8",
-    WA_ScreenTitle, "HivelyTracker (c)2013 IRIS & Up Rough! - http://www.uprough.net - http://www.hivelytracker.co.uk",
+    WA_Title,       "HivelyTracker v1.9",
+    WA_ScreenTitle, "HivelyTracker (c)2022 IRIS & Up Rough! - http://www.uprough.net - http://www.hivelytracker.co.uk",
     WA_RMBTrap,     TRUE,
     WA_IDCMP,       IDCMP_CLOSEWINDOW,  //|IDCMP_MOUSEBUTTONS,
     WA_Activate,    TRUE,

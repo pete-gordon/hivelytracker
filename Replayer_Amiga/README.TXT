@@ -48,4 +48,4 @@ void hvl_DecodeFrame( struct hvl_tune *ht, int8 *buf1, int8 *buf2, int32 bufmod 
 
 
 Enjoy.
-Peter Gordon (pete@petergordon.org.uk)
+Peter Gordon (pete@gordon.plus)

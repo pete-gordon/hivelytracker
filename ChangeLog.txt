@@ -1,4 +1,4 @@
-1.9 xx-xxx-xxxx
+1.9 28-Oct-2022
 ===============
 
 - Added clamping to mixchunk() in the example replayer code (but not in the
@@ -7,10 +7,20 @@
 - White noise is now much more accurate to the real AHX sound <passing_by>
 - Example replayers come with accurate Amiga PAL/NTSC frequencies <passing_by>
 - Filters now sound exactly like the real AHX ones <kode54 and passing_by>
-- Fixed potential divide by zero <kode54>
+- Fixed potential divide by zero <kode54> and <Stian Skjelstad>
 - Added workaround for Alt Gr handling on Windows. The windows SDL library
   sends dummy RCTRL key presses when you hit Alt Gr, so now right alt works
   as it should (thanks to AceMan)
+- Much more accurate wavefilter function <kode54>
+- Various macOS fixes <Chris O'Neill>
+- Changes to make the replayers more suited to systems with more ROM but
+  not much RAM <Fredrik Ahlstrom>
+- Fixed 5xx command bug <passing_by> and <str00t>
+- GTK message bugfix <r-mtwo>
+- Linux improvements <Alex Myczko>, <Olivier Humbert>, <Francesco Gazzetta>
+  and <Stian Skjelstad>
+- Font fixes <DeltaRazero>
+- Misc replayer fixes <pachuco>
 
 
 1.8 07-May-2013
