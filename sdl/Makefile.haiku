@@ -11,7 +11,7 @@ CFLAGS += -I$(BASEDIR) \
           -I$(WRAPPERDIR) \
           `sdl-config --cflags`
 
-LFLAGS += -g -lSDL_ttf `sdl-config --libs` -lSDL_image -lfreetype -lz -lbe -ltracker
+LFLAGS += -g -lSDL_ttf `sdl-config --libs` -lSDL_image -lfreetype -lz -lbe -ltracker -lstdc++
 
 TARGET = hivelytracker
 
