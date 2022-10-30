@@ -4,14 +4,14 @@ BASEDIR = $(CURDIR)/..
 
 CC = gcc
 
-CFLAGS = -g -D__SDL_WRAPPER__
+CFLAGS = -O2 -D__SDL_WRAPPER__
 
 
 CFLAGS += -I$(BASEDIR) \
           -I$(WRAPPERDIR) \
           `sdl-config --cflags`
 
-LFLAGS += -g -lSDL_ttf `sdl-config --libs` -lSDL_image -lfreetype -lz -lbe -ltracker -lstdc++
+LFLAGS += -O2 -lSDL_ttf `sdl-config --libs` -lSDL_image -lfreetype -lz -lbe -ltracker
 
 TARGET = hivelytracker
 
@@ -27,9 +27,13 @@ all: $(TARGET)
 
 -include $(OBJECTS:.o=.d)
 
+%.rsrc: %.rdef
+	rc -o $@ $^
 
-$(TARGET): $(OBJECTS) haiku.o
-	$(CC) -o $(TARGET) $(OBJECTS) haiku.o $(LFLAGS)
+$(TARGET): $(OBJECTS) haiku.o hively.rsrc
+	g++ -o $(TARGET) $(OBJECTS) haiku.o $(LFLAGS)
+	xres -o $(TARGET) hively.rsrc
+	mimeset -f $(TARGET)
 
 $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
