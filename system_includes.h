@@ -37,10 +37,15 @@
 #include <reaction/reaction.h>
 
 #else
-
+#ifdef __APPLE__
+#include <SDL/SDL.h>
+#include <SDL_image/SDL_image.h>
+#include <SDL_ttf/SDL_ttf.h>
+#else
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#endif /* __APPLE__*/
 #include <sdl_wrapper.h>
 
 #endif /* __SDL_WRAPPER */

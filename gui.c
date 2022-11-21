@@ -20,7 +20,7 @@
 #include "about.h"
 #include "undo.h"
 #ifdef __APPLE__
-char *osxGetPrefsPath();
+char *osxGetPrefsPath(void);
 char *osxGetResourcesPath(char *, const char*);
 #endif
 
@@ -3331,23 +3331,34 @@ void gui_loadskinsettings( void )
 
     if( gui_decode_pstr( "font1", tmp ) )
     {
-      #ifdef __SDL_WRAPPER__
+    #ifdef __SDL_WRAPPER__
+    #ifdef __APPLE__
+      osxGetResourcesPath(prpfontname, skindir);
+      strcat( prpfontname, "/" );     // // //
+    #else
+
 #ifdef PREFIX
 	strcpy( prpfontname, PREFIX "/share/hivelytracker/ttf/");
 #else
         strcpy( prpfontname, skindir ); // // // Set path to skin directory
         strcat( prpfontname, "/" );     // // //
 #endif
+#endif
         strcat( prpfontname, tmp );     // // // Append font filename
         
         // If font cannot be opened/found, load default
         if ( access(prpfontname, F_OK ) == -1 )
         {
+#ifdef __APPLE__
+            osxGetResourcesPath(prpfontname, "DejaVuSans.ttf");
+#else
+
             strcpy( prpfontname,
 #ifdef PREFIX
 	                         PREFIX "/share/hivelytracker/"
 #endif
                                  "ttf/DejaVuSans.ttf" );
+#endif
         }
       #endif
       continue;
@@ -3356,21 +3367,30 @@ void gui_loadskinsettings( void )
     if( gui_decode_pstr( "font2", tmp ) )
     {
       #ifdef __SDL_WRAPPER__
+#ifdef __APPLE__
+  osxGetResourcesPath(fixfontname, skindir);
+  strcat( fixfontname, "/" );     // // //
+#else
 #ifdef PREFIX
 	strcpy( fixfontname, PREFIX "/share/hivelytracker/ttf/");
 #else
         strcpy( fixfontname, skindir ); // // //
         strcat( fixfontname, "/" );     // // //
 #endif
+#endif
         strcat( fixfontname, tmp );     // // //
         
         if ( access(fixfontname, F_OK ) == -1 )
         {
+#ifdef __APPLE__
+            osxGetResourcesPath(fixfontname, "DejaVuSansMono.ttf");
+#else
             strcpy( fixfontname,
 #ifdef PREFIX
 	                         PREFIX "/share/hivelytracker/"
 #endif
                                  "ttf/DejaVuSansMono.ttf" );
+#endif
         }
       #endif
       continue;
@@ -3379,21 +3399,31 @@ void gui_loadskinsettings( void )
     if( gui_decode_pstr( "font3", tmp ) )
     {
       #ifdef __SDL_WRAPPER__
+#ifdef __APPLE__
+  osxGetResourcesPath(sfxfontname, skindir);
+  strcat( sfxfontname, "/" );     // // //
+#else
 #ifdef PREFIX
 	strcpy( sfxfontname, PREFIX "/share/hivelytracker/ttf/");
 #else
         strcpy( sfxfontname, skindir ); // // //
         strcat( sfxfontname, "/" );     // // //
 #endif
+#endif
         strcat( sfxfontname, tmp );     // // //
         
         if ( access(sfxfontname, F_OK ) == -1 )
         {
+#ifdef __APPLE__
+            osxGetResourcesPath(sfxfontname, "DejaVuSansMono.ttf");
+#else
+
             strcpy( sfxfontname,
 #ifdef PREFIX
 	                         PREFIX "/share/hivelytracker/"
 #endif
                                  "ttf/DejaVuSansMono.ttf" );
+#endif
         }
       #endif
       continue;

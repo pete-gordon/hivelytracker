@@ -274,8 +274,9 @@ uint16 sdl_keysym_to_amiga_rawkey(SDLKey keysym)
       if (pref_rctrlplaypos)
         return 103; /* My linux laptop has no RSUPER or MENU, so use RCTRL */
       break;
+      default:
+          break;
   }
-  
   return 0;
 }
 
