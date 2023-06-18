@@ -974,7 +974,8 @@ void rp_load_ins( const TEXT *name, struct ahx_tune *at, int32 in )
   ni->ins_pcurx = 0;
   ni->ins_pcury = 0;
   
-  strncpy( ni->ins_Name, (TEXT *)bptr, 128 );
+  strncpy( ni->ins_Name, (TEXT *)bptr, 127 );
+  ni->ins_Name[127] = '\0';
 
 //  printf( "Loaded '%s'!\n", ni->ins_Name );
 }
@@ -1532,7 +1533,8 @@ struct ahx_tune *rp_load_ahx( struct ahx_tune *at, uint8 *buf, uint32 buflen, BO
     return NULL;
   }
 
-  strncpy( at->at_Name, (TEXT *)&buf[(buf[4]<<8)|buf[5]], 128 );
+  strncpy( at->at_Name, (TEXT *)&buf[(buf[4]<<8)|buf[5]], 127 );
+  at->at_Name[127] = '\0';
   nptr = (TEXT *)&buf[((buf[4]<<8)|buf[5])+strlen( at->at_Name )+1];
 
   bptr = &buf[14];
@@ -1578,7 +1580,8 @@ struct ahx_tune *rp_load_ahx( struct ahx_tune *at, uint8 *buf, uint32 buflen, BO
   {
     if( nptr < (TEXT *)(buf+buflen) )
     {
-      strncpy( at->at_Instruments[i].ins_Name, nptr, 128 );
+      strncpy( at->at_Instruments[i].ins_Name, nptr, 127 );
+      at->at_Instruments[i].ins_Name[127] = '\0';
       nptr += strlen( nptr )+1;
     } else {
       at->at_Instruments[i].ins_Name[0] = 0;
@@ -1913,7 +1916,8 @@ struct ahx_tune *rp_load_tune( const TEXT *name, struct ahx_tune *at )
     return NULL;
   }
 
-  strncpy( at->at_Name, (TEXT *)&buf[(buf[4]<<8)|buf[5]], 128 );
+  strncpy( at->at_Name, (TEXT *)&buf[(buf[4]<<8)|buf[5]], 127 );
+  at->at_Name[127] = '\0';
   nptr = (TEXT *)&buf[((buf[4]<<8)|buf[5])+strlen( at->at_Name )+1];
 
   bptr = &buf[16];
@@ -1990,7 +1994,8 @@ struct ahx_tune *rp_load_tune( const TEXT *name, struct ahx_tune *at )
   {
     if( nptr < (TEXT *)(buf+buflen) )
     {
-      strncpy( at->at_Instruments[i].ins_Name, nptr, 128 );
+      strncpy( at->at_Instruments[i].ins_Name, nptr, 127 );
+      at->at_Instruments[i].ins_Name[127] = '\0';
       nptr += strlen( nptr )+1;
     } else {
       at->at_Instruments[i].ins_Name[0] = 0;
